@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import ForgotPassword from "./pages/ForgotPassword";
 import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
+import AddProduct from "./pages/admin/AddProduct";
 
 /* =========================
    ROUTER
@@ -33,6 +34,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/products",
+    element: <><AddProduct /></>
   },
   {
     path: "/profile",

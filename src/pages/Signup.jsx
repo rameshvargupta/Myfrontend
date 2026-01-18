@@ -265,7 +265,14 @@ const Signup = () => {
                   <Input
                     name="otp"
                     value={formData.otp}
-                    onChange={handleChange}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only digits and max length 6
+                      if (/^\d*$/.test(value) && value.length <= 6) {
+                        setFormData((prev) => ({ ...prev, otp: value }));
+                      }
+                    }}
+                    maxLength={6}
                     required
                   />
                 </div>
