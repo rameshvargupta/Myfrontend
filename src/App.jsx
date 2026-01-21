@@ -12,6 +12,10 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Footer from "./components/Footer";
 import Profile from "./pages/Profile";
 import AddProduct from "./pages/admin/AddProduct";
+import Products from "./pages/user/Products";
+import ProductList from "./pages/admin/ProductList";
+import EditProduct from "./pages/admin/EditProduct";
+import ProductDetails from "./pages/user/ProductDetails";
 
 /* =========================
    ROUTER
@@ -35,10 +39,7 @@ const router = createBrowserRouter([
     path: "/login",
     element: <Login />,
   },
-  {
-    path: "/products",
-    element: <><AddProduct /></>
-  },
+
   {
     path: "/profile",
     element: (
@@ -52,6 +53,19 @@ const router = createBrowserRouter([
     path: "/forgot-password",
     element: <ForgotPassword />,
   },
+
+  //  user?
+  { path: "/products", element: < Products /> },
+  { path: "/product/:slug", element: <ProductDetails /> },
+
+  // {/* ADMIN */ }
+  { path: "/admin/products", element: < ProductList /> },
+  { path: "/admin/add-product", element: < AddProduct /> },
+  {
+    path: "/admin/product/edit/:id",
+    element: <EditProduct />
+  }
+
 ]);
 
 /* =========================
