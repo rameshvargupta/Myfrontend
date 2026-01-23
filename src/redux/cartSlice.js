@@ -1,8 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  cartItems: JSON.parse(localStorage.getItem("cartItems")) || [],
-  shippingAddress: JSON.parse(localStorage.getItem("shippingAddress")) || "",
+  cartItems: [],
+  addresses: [],          // 👈 MULTIPLE ADDRESSES
+  selectedAddressId: null // 👈 SELECTED
 };
 
 const cartSlice = createSlice({
@@ -10,38 +11,73 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     addToCart: (state, action) => {
-      const item = state.cartItems.find(i => i.productId === action.payload.productId);
+      const item = state.cartItems.find(
+        (i) => i.productId === action.payload.productId
+      );
       if (item) {
-        item.quantity += action.payload.quantity;
+        item.quantity += 1;
       } else {
-        state.cartItems.push(action.payload);
+        state.cartItems.push({ ...action.payload, quantity: 1 });
       }
-      localStorage.setItem("cartItems", JSON.stringify(state.cartItems)); // ✅ save
+    },
+
+    updateQuantity: (state, action) => {
+      const item = state.cartItems.find(
+        (i) => i.productId === action.payload.productId
+      );
+      if (item) item.quantity = action.payload.quantity;
     },
 
     removeFromCart: (state, action) => {
-      state.cartItems = state.cartItems.filter((i) => i.productId !== action.payload);
-      localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
+      state.cartItems = state.cartItems.filter(
+        (i) => i.productId !== action.payload
+      );
     },
-    updateQuantity: (state, action) => {
-      const { productId, quantity } = action.payload;
-      const item = state.cartItems.find((i) => i.productId === productId);
-      if (item) {
-        item.quantity = quantity;
+
+    /* ================= ADDRESS ================= */
+
+    addAddress: (state, action) => {
+      state.addresses.push(action.payload);
+      state.selectedAddressId = action.payload.id;
+    },
+
+    updateAddress: (state, action) => {
+      const index = state.addresses.findIndex(
+        (a) => a.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.addresses[index] = action.payload;
       }
-      localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
     },
+
+    deleteAddress: (state, action) => {
+      state.addresses = state.addresses.filter(
+        (a) => a.id !== action.payload
+      );
+      if (state.selectedAddressId === action.payload) {
+        state.selectedAddressId = null;
+      }
+    },
+
+    selectAddress: (state, action) => {
+      state.selectedAddressId = action.payload;
+    },
+
     clearCart: (state) => {
       state.cartItems = [];
-      localStorage.removeItem("cartItems");
-    },
-    saveAddress: (state, action) => {
-      state.shippingAddress = action.payload;
-      localStorage.setItem("shippingAddress", JSON.stringify(action.payload));
     },
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, saveAddress } = cartSlice.actions;
+export const {
+  addToCart,
+  updateQuantity,
+  removeFromCart,
+  addAddress,
+  updateAddress,
+  deleteAddress,
+  selectAddress,
+  clearCart,
+} = cartSlice.actions;
 
 export default cartSlice.reducer;

@@ -29,9 +29,9 @@ const PlaceOrderPage = () => {
   /* ------------------ REDUX STATE ------------------ */
   const cartItems = useSelector((state) => state.cart.cartItems);
   const addresses = useSelector((state) => state.address.addresses);
-  const selectedAddress = useSelector(
-    (state) => state.address.selectedAddress
-  );
+ const selectedAddress = addresses.find(
+  (a) => a.id === selectedAddressId
+);
 
   /* ------------------ LOCAL STATE ------------------ */
   const [showForm, setShowForm] = useState(false);
