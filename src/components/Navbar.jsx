@@ -7,14 +7,19 @@ import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/userSlice";
 
 const Navbar = () => {
+ const cartItems = useSelector(
+    (state) => state.cart.cartItems || []
+  );
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const { user, isAuth } = useSelector((state) => state.user);
-
   const firstName = user?.name?.split(" ")?.[0] || "";
-  const isAdmin = user?.role === "admin"; // 🔥 KEY LINE
-
+  const isAdmin = user?.role === "admin";
+const totalQty = cartItems.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
   const logoutHandler = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -40,7 +45,7 @@ const Navbar = () => {
 
   return (
     <header className="bg-pink-50 fixed w-full z-20 border-b border-pink-200">
-      <div className="max-w-7xl mx-auto flex justify-between items-center py-3">
+      <div className="max-w-7xl mx-auto flex justify-between items-center py-3 px-4">
 
         <Link to="/">
           <img src="./download.png" alt="logo" className="w-[100px]" />
@@ -71,13 +76,17 @@ const Navbar = () => {
             )}
           </ul>
 
-          <Link to="/cart" className="relative">
-            <ShoppingCart />
-            <span className="bg-pink-500 rounded-full absolute text-white -top-3 -right-5 px-2">
-              0
-            </span>
+          {/* 🛒 CART ICON WITH COUNT */}
+          <Link to="/cartpage" className="relative">
+            <ShoppingCart size={28} />
+            {totalQty > 0 && (
+              <span className="bg-pink-500 rounded-full absolute text-white -top-3 -right-5 px-2 text-sm font-semibold">
+                {useSelector((state) => state.cart.cartItems.length)} {/* distinct products */}
+              </span>
+            )}
           </Link>
 
+          {/* LOGIN / LOGOUT BUTTON */}
           {isAuth ? (
             <Button
               onClick={logoutHandler}

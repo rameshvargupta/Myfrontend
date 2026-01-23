@@ -16,6 +16,9 @@ import Products from "./pages/user/Products";
 import ProductList from "./pages/admin/ProductList";
 import EditProduct from "./pages/admin/EditProduct";
 import ProductDetails from "./pages/user/ProductDetails";
+import Checkout from "./pages/user/Checkout";
+import CartPage from "./pages/user/CartPage";
+import OrderSuccess from "./pages/user/OrderSuccess";
 
 /* =========================
    ROUTER
@@ -57,6 +60,9 @@ const router = createBrowserRouter([
   //  user?
   { path: "/products", element: < Products /> },
   { path: "/product/:slug", element: <ProductDetails /> },
+  { path: "/checkout", element: <Checkout /> },
+  { path: "/cartpage", element: <CartPage /> },
+  { path: "/ordersuccess", element: <OrderSuccess /> },
 
   // {/* ADMIN */ }
   { path: "/admin/products", element: < ProductList /> },

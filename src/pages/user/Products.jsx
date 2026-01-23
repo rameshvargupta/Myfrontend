@@ -5,6 +5,8 @@ import { fetchUserProducts } from "@/api/productApi";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { Link } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { addToCart } from "@/redux/cartSlice";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -14,7 +16,7 @@ const Products = () => {
   const [sort, setSort] = useState(""); // "price_asc" or "price_desc"
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
+  const dispatch = useDispatch();
   const LIMIT = 12; // products per page
 
   useEffect(() => {
@@ -162,6 +164,17 @@ const Products = () => {
                     ? "bg-pink-500 text-white hover:bg-pink-600"
                     : "bg-gray-300 text-gray-700 cursor-not-allowed"
                     }`}
+                  onClick={() => {
+                    if (p.stock === 0) return;
+                    dispatch(addToCart({
+                      productId: p._id,
+                      name: p.name,
+                      price: p.finalPrice,
+                      image: p.images?.[0]?.url,
+                      quantity: 1,
+                    }));
+                    toast.success(`${p.name} added to cart ✅`);
+                  }}
                 >
                   Add to Cart
                 </button>

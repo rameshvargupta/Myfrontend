@@ -5,12 +5,17 @@ import { toast } from "sonner";
 import ProductSkeleton from "@/components/skeletons/ProductDetailsSkeleton";
 import ProductReviews from "@/components/product/ProductReviews";
 import SimilarProducts from "@/components/product/SimilarProduct";
+import { useDispatch } from "react-redux";
+import { addToCart } from "@/redux/cartSlice";
+import { useNavigate } from "react-router-dom";
 
 const ProductDetails = () => {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
   const [activeImage, setActiveImage] = useState("");
   const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const fetchProduct = async () => {
     try {
@@ -29,6 +34,23 @@ const ProductDetails = () => {
       setLoading(false);
     }
   };
+
+  const handleAddToCart = () => {
+    if (product.stock === 0) return;
+
+    // Dispatch product to Redux cart
+    dispatch(addToCart({
+      productId: product._id,
+      name: product.name,
+      price: product.finalPrice,
+      image: product.images?.[0]?.url || "/download.png",
+      quantity: 1
+    }));
+
+    // Redirect to checkout page
+    navigate("/checkout");
+  };
+
 
   useEffect(() => {
     fetchProduct();
@@ -58,11 +80,10 @@ const ProductDetails = () => {
                 key={img.public_id}
                 src={img.url}
                 onClick={() => setActiveImage(img.url)}
-                className={`w-20 h-20 rounded-lg border cursor-pointer ${
-                  activeImage === img.url
-                    ? "border-pink-500"
-                    : "opacity-70"
-                }`}
+                className={`w-20 h-20 rounded-lg border cursor-pointer ${activeImage === img.url
+                  ? "border-pink-500"
+                  : "opacity-70"
+                  }`}
               />
             ))}
           </div>
@@ -90,7 +111,7 @@ const ProductDetails = () => {
                   {Math.round(
                     ((product.price - product.discountPrice) /
                       product.price) *
-                      100
+                    100
                   )}
                   % OFF
                 </span>
@@ -99,22 +120,21 @@ const ProductDetails = () => {
           </div>
 
           <p
-            className={`mt-3 font-medium ${
-              product.stock > 0
-                ? "text-green-600"
-                : "text-red-600"
-            }`}
+            className={`mt-3 font-medium ${product.stock > 0
+              ? "text-green-600"
+              : "text-red-600"
+              }`}
           >
             {product.stock > 0 ? "In Stock" : "Out of Stock"}
           </p>
 
           <button
             disabled={product.stock === 0}
-            className={`mt-6 w-full py-4 rounded-xl text-lg font-semibold ${
-              product.stock === 0
+            onClick={handleAddToCart}
+            className={`mt-6 w-full py-4 rounded-xl text-lg font-semibold ${product.stock === 0
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-pink-500 text-white hover:bg-pink-600"
-            }`}
+              }`}
           >
             {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
           </button>
