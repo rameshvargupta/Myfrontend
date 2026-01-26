@@ -46,6 +46,7 @@ const Login = () => {
       setLoading(true);
 
       // 1️⃣ LOGIN API
+      // 1️⃣ LOGIN API
       const res = await fetch("http://localhost:5000/api/v1/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,36 +54,24 @@ const Login = () => {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login failed");
+      if (!data.success) throw new Error(data.message);
 
-      // 2️⃣ SAVE TOKEN
+      // 2️⃣ SAVE TOKEN ONLY
       localStorage.setItem("token", data.token);
 
-      // 3️⃣ FETCH FULL USER DETAILS
-      const meRes = await fetch("http://localhost:5000/api/v1/user/me", {
-        headers: {
-          Authorization: `Bearer ${data.token}`,
-        },
-      });
-
-      const meData = await meRes.json();
-      if (!meData.success) throw new Error("Failed to fetch user");
-
-      // 4️⃣ FINAL USER OBJECT
-      const fullUser = {
-        ...meData.user,
-        avatar: {
-          url: meData.user.profilePic,
-          publicId: meData.user.profilePicPublicId,
-        },
-      };
-
-      // 5️⃣ REDUX + LOCALSTORAGE
-      dispatch(setUser({ user: fullUser, token: data.token }));
-      localStorage.setItem("user", JSON.stringify(fullUser));
+      // 3️⃣ TEMP USER (login response user)
+      dispatch(
+        setUser({
+          user: data.user,
+          token: data.token,
+        })
+      );
+      console.log("LOGIN RESPONSE 👉", data);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
       toast.success("Login successful 👋");
       navigate("/");
+
 
     } catch (error) {
       toast.error(error.message);

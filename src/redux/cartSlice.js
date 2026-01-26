@@ -1,68 +1,47 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
-  cartItems: [],
-  addresses: [],          // 👈 MULTIPLE ADDRESSES
-  selectedAddressId: null // 👈 SELECTED
+  cartItems: [], // 🛒 only cart data
 };
 
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
+    /* ================= ADD TO CART ================= */
     addToCart: (state, action) => {
       const item = state.cartItems.find(
         (i) => i.productId === action.payload.productId
       );
+
       if (item) {
         item.quantity += 1;
       } else {
-        state.cartItems.push({ ...action.payload, quantity: 1 });
+        state.cartItems.push({
+          ...action.payload,
+          quantity: 1,
+        });
       }
     },
 
+    /* ================= UPDATE QTY ================= */
     updateQuantity: (state, action) => {
       const item = state.cartItems.find(
         (i) => i.productId === action.payload.productId
       );
-      if (item) item.quantity = action.payload.quantity;
+      if (item) {
+        item.quantity = action.payload.quantity;
+      }
     },
 
+    /* ================= REMOVE ================= */
     removeFromCart: (state, action) => {
       state.cartItems = state.cartItems.filter(
         (i) => i.productId !== action.payload
       );
     },
 
-    /* ================= ADDRESS ================= */
-
-    addAddress: (state, action) => {
-      state.addresses.push(action.payload);
-      state.selectedAddressId = action.payload.id;
-    },
-
-    updateAddress: (state, action) => {
-      const index = state.addresses.findIndex(
-        (a) => a.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.addresses[index] = action.payload;
-      }
-    },
-
-    deleteAddress: (state, action) => {
-      state.addresses = state.addresses.filter(
-        (a) => a.id !== action.payload
-      );
-      if (state.selectedAddressId === action.payload) {
-        state.selectedAddressId = null;
-      }
-    },
-
-    selectAddress: (state, action) => {
-      state.selectedAddressId = action.payload;
-    },
-
+    /* ================= CLEAR CART ================= */
     clearCart: (state) => {
       state.cartItems = [];
     },
@@ -73,10 +52,6 @@ export const {
   addToCart,
   updateQuantity,
   removeFromCart,
-  addAddress,
-  updateAddress,
-  deleteAddress,
-  selectAddress,
   clearCart,
 } = cartSlice.actions;
 

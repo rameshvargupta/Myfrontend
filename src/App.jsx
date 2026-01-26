@@ -18,6 +18,8 @@ import ProductDetails from "./pages/user/ProductDetails";
 import Checkout from "./pages/user/Checkout";
 import CartPage from "./pages/user/CartPage";
 import OrderSuccess from "./pages/user/OrderSuccess";
+import AdminDashboard from "./pages/admin/dashboard/AdminDashboard";
+import MyOrders from "./pages/user/MyOrders";
 
 /* =========================
    ROUTER
@@ -61,10 +63,13 @@ const router = createBrowserRouter([
   { path: "/product/:slug", element: <ProductDetails /> },
   { path: "/checkout", element: <Checkout /> },
   { path: "/cartpage", element: <CartPage /> },
-  { path: "/ordersuccess", element: <OrderSuccess /> },
+  { path: "/myorders", element: <MyOrders /> },
+
+  { path: "/ordersuccess/:orderId", element: <OrderSuccess /> },
 
   // {/* ADMIN */ }
   { path: "/admin/products", element: < ProductList /> },
+  { path: "/adminDashboard", element: < AdminDashboard /> },
   { path: "/admin/add-product", element: < AddProduct /> },
   {
     path: "/admin/product/edit/:id",
@@ -79,60 +84,46 @@ const router = createBrowserRouter([
 const App = () => {
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    // 🔹 Step 1: Load from localStorage (FAST + offline support)
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
+useEffect(() => {
+  const token = localStorage.getItem("token");
+  if (!token) return;
 
-    if (storedUser && token) {
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(
+        "http://localhost:5000/api/v1/user/me",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        localStorage.clear();
+        return;
+      }
+
+      const data = await res.json();
+      if (!data.success) return;
+
       dispatch(
         setUser({
-          user: JSON.parse(storedUser),
+          user: data.user,
           token,
         })
       );
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+    } catch (err) {
+      console.log("Failed to sync user");
     }
+  };
 
-    // 🔹 Step 2: Fetch fresh full user from backend (/me)
-    if (!token) return;
+  fetchMe();
+}, [dispatch]);
 
-    const fetchMe = async () => {
-      try {
-        const res = await fetch(
-          "http://localhost:5000/api/v1/user/me",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
 
-        const data = await res.json();
-        if (!data.success) return;
-
-        const fullUser = {
-          ...data.user,
-          avatar: {
-            url: data.user.profilePic,
-            publicId: data.user.profilePicPublicId,
-          },
-        };
-
-        dispatch(
-          setUser({
-            user: fullUser,
-            token,
-          })
-        );
-
-        localStorage.setItem("user", JSON.stringify(fullUser));
-      } catch (error) {
-        console.log("Failed to sync user");
-      }
-    };
-
-    fetchMe();
-  }, [dispatch]);
 
   return (
     <>

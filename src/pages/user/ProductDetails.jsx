@@ -151,13 +151,13 @@ const ProductDetails = () => {
       </div>
 
       {/* SIMILAR PRODUCTS */}
-      <SimilarProducts
+      {/* <SimilarProducts
         productId={product._id}
         categoryId={product.category?._id}
-      />
+      /> */}
 
       {/* REVIEWS */}
-      <ProductReviews productId={product._id} />
+      {/* <ProductReviews productId={product._id} /> */}
     </>
   );
 };
