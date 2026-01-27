@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setUser } from "@/redux/userSlice";
+import { logoutUser, setUser } from "@/redux/userSlice";
 import { Toaster } from "sonner";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -83,47 +83,57 @@ const router = createBrowserRouter([
 ========================= */
 const App = () => {
   const dispatch = useDispatch();
+  const [loadingUser, setLoadingUser] = useState(true)
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-  const fetchMe = async () => {
-    try {
-      const res = await fetch(
-        "http://localhost:5000/api/v1/user/me",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!res.ok) {
-        localStorage.clear();
-        return;
-      }
-
-      const data = await res.json();
-      if (!data.success) return;
-
+      if (storedUser) {
       dispatch(
         setUser({
-          user: data.user,
-          token,
+          user: JSON.parse(storedUser),
+          token: token || null,
         })
       );
-
-      localStorage.setItem("user", JSON.stringify(data.user));
-    } catch (err) {
-      console.log("Failed to sync user");
     }
-  };
+    
+    if (!token) {
+      setLoadingUser(false);
+      return;
+    }
 
-  fetchMe();
-}, [dispatch]);
+    if (token) {
+      fetch("http://localhost:5000/api/v1/user/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            localStorage.clear();
+            dispatch(logoutUser());
+          } else {
+            dispatch(setUser({ user: data.user, token }));
+          }
+          setLoadingUser(false);
+        })
+        .catch(() => {
+          localStorage.clear();
+          dispatch(logoutUser());
+          setLoadingUser(false);
+        });
+    } else {
+      setLoadingUser(false);
+    }
+  }, [dispatch]);
 
-
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen flex justify-center items-center">
+        <p className="text-lg text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <>

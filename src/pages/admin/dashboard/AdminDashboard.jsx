@@ -6,19 +6,20 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
-  const [selectedUserOrders, setSelectedUserOrders] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [userOrdersLoading, setUserOrdersLoading] = useState(false);
 
   const token = localStorage.getItem("token");
 
-  // Fetch all orders
+  /* ================= FETCH ORDERS ================= */
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/api/v1/orders/admin/orders", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        "http://localhost:5000/api/v1/orders/admin/orders",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       if (data.success) setOrders(data.orders);
     } catch (err) {
@@ -29,13 +30,16 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch all users
+  /* ================= FETCH USERS ================= */
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5000/api/v1/orders/admin/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        "http://localhost:5000/api/v1/orders/admin/users",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       if (data.success) setUsers(data.users);
     } catch (err) {
@@ -46,35 +50,22 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch orders of specific user
-  const fetchUserOrders = async (userId) => {
-    try {
-      setUserOrdersLoading(true);
-      const res = await fetch(
-        `http://localhost:5000/api/v1/orders/admin/user/${userId}/orders`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await res.json();
-      if (data.success) setSelectedUserOrders(data.orders);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to fetch user orders");
-    } finally {
-      setUserOrdersLoading(false);
-    }
-  };
-
-  // Update order status
+  /* ================= UPDATE ORDER STATUS ================= */
   const updateStatus = async (orderId, orderStatus, paymentStatus) => {
     try {
-      await fetch(`http://localhost:5000/api/v1/orders/admin/order/${orderId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ orderStatus, paymentStatus }),
-      });
+      await fetch(
+        `http://localhost:5000/api/v1/orders/admin/order/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ orderStatus, paymentStatus }),
+        }
+      );
       toast.success("Order updated successfully");
       fetchOrders();
-      if (selectedUserOrders.length) fetchUserOrders(selectedUserOrders[0]?.user._id);
     } catch (err) {
       console.error(err);
       toast.error("Failed to update order");
@@ -89,18 +80,21 @@ const AdminDashboard = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 pt-24 pb-10 space-y-6">
+
+      <div className="max-w-7xl mx-auto px-4 pt-24 pb-10 space-y-6">
         <h2 className="text-3xl font-bold text-center">Admin Dashboard</h2>
 
-        {/* Tabs */}
-        <div className="flex gap-2 justify-center">
+        {/* ================= TABS ================= */}
+        <div className="flex justify-center gap-3">
           {["orders", "users"].map((tab) => (
             <button
               key={tab}
-              className={`px-6 py-2 rounded-md font-semibold ${
-                activeTab === tab ? "bg-black text-white" : "bg-gray-200 text-black"
-              }`}
               onClick={() => setActiveTab(tab)}
+              className={`px-6 py-2 rounded-md font-semibold transition ${
+                activeTab === tab
+                  ? "bg-black text-white"
+                  : "bg-gray-200 hover:bg-gray-300"
+              }`}
             >
               {tab === "orders" ? "Orders" : "Users"}
             </button>
@@ -109,63 +103,89 @@ const AdminDashboard = () => {
 
         {loading && <p className="text-center">Loading...</p>}
 
-        {/* Orders Tab */}
+        {/* ================= ORDERS TAB ================= */}
         {activeTab === "orders" && (
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">
             {orders.map((order) => (
               <details
                 key={order._id}
-                className="bg-white p-4 rounded-md shadow"
+                className="bg-white p-4 rounded-lg shadow"
               >
-                <summary className="cursor-pointer font-semibold flex justify-between items-center">
+                <summary className="cursor-pointer flex justify-between items-center font-semibold">
                   <span>
-                    {order.user.firstName} {order.user.lastName} | ₹{order.totalAmount}
+                    {order.user.firstName} {order.user.lastName} — ₹
+                    {order.totalAmount}
                   </span>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    order.orderStatus === "Delivered" ? "bg-green-100" :
-                    order.orderStatus === "Cancelled" ? "bg-red-100" : "bg-yellow-100"
-                  }`}>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      order.orderStatus === "Delivered"
+                        ? "bg-green-100 text-green-700"
+                        : order.orderStatus === "Cancelled"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
                     {order.orderStatus}
                   </span>
                 </summary>
-                <div className="mt-2 space-y-2">
-                  <p><b>Email:</b> {order.user.email}</p>
+
+                <div className="mt-4 space-y-3 text-sm">
                   <p>
-                    <b>Order Status:</b>{" "}
-                    <select
-                      value={order.orderStatus}
-                      onChange={(e) =>
-                        updateStatus(order._id, e.target.value, order.paymentStatus)
-                      }
-                      className="border rounded px-2 py-1"
-                    >
-                      <option>Pending</option>
-                      <option>Processing</option>
-                      <option>Shipped</option>
-                      <option>Delivered</option>
-                      <option>Cancelled</option>
-                    </select>
+                    <b>Email:</b> {order.user.email}
                   </p>
-                  <p>
-                    <b>Payment Status:</b>{" "}
-                    <select
-                      value={order.paymentStatus}
-                      onChange={(e) =>
-                        updateStatus(order._id, order.orderStatus, e.target.value)
-                      }
-                      className="border rounded px-2 py-1"
-                    >
-                      <option>Pending</option>
-                      <option>Completed</option>
-                      <option>Failed</option>
-                    </select>
-                  </p>
+
+                  <div className="flex gap-4">
+                    <label>
+                      <b>Order Status</b>
+                      <select
+                        value={order.orderStatus}
+                        onChange={(e) =>
+                          updateStatus(
+                            order._id,
+                            e.target.value,
+                            order.paymentStatus
+                          )
+                        }
+                        className="ml-2 border rounded px-2 py-1"
+                      >
+                        <option>Pending</option>
+                        <option>Processing</option>
+                        <option>Shipped</option>
+                        <option>Delivered</option>
+                        <option>Cancelled</option>
+                      </select>
+                    </label>
+
+                    <label>
+                      <b>Payment</b>
+                      <select
+                        value={order.paymentStatus}
+                        onChange={(e) =>
+                          updateStatus(
+                            order._id,
+                            order.orderStatus,
+                            e.target.value
+                          )
+                        }
+                        className="ml-2 border rounded px-2 py-1"
+                      >
+                        <option>Pending</option>
+                        <option>Completed</option>
+                        <option>Failed</option>
+                      </select>
+                    </label>
+                  </div>
+
                   <hr />
+
                   <div className="space-y-1">
                     {order.orderItems.map((item, i) => (
-                      <p key={i}>
-                        {item.name} × {item.quantity} — ₹{item.price}
-                      </p>
+                      <div key={i} className="flex justify-between">
+                        <span>
+                          {item.name} × {item.quantity}
+                        </span>
+                        <span>₹{item.price}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -174,64 +194,61 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Users Tab */}
+        {/* ================= USERS TAB (NO ORDERS) ================= */}
         {activeTab === "users" && (
-          <div className="flex gap-4">
-            {/* Users List */}
-            <div className="w-1/3 max-h-[70vh] overflow-y-auto space-y-3">
-              {users.map((user) => (
-                <div
-                  key={user._id}
-                  className="bg-white p-3 rounded-md shadow cursor-pointer hover:bg-gray-100"
-                  onClick={() => fetchUserOrders(user._id)}
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={user.profilePic || "https://cdn-icons-png.flaticon.com/512/149/149071.png"}
-                      alt="profile"
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold">{user.firstName} {user.lastName}</p>
-                      <p className="text-sm">{user.email}</p>
-                      <p className="text-xs text-gray-500">Role: {user.role}</p>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-h-[70vh] overflow-y-auto">
+            {users.map((user) => (
+              <div
+                key={user._id}
+                className="bg-white p-4 rounded-lg shadow hover:shadow-lg transition space-y-3"
+              >
+                <div className="flex items-center gap-4">
+                  <img
+                    src={
+                      user.profilePic ||
+                      "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                    }
+                    className="w-14 h-14 rounded-full border"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">
+                      {user.firstName} {user.lastName}
+                    </h3>
+                    <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
-                  <div className="mt-2 text-sm">
-                    {user.addresses?.length ? (
-                      user.addresses.map((addr, i) => (
-                        <p key={i}>
-                          {addr.address}, {addr.city}, {addr.state} – {addr.pincode}
-                        </p>
-                      ))
-                    ) : (
-                      <p>No address</p>
-                    )}
-                  </div>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      user.role === "admin"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {user.role}
+                  </span>
                 </div>
-              ))}
-            </div>
 
-            {/* Selected User Orders */}
-            <div className="flex-1 max-h-[70vh] overflow-y-auto space-y-4">
-              {userOrdersLoading && <p>Loading...</p>}
-              {selectedUserOrders.map((order) => (
-                <div key={order._id} className="bg-white p-4 rounded-md shadow">
-                  <div className="flex justify-between">
-                    <span>Order ₹{order.totalAmount}</span>
-                    <span>{order.orderStatus}</span>
-                  </div>
-                  <div className="mt-2">
-                    {order.orderItems.map((item, i) => (
-                      <p key={i}>{item.name} × {item.quantity} — ₹{item.price}</p>
-                    ))}
-                  </div>
+                <hr />
+
+                <div className="text-sm">
+                  <p className="font-medium text-gray-700 mb-1">Address</p>
+                  {user.addresses?.length ? (
+                    user.addresses.map((addr, i) => (
+                      <p key={i} className="text-gray-600">
+                        {addr.address}, {addr.city}, {addr.state} –{" "}
+                        {addr.pincode}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-gray-400">No address added</p>
+                  )}
                 </div>
-              ))}
-              {!userOrdersLoading && selectedUserOrders.length === 0 && (
-                <p>Select a user to see their orders</p>
-              )}
-            </div>
+
+                <div className="flex justify-between text-xs text-gray-500 border-t pt-2">
+                  <span>User ID</span>
+                  <span>{user._id.slice(-6)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

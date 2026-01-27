@@ -16,7 +16,8 @@ const Navbar = () => {
   const cartItems = useSelector((state) => state.cart?.cartItems || []);
   const { user, isAuth } = useSelector((state) => state.user || {});
   const firstName = user?.name?.split(" ")[0] || "";
-  const isAdmin = user?.role === "admin";
+  const isAdmin = isAuth && user?.role === "admin";
+
   const totalQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // ===== Logout =====
@@ -56,11 +57,11 @@ const Navbar = () => {
           <Link className="hover:text-pink-600 transition" to="/">Home</Link>
           <Link className="hover:text-pink-600 transition" to="/products">Products</Link>
 
-          {isAuth && isAdmin && (
+          {isAdmin && (
             <>
-              <Link className="hover:text-pink-600 transition" to="/adminDashboard">Dashboard</Link>
-              <Link className="hover:text-pink-600 transition" to="/admin/products">Admin Products</Link>
-              <Link className="hover:text-pink-600 transition" to="/admin/add-product">Add Product</Link>
+              <Link to="/adminDashboard">Dashboard</Link>
+              <Link to="/admin/products">Admin Products</Link>
+              <Link to="/admin/add-product">Add Product</Link>
             </>
           )}
         </nav>
@@ -144,7 +145,7 @@ const Navbar = () => {
           <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Home</Link>
           <Link to="/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Products</Link>
 
-          {isAuth && isAdmin && (
+          {isAdmin &&(
             <>
               <Link to="/adminDashboard" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Dashboard</Link>
               <Link to="/admin/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Admin Products</Link>

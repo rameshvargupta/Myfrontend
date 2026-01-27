@@ -18,6 +18,7 @@ const Checkout = () => {
   const [editId, setEditId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAllAddresses, setShowAllAddresses] = useState(false);
 
   const [addressForm, setAddressForm] = useState({
     fullName: "",
@@ -35,6 +36,15 @@ const Checkout = () => {
   const { addresses, selectedAddress } = useSelector(
     (state) => state.address
   );
+  const defaultAddress =
+    selectedAddress || (addresses.length > 0 ? addresses[0] : null);
+
+  const addressToShow = showAllAddresses
+    ? addresses
+    : defaultAddress
+      ? [defaultAddress]
+      : [];
+
 
   /* ================= TOTAL ================= */
   const totalAmount = cartItems.reduce(
@@ -42,23 +52,24 @@ const Checkout = () => {
     0
   );
 
-  /* ================= FETCH ADDRESS ================= */
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch(
-          "http://localhost:5000/api/v1/user/address",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch("http://localhost:5000/api/v1/user/address", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const data = await res.json();
         if (data.success) {
-          dispatch(setAddresses(data.addresses)); // 🔥 clean replace
+          dispatch(setAddresses(data.addresses));
+
+          // 🔥 Auto-select first address if none selected
+          if (data.addresses.length > 0) {
+            dispatch(selectAddress(data.addresses[0]));
+          }
         }
       } catch (err) {
         console.error("FETCH ADDRESS ERROR", err);
@@ -66,7 +77,8 @@ const Checkout = () => {
     };
 
     fetchAddresses();
-  }, [dispatch]);
+  }, [dispatch]); // only run once
+
 
   /* ================= CART QTY ================= */
   const handleIncreaseQty = (id) => {
@@ -138,6 +150,7 @@ const Checkout = () => {
       }
 
       dispatch(setAddresses(data.addresses)); // 🔥 always sync with backend
+      dispatch(selectAddress(data.addresses[data.addresses.length - 1])); // select last added
       resetForm();
     } catch (err) {
       console.error("SAVE ADDRESS ERROR", err);
@@ -147,8 +160,11 @@ const Checkout = () => {
 
   /* ================= PLACE ORDER ================= */
   const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      alert("Please select delivery address");
+    // fallback to first address if selectedAddress is null
+    const shippingAddress = selectedAddress || addresses[0];
+
+    if (!shippingAddress) {
+      alert("Please add a delivery address");
       return;
     }
 
@@ -170,14 +186,7 @@ const Checkout = () => {
             quantity: item.quantity,
             image: item.image,
           })),
-          shippingAddress: {
-            fullName: selectedAddress.fullName,
-            phone: selectedAddress.phone,
-            address: selectedAddress.address,
-            city: selectedAddress.city,
-            pincode: selectedAddress.pincode,
-            state: selectedAddress.state,
-          },
+          selectedAddressId: selectedAddress._id, // 🔥 send ID instead of full address
           totalAmount,
           paymentMethod: "Cash on Delivery",
         }),
@@ -201,6 +210,7 @@ const Checkout = () => {
     }
   };
 
+
   /* ================= UI ================= */
   return (
     <>
@@ -218,39 +228,126 @@ const Checkout = () => {
               <div className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between mb-4">
                   <h2 className="text-lg font-semibold">Shipping Address</h2>
-                  <Button onClick={() => setShowAddressForm(true)}>
-                    + Add Address
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button onClick={() => setShowAddressForm(true)}>
+                      + Add Address
+                    </Button>
+
+                    {addresses.length > 1 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllAddresses(!showAllAddresses)}
+                      >
+                        {showAllAddresses ? "Done" : "Change Address"}
+                      </Button>
+                    )}
+                  </div>
+
                 </div>
 
                 {showAddressForm && (
-                  <div className="border p-4 rounded mb-4 space-y-3">
-                    {["fullName", "phone", "address", "city", "pincode", "state"].map(
-                      (field) => (
-                        <input
-                          key={field}
-                          name={field}
-                          placeholder={field.toUpperCase()}
-                          value={addressForm[field]}
-                          onChange={handleAddressChange}
-                          className="w-full border p-2 rounded"
-                        />
-                      )
-                    )}
+                  <div className="border rounded-lg p-4 bg-gray-50 space-y-4">
+                    <h3 className="text-md font-semibold">
+                      {editId ? "Edit Address" : "Add New Address"}
+                    </h3>
 
-                    <div className="flex gap-2">
-                      <Button onClick={handleSaveAddress}>Save</Button>
-                      <Button variant="outline" onClick={resetForm}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Full Name */}
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-gray-700">Full Name</label>
+                        <input
+                          name="fullName"
+                          value={addressForm.fullName}
+                          onChange={handleAddressChange}
+                          placeholder="John Doe"
+                          className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+
+                      {/* Phone */}
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-gray-700">Mobile No.</label>
+                        <input
+                          name="phone"
+                          value={addressForm.phone}
+                          onChange={handleAddressChange}
+                          placeholder="1234567890"
+                          className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Address */}
+                    <div className="flex flex-col">
+                      <label className="text-xs font-medium text-gray-700">Street Address</label>
+                      <textarea
+                        name="address"
+                        rows={2}
+                        value={addressForm.address}
+                        onChange={handleAddressChange}
+                        placeholder="House No, Street, Area"
+                        className="border rounded px-2 py-1 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* City */}
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-gray-700">City</label>
+                        <input
+                          name="city"
+                          value={addressForm.city}
+                          onChange={handleAddressChange}
+                          placeholder="City"
+                          className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+
+                      {/* State */}
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-gray-700">State</label>
+                        <input
+                          name="state"
+                          value={addressForm.state}
+                          onChange={handleAddressChange}
+                          placeholder="State"
+                          className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+
+                      {/* Pincode */}
+                      <div className="flex flex-col">
+                        <label className="text-xs font-medium text-gray-700">Pincode</label>
+                        <input
+                          name="pincode"
+                          value={addressForm.pincode}
+                          onChange={handleAddressChange}
+                          placeholder="123456"
+                          className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* ACTIONS */}
+                    <div className="flex justify-end gap-2 pt-1">
+                      <Button variant="outline" size="sm" onClick={resetForm}>
                         Cancel
+                      </Button>
+                      <Button size="sm" onClick={handleSaveAddress}>
+                        {editId ? "Update" : "Save"}
                       </Button>
                     </div>
                   </div>
                 )}
 
+
                 {/* ADDRESS CARD */}
-            
-                <div className="max-h-64 overflow-y-auto space-y-3">
-                  {addresses.map((addr) => (
+
+                <div
+                  className={`space-y-3 ${showAllAddresses ? "max-h-64 overflow-y-auto" : ""
+                    }`}
+                >
+                  {addressToShow.map((addr) => (
                     <div
                       key={addr._id}
                       className={`border rounded-lg p-4 flex justify-between items-start ${selectedAddress?._id === addr._id
@@ -273,41 +370,47 @@ const Checkout = () => {
                         </div>
                       </label>
 
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditId(addr._id);
-                            setAddressForm(addr);
-                            setShowAddressForm(true);
-                          }}
-                        >
-                          Edit
-                        </Button>
+                      {/* 🔥 EDIT / DELETE ONLY WHEN CHANGE ADDRESS MODE */}
+                      {showAllAddresses && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditId(addr._id);
+                              setAddressForm(addr);
+                              setShowAddressForm(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
 
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={async () => {
-                            const token = localStorage.getItem("token");
-                            const res = await fetch(
-                              `http://localhost:5000/api/v1/user/address/${addr._id}`,
-                              {
-                                method: "DELETE",
-                                headers: { Authorization: `Bearer ${token}` },
-                              }
-                            );
-                            const data = await res.json();
-                            dispatch(setAddresses(data.addresses));
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={async () => {
+                              const token = localStorage.getItem("token");
+                              const res = await fetch(
+                                `http://localhost:5000/api/v1/user/address/${addr._id}`,
+                                {
+                                  method: "DELETE",
+                                  headers: {
+                                    Authorization: `Bearer ${token}`,
+                                  },
+                                }
+                              );
+                              const data = await res.json();
+                              dispatch(setAddresses(data.addresses));
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+
 
               </div>
 
