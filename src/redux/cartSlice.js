@@ -18,11 +18,17 @@ const cartSlice = createSlice({
         item.quantity += 1;
       } else {
         state.cartItems.push({
-          ...action.payload,
+          productId: action.payload.productId,
+          slug: action.payload.slug, // ✅ MUST
+          name: action.payload.name,
+          price: action.payload.price,
+          image: action.payload.image,
           quantity: 1,
         });
       }
     },
+
+
 
     /* ================= UPDATE QTY ================= */
     updateQuantity: (state, action) => {

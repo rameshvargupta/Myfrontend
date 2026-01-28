@@ -41,6 +41,7 @@ const ProductDetails = () => {
     // Dispatch product to Redux cart
     dispatch(addToCart({
       productId: product._id,
+      slug: product.slug, // 🔥 important
       name: product.name,
       price: product.finalPrice,
       image: product.images?.[0]?.url || "/download.png",
@@ -94,7 +95,7 @@ const ProductDetails = () => {
           <h1 className="text-3xl font-bold">{product.name}</h1>
 
           <p className="text-gray-500 mt-2">
-            Category: {product.category?.name}
+            Category: {product.category?.name || "Not Available"}
           </p>
 
           <div className="mt-4 flex items-center gap-3">
@@ -132,8 +133,8 @@ const ProductDetails = () => {
             disabled={product.stock === 0}
             onClick={handleAddToCart}
             className={`mt-6 w-full py-4 rounded-xl text-lg font-semibold ${product.stock === 0
-                ? "bg-gray-300 cursor-not-allowed"
-                : "bg-pink-500 text-white hover:bg-pink-600"
+              ? "bg-gray-300 cursor-not-allowed"
+              : "bg-pink-500 text-white hover:bg-pink-600"
               }`}
           >
             {product.stock === 0 ? "Out of Stock" : "Add to Cart"}

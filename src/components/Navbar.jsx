@@ -14,8 +14,13 @@ const Navbar = () => {
 
   // ===== Redux State =====
   const cartItems = useSelector((state) => state.cart?.cartItems || []);
-  const { user, isAuth } = useSelector((state) => state.user || {});
+  const { user, isAuth, authChecked } = useSelector((state) => state.user || {});
   const firstName = user?.name?.split(" ")[0] || "";
+  if (!authChecked) {
+    return null; // ya skeleton navbar
+  }
+  console.log("NAVBAR 👉", { isAuth, user, authChecked });
+
   const isAdmin = isAuth && user?.role === "admin";
 
   const totalQty = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -43,6 +48,9 @@ const Navbar = () => {
       navigate("/login");
     }
   };
+
+ 
+
 
   return (
     <header className="bg-white fixed w-full z-50 shadow-md">
@@ -145,7 +153,7 @@ const Navbar = () => {
           <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Home</Link>
           <Link to="/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Products</Link>
 
-          {isAdmin &&(
+          {isAdmin && (
             <>
               <Link to="/adminDashboard" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Dashboard</Link>
               <Link to="/admin/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Admin Products</Link>

@@ -1,7 +1,25 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { Calendar, IndianRupee, Package } from "lucide-react";
+import {
+    Calendar,
+    IndianRupee,
+    Package,
+    Eye
+} from "lucide-react";
+
+const statusColor = (status) => {
+    switch (status) {
+        case "Delivered":
+            return "bg-green-100 text-green-700";
+        case "Cancelled":
+            return "bg-red-100 text-red-700";
+        case "Shipped":
+            return "bg-blue-100 text-blue-700";
+        default:
+            return "bg-yellow-100 text-yellow-700";
+    }
+};
 
 const MyOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -28,32 +46,40 @@ const MyOrders = () => {
     }, []);
 
     if (loading)
-        return <p className="text-center mt-20 text-gray-500">Loading orders...</p>;
+        return (
+            <>
+                <Navbar />
+                <p className="text-center mt-32 text-gray-500">Loading your orders...</p>
+            </>
+        );
 
     if (!orders.length)
         return (
-            <p className="text-center mt-20 text-gray-500">
-                You have not placed any orders yet.
-            </p>
+            <>
+                <Navbar />
+                <p className="text-center mt-32 text-gray-500">
+                    You haven’t placed any orders yet.
+                </p>
+            </>
         );
 
     return (
         <>
             <Navbar />
 
-            <div className="max-w-6xl mx-auto mt-28 px-4">
-                <h1 className="text-3xl font-bold mb-8">My Orders</h1>
+            <div className="max-w-6xl mx-auto pt-32 pb-16 px-4">
+                <h1 className="text-3xl font-bold mb-10">My Orders</h1>
 
-                <div className="space-y-6">
+                <div className="space-y-8">
                     {orders.map((order) => (
                         <div
                             key={order._id}
                             className="bg-white rounded-2xl shadow-md hover:shadow-xl transition p-6"
                         >
                             {/* ORDER HEADER */}
-                            <div className="flex flex-wrap justify-between items-center border-b pb-4 mb-4">
+                            <div className="flex flex-wrap justify-between items-center border-b pb-4 mb-6 gap-3">
                                 <div>
-                                    <p className="text-sm text-gray-500">Order ID</p>
+                                    <p className="text-xs text-gray-500">ORDER ID</p>
                                     <p className="font-semibold text-gray-800">{order._id}</p>
                                 </div>
 
@@ -63,46 +89,60 @@ const MyOrders = () => {
                                 </div>
                             </div>
 
-                            {/* PRODUCTS */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            {/* ORDER ITEMS */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
                                 {order.orderItems.map((item) => (
                                     <div
                                         key={item._id}
-                                        className="cursor-pointer border rounded-xl p-2 flex flex-col items-center hover:shadow-lg transition"
-                                        onClick={() => navigate(`/product/${item.productId}`)}
+                                        className="flex gap-4 border rounded-xl p-3 hover:shadow-md transition"
                                     >
+                                        {/* IMAGE */}
                                         <img
                                             src={item.image || "/placeholder.png"}
                                             alt={item.name}
-                                            className="w-full h-32 object-cover rounded-lg"
+                                            className="w-24 h-24 object-cover rounded-lg cursor-pointer"
+                                            onClick={() => {
+                                                if (!item.slug) {
+                                                    alert("Product details not available");
+                                                    return;
+                                                }
+                                                navigate(`/product/${item.slug}`);
+                                            }}
+
                                         />
-                                        <p className="text-sm font-medium mt-2 line-clamp-2 text-center">
-                                            {item.name}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">Qty: {item.quantity}</p>
-                                        <div className="flex items-center gap-1 mt-1 text-gray-700">
-                                            <IndianRupee size={12} />
-                                            <span className="font-semibold">{item.price}</span>
+
+                                        {/* INFO */}
+                                        <div className="flex flex-col justify-between">
+                                            <div>
+                                                <p className="font-medium text-gray-800 line-clamp-2">
+                                                    {item.name}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Qty: {item.quantity}
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-1 font-semibold text-gray-700">
+                                                <IndianRupee size={14} />
+                                                {item.price}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
                             {/* ORDER FOOTER */}
-                            <div className="flex flex-wrap justify-between items-center mt-6 gap-4">
+                            <div className="flex flex-wrap justify-between items-center mt-8 gap-4">
                                 <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-1 text-gray-700">
-                                        <IndianRupee size={16} />
-                                        <span className="font-semibold">{order.totalAmount}</span>
+                                    <div className="flex items-center gap-1 text-lg font-bold text-gray-800">
+                                        <IndianRupee size={18} />
+                                        {order.totalAmount}
                                     </div>
 
                                     <span
-                                        className={`px-3 py-1 text-sm rounded-full font-medium ${order.orderStatus === "Delivered"
-                                                ? "bg-green-100 text-green-700"
-                                                : order.orderStatus === "Cancelled"
-                                                    ? "bg-red-100 text-red-700"
-                                                    : "bg-yellow-100 text-yellow-700"
-                                            }`}
+                                        className={`px-4 py-1 text-sm rounded-full font-semibold ${statusColor(
+                                            order.orderStatus
+                                        )}`}
                                     >
                                         {order.orderStatus}
                                     </span>
@@ -110,9 +150,10 @@ const MyOrders = () => {
 
                                 <button
                                     onClick={() => navigate(`/ordersuccess/${order._id}`)}
-                                    className="flex items-center gap-2 text-green-600 font-semibold hover:underline"
+                                    className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 transition font-medium"
                                 >
-                                    <Package size={18} /> Order Details
+                                    <Eye size={18} />
+                                    View Order Details
                                 </button>
                             </div>
                         </div>

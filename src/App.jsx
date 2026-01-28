@@ -89,19 +89,20 @@ const App = () => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
 
-      if (storedUser) {
-      dispatch(
-        setUser({
-          user: JSON.parse(storedUser),
-          token: token || null,
-        })
-      );
+    if (storedUser && token) {
+      dispatch(setUser({
+        user: JSON.parse(storedUser),
+        token
+      }));
     }
-    
-    if (!token) {
-      setLoadingUser(false);
-      return;
-    }
+
+
+  if (!token) {
+  dispatch(logoutUser()); // authChecked = true
+  setLoadingUser(false);
+  return;
+}
+
 
     if (token) {
       fetch("http://localhost:5000/api/v1/user/me", {
