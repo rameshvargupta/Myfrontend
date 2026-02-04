@@ -1,309 +1,514 @@
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import {
   Package,
   IndianRupee,
-  CalendarDays,
+  Clock,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 
-const statusStyle = (status) => {
-  switch (status) {
-    case "Delivered":
-      return "bg-green-100 text-green-700";
-    case "Cancelled":
-      return "bg-red-100 text-red-700";
-    case "Shipped":
-      return "bg-blue-100 text-blue-700";
-    case "Processing":
-      return "bg-purple-100 text-purple-700";
-    default:
-      return "bg-yellow-100 text-yellow-700";
-  }
-};
+/* ================= TIME BUTTONS ================= */
+const timeButtons = [
+  ["today", "Today"],
+  ["7days", "7 Days"],
+  ["1month", "1 Month"],
+  ["6months", "6 Months"],
+  ["1year", "1 Year"],
+  ["all", "Overall"],
+];
 
 const OrdersPanel = () => {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
+  const [timeRange, setTimeRange] = useState("today");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const token = localStorage.getItem("token");
+  const [amountSort, setAmountSort] = useState(null); // asc | desc
+  const [dateSort, setDateSort] = useState(null); // asc | desc
+  const [categoryFilter, setCategoryFilter] = useState("all");
 
-  /* ================= FETCH ALL ORDERS ================= */
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(
-        "http://localhost:5000/api/v1/orders/admin/orders",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const data = await res.json();
-      if (data.success) setOrders(data.orders);
-    } catch (err) {
-      toast.error("Failed to fetch orders");
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  /* ================= UPDATE STATUS ================= */
-  const updateStatus = async (orderId, orderStatus, paymentStatus) => {
-    try {
-      await fetch(
-        `http://localhost:5000/api/v1/orders/admin/order/${orderId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ orderStatus, paymentStatus }),
-        }
-      );
-      toast.success("Order updated");
-      fetchOrders();
-    } catch {
-      toast.error("Failed to update order");
-    }
-  };
+  const [openOrder, setOpenOrder] = useState(null);
 
   useEffect(() => {
+    const fetchOrders = async () => {
+      const token = localStorage.getItem("token"); // 👈 IMPORTANT
+
+      const { data } = await axios.get(
+        "http://localhost:5000/api/v1/orders/admin/orders",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log(data);
+
+      setOrders(data.orders || []);
+    };
+
     fetchOrders();
-
-    const interval = setInterval(() => {
-      fetchOrders();
-    }, 30000); // every 30 sec
-
-    return () => clearInterval(interval);
   }, []);
 
 
-  const filteredOrders = orders.filter(
-    (order) =>
-      order._id.toLowerCase().includes(search.toLowerCase()) ||
-      order.user?.email.toLowerCase().includes(search.toLowerCase())
-  );
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + o.totalAmount,
-    0
-  );
+  /* ================= TIME FILTER ================= */
+  const isWithinRange = (date, range) => {
+    const now = new Date();
+    const d = new Date(date);
 
-  const deliveredCount = orders.filter(
-    (o) => o.orderStatus === "Delivered"
-  ).length;
+    switch (range) {
+      case "today":
+        return d.toDateString() === now.toDateString();
+      case "7days":
+        return d >= new Date(new Date().setDate(now.getDate() - 7));
+      case "1month":
+        return d >= new Date(new Date().setMonth(now.getMonth() - 1));
+      case "6months":
+        return d >= new Date(new Date().setMonth(now.getMonth() - 6));
+      case "1year":
+        return d >= new Date(new Date().setFullYear(now.getFullYear() - 1));
+      default:
+        return true;
+    }
+  };
 
-  const downloadInvoice = async (orderId) => {
-  try {
-    const res = await fetch(
-      `http://localhost:5000/api/v1/orders/invoice/${orderId}`,
+  const updateOrder = async (orderId, payload) => {
+    const token = localStorage.getItem("token");
+
+    const { data } = await axios.put(
+      `http://localhost:5000/api/v1/orders/admin/order/${orderId}`,
+      payload,
       {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       }
     );
 
-    if (!res.ok) throw new Error("Download failed");
-
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `invoice-${orderId}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    toast.error("Invoice download failed");
-  }
-};
+    // ✅ always use updated order from backend
+    setOrders(prev =>
+      prev.map(o =>
+        o._id === orderId ? data.order : o
+      )
+    );
+  };
 
 
-  /* ================= UI ================= */
+  /* ================= CATEGORIES (AUTO FROM ORDERS) ================= */
+  const categories = useMemo(() => {
+    const set = new Set();
+
+    orders.forEach(order => {
+      order.orderItems?.forEach(item => {
+        const cat =
+          item.categoryName ||
+          item.category?.name;
+
+        if (cat) set.add(cat);
+      });
+    });
+
+    return ["all", ...Array.from(set)];
+  }, [orders]);
+
+
+  const filteredOrders = useMemo(() => {
+    let temp = [...orders];
+
+    /* ================= TIME FILTER ================= */
+    temp = temp.filter(order =>
+      isWithinRange(order.createdAt, timeRange)
+    );
+
+    /* ================= STATUS FILTER ================= */
+    if (statusFilter !== "all") {
+      temp = temp.filter(
+        order => order.orderStatus === statusFilter
+      );
+    }
+
+    /* ================= CATEGORY FILTER ================= */
+    if (categoryFilter !== "all") {
+      temp = temp.filter(order => {
+        const category =
+          order.orderItems?.[0]?.categoryName ||
+          order.orderItems?.[0]?.category?.name;
+
+        return category === categoryFilter;
+      });
+    }
+
+    /* ================= SORTING ================= */
+    if (amountSort) {
+      temp.sort((a, b) =>
+        amountSort === "asc"
+          ? a.totalAmount - b.totalAmount
+          : b.totalAmount - a.totalAmount
+      );
+    } else if (dateSort) {
+      temp.sort((a, b) =>
+        dateSort === "asc"
+          ? new Date(a.createdAt) - new Date(b.createdAt)
+          : new Date(b.createdAt) - new Date(a.createdAt)
+      );
+    }
+
+    return temp;
+  }, [
+    orders,
+    timeRange,
+    statusFilter,
+    categoryFilter,
+    amountSort,
+    dateSort,
+  ]);
+
+  /* ================= STATS ================= */
+  const revenue = filteredOrders
+    .filter(o => o.paymentStatus === "Completed")
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+
+  const statusColor = status => {
+    switch (status) {
+      case "Delivered":
+        return "bg-green-100 text-green-700";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "Processing":
+        return "bg-blue-100 text-blue-700";
+      case "Shipped":
+        return "bg-indigo-100 text-indigo-700";
+      case "Cancelled":
+        return "bg-red-100 text-red-700";
+      default:
+        return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  const StatCard = ({ icon, title, value, gradient }) => (
+    <div
+      className={`relative overflow-hidden rounded-2xl p-5 text-white shadow-lg ${gradient}`}
+    >
+      {/* glow */}
+      <div className="absolute inset-0 bg-white/10 backdrop-blur-xl" />
+
+      <div className="relative z-10 flex justify-between items-start">
+        <div>
+          <p className="text-sm font-medium opacity-90">{title}</p>
+          <h3 className="text-3xl font-extrabold mt-1 tracking-tight">
+            {value}
+          </h3>
+        </div>
+
+        <div className="bg-white/20 p-3 rounded-xl">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+
+
   return (
     <div className="space-y-6">
-      {/* HEADER */}
-      <input
-        type="text"
-        placeholder="Search by Order ID or Email"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="border rounded-lg px-4 py-2 w-72"
-      />
-
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-xl shadow">
-          <p className="text-sm text-gray-500">Total Orders</p>
-          <h3 className="text-2xl font-bold">{orders.length}</h3>
+      {/* ================= HEADER ================= */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        {/* TITLE */}
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            Orders Analytics
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Overview of order performance & revenue
+          </p>
         </div>
 
-        <div className="bg-white p-5 rounded-xl shadow">
-          <p className="text-sm text-gray-500">Delivered</p>
-          <h3 className="text-2xl font-bold text-green-600">
-            {deliveredCount}
-          </h3>
-        </div>
-
-        <div className="bg-white p-5 rounded-xl shadow">
-          <p className="text-sm text-gray-500">Revenue</p>
-          <h3 className="text-2xl font-bold text-blue-600">
-            ₹{totalRevenue}
-          </h3>
+        {/* TIME FILTER */}
+        <div className="flex gap-2 bg-white/80 backdrop-blur-md border border-gray-200 rounded-full p-1 shadow-sm">
+          {timeButtons.map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTimeRange(key)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all
+          ${timeRange === key
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md"
+                  : "text-gray-600 hover:bg-gray-100"
+                }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mt-6">
+        <StatCard
+          icon={<Package className="w-6 h-6" />}
+          title="Total Orders"
+          value={filteredOrders.length}
+          gradient="bg-gradient-to-br from-indigo-500 to-indigo-700"
+        />
 
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Package size={22} /> All User Orders
-        </h2>
-        <span className="text-sm text-gray-500">
-          Total Orders: {orders.length}
-        </span>
+        <StatCard
+          icon={<Clock className="w-6 h-6" />}
+          title="Pending Orders"
+          value={filteredOrders.filter(o => o.orderStatus === "Pending").length}
+          gradient="bg-gradient-to-br from-yellow-400 to-orange-500"
+        />
+
+        <StatCard
+          icon={<CheckCircle className="w-6 h-6" />}
+          title="Delivered"
+          value={filteredOrders.filter(o => o.orderStatus === "Delivered").length}
+          gradient="bg-gradient-to-br from-green-500 to-emerald-600"
+        />
+
+        <StatCard
+          icon={<XCircle className="w-6 h-6" />}
+          title="Cancelled"
+          value={filteredOrders.filter(o => o.orderStatus === "Cancelled").length}
+          gradient="bg-gradient-to-br from-red-500 to-rose-600"
+        />
+
+        <StatCard
+          icon={<IndianRupee className="w-6 h-6" />}
+          title="Total Revenue"
+          value={`₹${revenue}`}
+          gradient="bg-gradient-to-br from-purple-500 to-fuchsia-600"
+        />
       </div>
 
-      {loading && (
-        <p className="text-center text-gray-500">Loading orders...</p>
-      )}
 
-      {!loading && !orders.length && (
-        <p className="text-center text-gray-400">
-          No orders found
-        </p>
-      )}
 
-      {/* ORDERS LIST */}
-      <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-2">
-        {filteredOrders.map((order) => (
-          <details
-            key={order._id}
-            className="group bg-gray-50 border rounded-xl shadow-sm open:shadow-md transition"
-          >
-            {/* SUMMARY */}
-            <summary className="cursor-pointer list-none p-5 flex flex-wrap justify-between items-center gap-4">
-              {/* USER */}
-              <div className="flex items-center gap-3">
-                <img
-                  src={
-                    order.user?.profilePic ||
-                    "https://cdn-icons-png.flaticon.com/512/149/149071.png"
+      {/* ================= FILTER BAR ================= */}
+      <div className="bg-white p-4 rounded-xl shadow flex flex-wrap gap-4 items-center">
+        <select
+          className="border rounded-lg px-3 py-2"
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+        >
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Delivered">Delivered</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+
+        <button
+          onClick={() => {
+            setAmountSort(amountSort === "asc" ? "desc" : "asc");
+            setDateSort(null); // 👈 VERY IMPORTANT
+          }}
+          className="px-4 py-2 border rounded-lg"
+        >
+          Amount {amountSort === "asc" ? "↑" : "↓"}
+        </button>
+
+        <button
+          onClick={() => {
+            setDateSort(dateSort === "asc" ? "desc" : "asc");
+            setAmountSort(null); // 👈 VERY IMPORTANT
+          }}
+          className="px-4 py-2 border rounded-lg"
+        >
+          Date {dateSort === "asc" ? "↑" : "↓"}
+        </button>
+
+        <select
+          className="border rounded-lg px-3 py-2"
+          value={categoryFilter}
+          onChange={e => setCategoryFilter(e.target.value)}
+        >
+          {categories.map(cat => (
+            <option key={cat} value={cat}>
+              {cat === "all" ? "All Categories" : cat}
+            </option>
+          ))}
+        </select>
+
+
+
+      </div>
+
+      {/* ================= ORDERS TABLE ================= */}
+
+
+      <div className="relative bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200 shadow-[0_10px_30px_rgba(0,0,0,0.12)] hover:shadow-[0_16px_45px_rgba(0,0,0,0.18)] transition-all p-5">
+        <table className="w-full text-sm border-separate border-spacing-y-3">
+          {/* ================= HEADER ================= */}
+          <thead>
+            <tr className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs uppercase tracking-wider rounded-xl">
+              <th className="p-4 text-left rounded-l-xl">Customer</th>
+              <th className="p-4 text-left">Amount</th>
+              <th className="p-4 text-left">Category</th>
+              <th className="p-4 text-left">Date</th>
+              <th className="p-4 text-left">Order</th>
+              <th className="p-4 text-left">Payment</th>
+              <th className="p-4 text-left rounded-r-xl">Status</th>
+            </tr>
+          </thead>
+
+          {/* ================= BODY ================= */}
+          <tbody className="divide-y divide-gray-100">
+            {filteredOrders.map(order => (
+              <Fragment key={order._id}>
+                {/* ===== SUMMARY ROW ===== */}
+                <tr
+                  onClick={() =>
+                    setOpenOrder(openOrder === order._id ? null : order._id)
                   }
-                  className="w-11 h-11 rounded-full object-cover border"
-                />
+                  className="
+    bg-white
+    rounded-2xl
+    shadow-[0_4px_14px_rgba(0,0,0,0.08)]
+    hover:shadow-[0_10px_28px_rgba(99,102,241,0.25)]
+    transition-all
+    cursor-pointer
+    ring-1 ring-gray-200
+    hover:ring-indigo-300
+  "   >
+                  {/* CUSTOMER */}
+                  <td className="p-4">
+                    <p className="font-semibold text-gray-900">
+                      {order.addresses?.fullName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      📞 {order.addresses?.phone}
+                    </p>
+                  </td>
 
-                <div>
-                  <p className="font-semibold text-gray-800">
-                    {order.user?.firstName} {order.user?.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {order.user?.email}
-                  </p>
-                </div>
-              </div>
+                  {/* AMOUNT */}
+                  <td className="p-4 font-bold text-gray-900">
+                    ₹{order.totalAmount}
+                  </td>
 
-              {/* DATE */}
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <CalendarDays size={16} />
-                {new Date(order.createdAt).toLocaleDateString()}
-              </div>
+                  {/* CATEGORY */}
+                  <td className="p-4">
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-700">
+                      {order.orderItems?.[0]?.categoryName ||
+                        order.orderItems?.[0]?.category?.name ||
+                        "N/A"}
+                    </span>
+                  </td>
 
-              {/* AMOUNT */}
-              <div className="flex items-center gap-1 font-bold text-gray-800">
-                <IndianRupee size={16} />
-                {order.totalAmount}
-              </div>
+                  {/* DATE */}
+                  <td className="p-4">
+                    <p className="font-medium text-gray-900">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(order.createdAt).toLocaleString("en-IN", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </p>
+                  </td>
 
-              {/* STATUS */}
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold ${statusStyle(
-                  order.orderStatus
-                )}`}
-              >
-                {order.orderStatus}
-              </span>
-            </summary>
+                  {/* ORDER STATUS */}
+                  <td className="p-4">
+                    <select
+                      value={order.orderStatus}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e =>
+                        updateOrder(order._id, { orderStatus: e.target.value })
+                      }
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold outline-none border shadow-sm transition
+                ${statusColor(order.orderStatus)}`}
+                    >
+                      <option>Pending</option>
+                      <option>Processing</option>
+                      <option>Shipped</option>
+                      <option>Delivered</option>
+                      <option>Cancelled</option>
+                    </select>
+                  </td>
 
-            {/* DETAILS */}
-            <div className="border-t bg-white p-5 space-y-5">
-              {/* UPDATE STATUS */}
-              <div className="flex flex-wrap gap-4">
-                <label className="text-sm font-medium">
-                  Order Status
-                  <select
-                    value={order.orderStatus}
-                    onChange={(e) =>
-                      updateStatus(
-                        order._id,
-                        e.target.value,
-                        order.paymentStatus
-                      )
-                    }
-                    className="ml-2 border rounded px-2 py-1"
-                  >
-                    <option>Pending</option>
-                    <option>Processing</option>
-                    <option>Shipped</option>
-                    <option>Delivered</option>
-                    <option>Cancelled</option>
-                  </select>
-                </label>
+                  {/* PAYMENT METHOD */}
+                  <td className="p-4 text-xs font-medium text-gray-600 whitespace-nowrap">
+                    {order.paymentMethod}
+                  </td>
 
-                <label className="text-sm font-medium">
-                  Payment
-                  <select
-                    value={order.paymentStatus}
-                    onChange={(e) =>
-                      updateStatus(
-                        order._id,
-                        order.orderStatus,
-                        e.target.value
-                      )
-                    }
-                    className="ml-2 border rounded px-2 py-1"
-                  >
-                    <option>Pending</option>
-                    <option>Completed</option>
-                    <option>Failed</option>
-                  </select>
-                </label>
+                  {/* PAYMENT STATUS */}
+                  <td className="p-4">
+                    <select
+                      value={order.paymentStatus}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e =>
+                        updateOrder(order._id, { paymentStatus: e.target.value })
+                      }
+                      className={`px-4 py-1.5 rounded-full text-xs font-semibold outline-none border shadow-sm transition
+                  ${order.paymentStatus === "Paid"
+                          ? "bg-gradient-to-r from-green-400 to-emerald-500 text-white border-green-500"
+                          : order.paymentStatus === "Failed"
+                            ? "bg-gradient-to-r from-red-400 to-rose-500 text-white border-red-500"
+                            : "bg-gradient-to-r from-yellow-300 to-orange-400 text-white border-yellow-400"
+                        }`}
+                    >
+                      <option>Pending</option>
+                      <option>Paid</option>
+                      <option>Failed</option>
+                    </select>
+                  </td>
+                </tr>
 
-                <button
-                  onClick={() => downloadInvoice(order._id)}
-                  className="bg-black text-white px-4 py-2 rounded"
-                >
-                  Download Invoice
-                </button>
+                {/* ===== EXPANDED DETAILS ===== */}
+                {openOrder === order._id && (
+                  <tr>
+                    <td colSpan={7} className="bg-gradient-to-br from-gray-50 to-indigo-50 p-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* ADDRESS CARD */}
+                        <div className="bg-white rounded-2xl p-5 border shadow-sm">
+                          <h4 className="font-bold text-gray-800 mb-2">
+                            📦 Delivery Address
+                          </h4>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {order.addresses?.fullName}<br />
+                            {order.addresses?.address}, {order.addresses?.city}<br />
+                            {order.addresses?.state} - {order.addresses?.pincode}<br />
+                            📞 {order.addresses?.phone}
+                          </p>
+                        </div>
 
-              </div>
+                        {/* PRODUCTS */}
+                        <div className="bg-white rounded-2xl p-5 border shadow-sm">
+                          <h4 className="font-bold text-gray-800 mb-3">
+                            🛒 Ordered Products
+                          </h4>
 
-              {/* ITEMS */}
-              <div className="space-y-3">
-                {order.orderItems.map((item, i) => (
-                  <div key={i} className="flex gap-4 items-center border rounded-lg p-3">
-                    <img
-                      src={item.image || "/placeholder.png"}
-                      className="w-14 h-14 rounded-md object-cover border"
-                    />
+                          <div className="space-y-3">
+                            {order.orderItems.map(item => (
+                              <div
+                                key={item._id}
+                                className="flex items-center gap-4 p-3 rounded-xl border hover:shadow-md transition"
+                              >
+                                <img
+                                  src={item.image}
+                                  alt={item.productName}
+                                  className="w-16 h-16 rounded-xl object-cover"
+                                />
 
-                    <div className="flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-gray-500">
-                        Qty: {item.quantity}
-                      </p>
-                    </div>
+                                <div className="flex-1">
+                                  <p className="font-semibold text-gray-900">
+                                    {item.productName}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    Qty: {item.quantity}
+                                  </p>
+                                </div>
 
-                    <p className="font-semibold">₹{item.price}</p>
-                  </div>
-
-                ))}
-              </div>
-            </div>
-          </details>
-        ))}
+                                <div className="font-bold text-gray-900">
+                                  ₹{item.price}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
+          </tbody>
+        </table>
       </div>
 
 
@@ -312,3 +517,14 @@ const OrdersPanel = () => {
 };
 
 export default OrdersPanel;
+
+/* ================= STAT CARD ================= */
+const Stat = ({ icon, title, value }) => (
+  <div className="bg-white p-5 rounded-xl shadow flex items-center gap-4">
+    <div className="p-3 bg-gray-100 rounded-lg">{icon}</div>
+    <div>
+      <p className="text-sm text-gray-500">{title}</p>
+      <h3 className="text-2xl font-bold">{value}</h3>
+    </div>
+  </div>
+);

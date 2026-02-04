@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import ProductSkeleton from "@/components/skeletons/ProductDetailsSkeleton";
-import ProductReviews from "@/components/product/ProductReviews";
-import SimilarProducts from "@/components/product/SimilarProduct";
 import { useDispatch } from "react-redux";
 import { addToCart } from "@/redux/cartSlice";
-import { useNavigate } from "react-router-dom";
 
 const ProductDetails = () => {
   const { slug } = useParams();
@@ -17,45 +14,43 @@ const ProductDetails = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const fetchProduct = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/v1/products/${slug}`
-      );
-      const data = await res.json();
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/v1/products/${slug}`
+        );
+        const data = await res.json();
+        if (!data.success) throw new Error();
 
-      if (!data.success) throw new Error();
+        setProduct(data.product);
+        setActiveImage(data.product.images?.[0]?.url);
+      } catch {
+        toast.error("Product not found");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setProduct(data.product);
-      setActiveImage(data.product.images?.[0]?.url);
-    } catch {
-      toast.error("Product not found");
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchProduct();
+  }, [slug]);
 
   const handleAddToCart = () => {
     if (product.stock === 0) return;
 
-    // Dispatch product to Redux cart
-    dispatch(addToCart({
-      productId: product._id,
-      slug: product.slug, // 🔥 important
-      name: product.name,
-      price: product.finalPrice,
-      image: product.images?.[0]?.url || "/download.png",
-      quantity: 1
-    }));
+    dispatch(
+      addToCart({
+        productId: product._id,
+        slug: product.slug,
+        name: product.name,
+        price: product.finalPrice,
+        image: product.images?.[0]?.url,
+        quantity: 1,
+      })
+    );
 
-    // Redirect to checkout page
     navigate("/checkout");
   };
-
-
-  useEffect(() => {
-    fetchProduct();
-  }, [slug]);
 
   if (loading) return <ProductSkeleton />;
   if (!product) return null;
@@ -64,103 +59,147 @@ const ProductDetails = () => {
     <>
       <Navbar />
 
-      {/* PRODUCT DETAILS */}
-      <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
-        {/* LEFT */}
-        <div>
-          <div className="border rounded-xl overflow-hidden">
-            <img
-              src={activeImage}
-              className="w-full h-[420px] object-cover"
-            />
-          </div>
+      {/* ===== PAGE WRAPPER (NAVBAR FIX) ===== */}
+      <div className="pt-24 bg-gray-50 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 
-          <div className="flex gap-3 mt-4">
-            {product.images.map((img) => (
-              <img
-                key={img.public_id}
-                src={img.url}
-                onClick={() => setActiveImage(img.url)}
-                className={`w-20 h-20 rounded-lg border cursor-pointer ${activeImage === img.url
-                  ? "border-pink-500"
-                  : "opacity-70"
-                  }`}
-              />
-            ))}
-          </div>
-        </div>
+            {/* ================= LEFT : IMAGE GALLERY ================= */}
+            <div className="space-y-4">
+              <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <div className="relative group">
+                  <img
+                    src={activeImage}
+                    alt={product.name}
+                    className="w-full h-[320px] sm:h-[420px] lg:h-[520px] object-cover
+                               transition-transform duration-500 ease-out
+                               group-hover:scale-105"
+                  />
+                </div>
+              </div>
 
-        {/* RIGHT */}
-        <div className="sticky top-24 h-fit">
-          <h1 className="text-3xl font-bold">{product.name}</h1>
+              {/* THUMBNAILS */}
+              <div className="flex gap-3 overflow-x-auto">
+                {product.images.map((img) => (
+                  <button
+                    key={img.public_id}
+                    onClick={() => setActiveImage(img.url)}
+                    className={`flex-shrink-0 rounded-xl border p-1 transition
+                      ${
+                        activeImage === img.url
+                          ? "border-pink-500 ring-2 ring-pink-200"
+                          : "border-gray-200 hover:border-gray-400"
+                      }`}
+                  >
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
 
-          <p className="text-gray-500 mt-2">
-            Category: {product.category?.name || "Not Available"}
-          </p>
+            {/* ================= RIGHT : PRODUCT INFO ================= */}
+            <div className="bg-white rounded-2xl border shadow-sm p-6 lg:p-8">
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">
+                {product.name}
+              </h1>
 
-          <div className="mt-4 flex items-center gap-3">
-            <span className="text-3xl font-bold text-pink-600">
-              ₹{product.finalPrice}
-            </span>
+              <p className="text-sm text-gray-500 mt-1">
+                Category · {product.category?.name || "N/A"}
+              </p>
 
-            {product.discountPrice > 0 && (
-              <>
-                <span className="line-through text-gray-400">
-                  ₹{product.price}
+              {/* PRICE */}
+              <div className="mt-5 flex items-center gap-4 flex-wrap">
+                <span className="text-3xl font-bold text-pink-600">
+                  ₹{product.finalPrice}
                 </span>
-                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded text-sm">
-                  {Math.round(
-                    ((product.price - product.discountPrice) /
-                      product.price) *
-                    100
-                  )}
-                  % OFF
-                </span>
-              </>
-            )}
-          </div>
 
-          <p
-            className={`mt-3 font-medium ${product.stock > 0
-              ? "text-green-600"
-              : "text-red-600"
-              }`}
-          >
-            {product.stock > 0 ? "In Stock" : "Out of Stock"}
-          </p>
+                {product.discountPrice > 0 && (
+                  <>
+                    <span className="line-through text-gray-400">
+                      ₹{product.price}
+                    </span>
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                      {Math.round(
+                        ((product.price - product.discountPrice) /
+                          product.price) *
+                          100
+                      )}
+                      % OFF
+                    </span>
+                  </>
+                )}
+              </div>
 
-          <button
-            disabled={product.stock === 0}
-            onClick={handleAddToCart}
-            className={`mt-6 w-full py-4 rounded-xl text-lg font-semibold ${product.stock === 0
-              ? "bg-gray-300 cursor-not-allowed"
-              : "bg-pink-500 text-white hover:bg-pink-600"
-              }`}
-          >
-            {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
-          </button>
+              {/* STOCK */}
+              <p
+                className={`mt-3 font-medium ${
+                  product.stock > 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {product.stock > 0 ? "✔ In Stock" : "✖ Out of Stock"}
+              </p>
 
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-2">
-              Description
-            </h2>
-            <p className="text-gray-700 leading-relaxed">
-              {product.description}
-            </p>
+              {/* CTA */}
+              <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  disabled={product.stock === 0}
+                  onClick={handleAddToCart}
+                  className={`py-3 rounded-xl text-lg font-semibold transition
+                    ${
+                      product.stock === 0
+                        ? "bg-gray-300 cursor-not-allowed"
+                        : "bg-pink-500 text-white hover:bg-pink-600"
+                    }`}
+                >
+                  Add to Cart
+                </button>
+
+                <button
+                  disabled={product.stock === 0}
+                  onClick={handleAddToCart}
+                  className={`py-3 rounded-xl text-lg font-semibold border transition
+                    ${
+                      product.stock === 0
+                        ? "border-gray-300 text-gray-400"
+                        : "border-pink-500 text-pink-600 hover:bg-pink-50"
+                    }`}
+                >
+                  Buy Now
+                </button>
+              </div>
+
+              {/* DESCRIPTION */}
+              <div className="mt-8 border-t pt-6">
+                <h2 className="text-lg font-semibold mb-2">
+                  Product Details
+                </h2>
+                <p className="text-gray-700 leading-relaxed text-sm lg:text-base">
+                  {product.description}
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
-
-      {/* SIMILAR PRODUCTS */}
-      {/* <SimilarProducts
-        productId={product._id}
-        categoryId={product.category?._id}
-      /> */}
-
-      {/* REVIEWS */}
-      {/* <ProductReviews productId={product._id} /> */}
     </>
   );
 };
 
 export default ProductDetails;
+
+
+{/* SIMILAR PRODUCTS */ }
+{/* <SimilarProducts
+        productId={product._id}
+        categoryId={product.category?._id}
+      /> */}
+
+{/* REVIEWS */ }
+{/* <ProductReviews productId={product._id} /> */ }

@@ -121,3 +121,15 @@
     @apply bg-background text-foreground;
   }
 }
+
+.footer-title {
+  @apply text-white font-semibold mb-4 tracking-wide;
+}
+
+.footer-links li {
+  @apply text-sm text-gray-400 hover:text-white cursor-pointer transition;
+}
+
+.footer-icon {
+  @apply p-2 rounded-full bg-gray-800 hover:bg-indigo-600 text-gray-300 hover:text-white transition cursor-pointer;
+}

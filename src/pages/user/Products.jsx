@@ -1,5 +1,3 @@
-
-
 import { useEffect, useState } from "react";
 import { fetchUserProducts } from "@/api/productApi";
 import { toast } from "sonner";
@@ -13,26 +11,28 @@ const Products = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [sort, setSort] = useState(""); // "price_asc" or "price_desc"
+  const [sort, setSort] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const dispatch = useDispatch();
-  const LIMIT = 12; // products per page
 
+  const dispatch = useDispatch();
+  const LIMIT = 12;
+
+  /* ================= FETCH CATEGORIES ================= */
   useEffect(() => {
-    // Fetch categories for filter
     const fetchCategories = async () => {
       try {
         const res = await fetch("http://localhost:5000/api/v1/categories");
         const data = await res.json();
         if (data.success) setCategories(data.categories);
       } catch (err) {
-        console.error("Fetch categories error:", err);
+        console.error(err);
       }
     };
     fetchCategories();
   }, []);
 
+  /* ================= FETCH PRODUCTS ================= */
   useEffect(() => {
     fetchProducts();
   }, [selectedCategory, sort, page]);
@@ -56,26 +56,31 @@ const Products = () => {
     }
   };
 
-  if (loading)
-    return <p className="p-6 text-center text-xl">Loading products...</p>;
-
-  if (products.length === 0)
+  if (loading) {
     return (
-      <p className="p-6 text-center text-xl text-gray-500">
-        No products available
-      </p>
+      <>
+        <Navbar />
+        <p className="p-10 text-center text-lg text-gray-500">
+          Loading products...
+        </p>
+      </>
     );
+  }
 
   return (
     <>
       <Navbar />
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6 text-center">All Products</h1>
 
-        {/* FILTER + SORT */}
-        <div className="flex flex-col sm:flex-row justify-between mb-6 gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* ================= HEADER ================= */}
+        <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">
+          Explore Products
+        </h1>
+
+        {/* ================= FILTER BAR ================= */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between mb-8">
           <select
-            className="border rounded px-3 py-2"
+            className="border rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
             value={selectedCategory}
             onChange={(e) => {
               setPage(1);
@@ -91,90 +96,135 @@ const Products = () => {
           </select>
 
           <select
-            className="border rounded px-3 py-2"
+            className="border rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
             value={sort}
             onChange={(e) => setSort(e.target.value)}
           >
             <option value="">Sort By</option>
-            <option value="price_asc">Price Low → High</option>
-            <option value="price_desc">Price High → Low</option>
+            <option value="price_asc">Price: Low → High</option>
+            <option value="price_desc">Price: High → Low</option>
           </select>
         </div>
 
-        {/* PRODUCT GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {/* ================= PRODUCT GRID ================= */}
+        <div
+          className="
+            grid
+            grid-cols-2
+            md:grid-cols-3
+            lg:grid-cols-4
+            gap-4
+            md:gap-6
+          "
+        >
           {products.map((p) => (
             <div
               key={p._id}
-              className="border rounded-lg shadow hover:shadow-lg transition overflow-hidden bg-white"
+              className="
+                bg-white
+                rounded-2xl
+                overflow-hidden
+                shadow-[0_6px_20px_rgba(0,0,0,0.08)]
+                hover:shadow-[0_16px_40px_rgba(79,70,229,0.25)]
+                transition-all
+                group
+              "
             >
-              <div className="relative">
-                <Link to={`/product/${p.slug}`}>
+              {/* IMAGE */}
+              <Link to={`/product/${p.slug}`}>
+                <div className="relative">
                   <img
                     src={p.images?.[0]?.url}
                     alt={p.name}
-                    className="w-full h-56 object-cover"
+                    className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                </Link>
-                {p.discountPrice > 0 && (
-                  <span className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-semibold">
-                    {Math.round(((p.price - p.discountPrice) / p.price) * 100)}%
-                    OFF
-                  </span>
-                )}
-              </div>
 
-              <div className="p-4 flex flex-col gap-2">
-                <h2 className="text-lg font-semibold line-clamp-1">{p.name}</h2>
-                <p className="text-gray-500 text-sm line-clamp-2">
+                  {p.discountPrice > 0 && (
+                    <span className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                      {Math.round(
+                        ((p.price - p.discountPrice) / p.price) * 100
+                      )}
+                      % OFF
+                    </span>
+                  )}
+                </div>
+              </Link>
+
+              {/* CONTENT */}
+              <div className="p-3 sm:p-4 flex flex-col gap-1">
+                <h2 className="font-semibold text-sm sm:text-base line-clamp-1">
+                  {p.name}
+                </h2>
+
+                <p className="text-xs text-gray-500 line-clamp-2">
                   {p.description}
                 </p>
 
-                <div className="flex justify-between items-center mt-2">
+                {/* PRICE */}
+                <div className="flex items-center justify-between mt-1">
                   <div>
-                    <span className="text-lg font-bold">₹{p.finalPrice}</span>{" "}
+                    <span className="text-base sm:text-lg font-bold text-gray-900">
+                      ₹{p.finalPrice}
+                    </span>
                     {p.discountPrice > 0 && (
-                      <span className="text-gray-400 line-through ml-1">
+                      <span className="ml-1 text-xs text-gray-400 line-through">
                         ₹{p.price}
                       </span>
                     )}
                   </div>
+
                   <span
-                    className={`px-2 py-0.5 rounded text-xs font-medium ${p.stock > 0
-                      ? "bg-green-100 text-green-700"
-                      : "bg-red-100 text-red-700"
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+                      ${
+                        p.stock > 0
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
                       }`}
                   >
-                    {p.stock > 0 ? "In Stock" : "Out of Stock"}
+                    {p.stock > 0 ? "In Stock" : "Out"}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center mt-2">
-                  <span className="text-sm text-gray-600">
-                    Category: {p.category?.name || "N/A"}
-                  </span>
-                  <span className="text-sm text-yellow-500 font-semibold">
+                {/* RATING + CATEGORY */}
+                <div className="flex justify-between items-center text-xs text-gray-600 mt-1">
+                  <span>{p.category?.name}</span>
+                  <span className="text-yellow-500 font-semibold">
                     ★ {p.rating?.toFixed(1) || 0}
                   </span>
                 </div>
 
+                {/* ADD TO CART */}
                 <button
                   disabled={p.stock === 0}
-                  className={`mt-3 w-full py-2 rounded font-semibold transition ${p.stock > 0
-                    ? "bg-pink-500 text-white hover:bg-pink-600"
-                    : "bg-gray-300 text-gray-700 cursor-not-allowed"
-                    }`}
                   onClick={() => {
                     if (p.stock === 0) return;
-                    dispatch(addToCart({
-                      productId: p._id,
-                      name: p.name,
-                      price: p.finalPrice,
-                      image: p.images?.[0]?.url,
-                      quantity: 1,
-                    }));
-                    toast.success(`${p.name} added to cart ✅`);
+
+                    dispatch(
+                      addToCart({
+                        productId: p._id,
+                        name: p.name,
+                        price: p.finalPrice,
+                        image: p.images?.[0]?.url,
+                        quantity: 1,
+                      })
+                    );
+
+                    toast.success(`${p.name} added to cart`);
                   }}
+                  className={`
+                    mt-3
+                    w-full
+                    py-2
+                    text-sm
+                    font-semibold
+                    rounded-full
+                    transition
+                    ${
+                      p.stock > 0
+                        ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
+                        : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    }
+                  `}
                 >
                   Add to Cart
                 </button>
@@ -183,22 +233,24 @@ const Products = () => {
           ))}
         </div>
 
-        {/* PAGINATION */}
-        <div className="flex justify-center items-center gap-2 mt-6">
+        {/* ================= PAGINATION ================= */}
+        <div className="flex justify-center items-center gap-4 mt-10">
           <button
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
             disabled={page === 1}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            className="px-4 py-2 rounded-full bg-gray-200 disabled:opacity-50"
           >
             Prev
           </button>
-          <span>
+
+          <span className="font-medium">
             Page {page} / {totalPages}
           </span>
+
           <button
-            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
             disabled={page === totalPages}
-            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+            className="px-4 py-2 rounded-full bg-gray-200 disabled:opacity-50"
           >
             Next
           </button>

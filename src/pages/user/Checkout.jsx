@@ -19,6 +19,8 @@ const Checkout = () => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showAllAddresses, setShowAllAddresses] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("");
+
 
   const [addressForm, setAddressForm] = useState({
     fullName: "",
@@ -167,6 +169,10 @@ const Checkout = () => {
       alert("Please add a delivery address");
       return;
     }
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -182,6 +188,8 @@ const Checkout = () => {
           orderItems: cartItems.map((item) => ({
             productId: item.productId,
             slug: item.slug,
+            categoryId: item.categoryId,
+            categoryName: item.categoryName, // ✅ now filled
             name: item.name,
             price: item.price,
             quantity: item.quantity,
@@ -189,7 +197,15 @@ const Checkout = () => {
           })),
           selectedAddressId: selectedAddress._id, // 🔥 send ID instead of full address
           totalAmount,
-          paymentMethod: "Cash on Delivery",
+          paymentMethod:
+            paymentMethod === "ONLINE"
+              ? "Online Payment"
+              : "Cash on Delivery",
+
+          paymentStatus:
+            paymentMethod === "ONLINE"
+              ? "Pending"
+              : "Pending", // COD bhi pending hi rahega
         }),
       });
 
@@ -218,7 +234,7 @@ const Checkout = () => {
       <Navbar />
 
       <div className="min-h-screen bg-gray-50 pt-24 pb-10">
-        <div className="max-w-5xl mx-auto px-4 space-y-6">
+        <div className="max-w-5xl mx-auto px-4 space-y-6 mt-10">
           <h1 className="text-3xl font-bold">Checkout</h1>
 
           {cartItems.length === 0 ? (
@@ -415,50 +431,124 @@ const Checkout = () => {
 
               </div>
 
-              {/* ================= ORDER SUMMARY ================= */}
-              <div className="bg-white p-6 rounded-lg shadow">
-                <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
+              <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
 
-                {cartItems.map((item) => (
-                  <div
-                    key={item.productId}
-                    className="flex justify-between border-b py-3"
-                  >
-                    <div className="flex gap-4">
-                      <img src={item.image} className="w-16 h-16 rounded" />
-                      <div>
-                        <p className="font-semibold">{item.name}</p>
-                        <p>₹{item.price}</p>
+                {/* HEADER */}
+                <div className="px-6 py-4 border-b bg-gradient-to-r from-pink-50 to-white">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Order Summary
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Review your items before placing order
+                  </p>
+                </div>
+
+                {/* ITEMS */}
+                <div className="divide-y">
+                  {cartItems.map((item) => (
+                    <div
+                      key={item.productId}
+                      className="flex gap-4 px-6 py-5 items-center"
+                    >
+                      {/* PRODUCT IMAGE */}
+                      <div className="w-20 h-20 flex-shrink-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover rounded-xl border"
+                        />
+                      </div>
+
+                      {/* PRODUCT INFO */}
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 line-clamp-1">
+                          {item.name}
+                        </p>
+
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          Price: ₹{item.price}
+                        </p>
+
+                        {/* QTY CONTROLLER */}
+                        <div className="flex items-center gap-3 mt-2">
+                          <button
+                            onClick={() => handleDecreaseQty(item.productId)}
+                            className="w-8 h-8 rounded-full border flex items-center justify-center
+                         hover:bg-gray-100 transition font-semibold"
+                          >
+                            −
+                          </button>
+
+                          <span className="min-w-[24px] text-center font-medium">
+                            {item.quantity}
+                          </span>
+
+                          <button
+                            onClick={() => handleIncreaseQty(item.productId)}
+                            className="w-8 h-8 rounded-full border flex items-center justify-center
+                         hover:bg-gray-100 transition font-semibold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ITEM TOTAL */}
+                      <div className="text-right">
+                        <p className="text-sm text-gray-500">Subtotal</p>
+                        <p className="font-bold text-gray-900 text-lg">
+                          ₹{item.price * item.quantity}
+                        </p>
                       </div>
                     </div>
+                  ))}
+                </div>
 
-                    <div className="flex gap-2 items-center">
-                      <button onClick={() => handleDecreaseQty(item.productId)}>
-                        −
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button onClick={() => handleIncreaseQty(item.productId)}>
-                        +
-                      </button>
-                      <span className="ml-4 font-semibold">
-                        ₹{item.price * item.quantity}
-                      </span>
-                    </div>
+                {/* TOTAL */}
+                <div className="px-6 py-5 border-t bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-semibold text-gray-700">
+                      Total Amount
+                    </span>
+                    <span className="text-2xl font-bold text-pink-600">
+                      ₹{totalAmount}
+                    </span>
                   </div>
-                ))}
-
-                <p className="text-right mt-4 text-xl font-bold">
-                  Total: ₹{totalAmount}
-                </p>
+                </div>
               </div>
 
-              <Button
+              {/* ================= PAYMENT METHOD ================= */}
+              <div className="mt-6 bg-white rounded-2xl border shadow-sm p-6">
+                <h3 className="text-lg font-semibold mb-3">
+                  Payment Method
+                </h3>
+
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full border rounded-xl px-4 py-3
+               focus:outline-none focus:ring-2 focus:ring-pink-400"
+                >
+                  <option value="">-- Select Payment Method --</option>
+                  <option value="COD">Cash on Delivery</option>
+                  <option value="ONLINE">Online Payment</option>
+                </select>
+              </div>
+
+              {/* ================= PLACE ORDER BUTTON ================= */}
+              <button
                 onClick={handlePlaceOrder}
-                disabled={loading || !selectedAddress}
-                className="w-full py-4 text-lg"
+                disabled={loading || !selectedAddress || !paymentMethod}
+                className={`mt-6 w-full py-4 rounded-2xl text-lg font-semibold transition
+    ${loading || !selectedAddress || !paymentMethod
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-pink-500 text-white hover:bg-pink-600"
+                  }`}
               >
                 {loading ? "Placing Order..." : "Place Order"}
-              </Button>
+              </button>
+
+
             </>
           )}
         </div>

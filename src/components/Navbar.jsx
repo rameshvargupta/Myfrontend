@@ -70,6 +70,7 @@ const Navbar = () => {
               <Link to="/adminDashboard">Dashboard</Link>
               <Link to="/admin/products">Admin Products</Link>
               <Link to="/admin/add-product">Add Product</Link>
+              <Link to="/admin/add-banner">Add Banner</Link>
             </>
           )}
         </nav>
@@ -158,6 +159,7 @@ const Navbar = () => {
               <Link to="/adminDashboard" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Dashboard</Link>
               <Link to="/admin/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Admin Products</Link>
               <Link to="/admin/add-product" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Add Product</Link>
+              <Link to="/admin/add-banner" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Add Banners</Link>
             </>
           )}
 

@@ -20,6 +20,8 @@ import CartPage from "./pages/user/CartPage";
 import OrderSuccess from "./pages/user/OrderSuccess";
 import AdminDashboard from "./pages/admin/dashboard/AdminDashboard";
 import MyOrders from "./pages/user/MyOrders";
+import AdminUserDetails from "./pages/admin/dashboard/components/AdminUserDetails";
+import AddBanner from "./pages/admin/dashboard/AddBanners";
 
 /* =========================
    ROUTER
@@ -69,8 +71,10 @@ const router = createBrowserRouter([
 
   // {/* ADMIN */ }
   { path: "/admin/products", element: < ProductList /> },
+  { path: "/admin/add-banner", element: < AddBanner /> },
   { path: "/adminDashboard", element: < AdminDashboard /> },
   { path: "/admin/add-product", element: < AddProduct /> },
+  { path: "/admin/users/:id", element: < AdminUserDetails /> },
   {
     path: "/admin/product/edit/:id",
     element: <EditProduct />
@@ -97,11 +101,11 @@ const App = () => {
     }
 
 
-  if (!token) {
-  dispatch(logoutUser()); // authChecked = true
-  setLoadingUser(false);
-  return;
-}
+    if (!token) {
+      dispatch(logoutUser()); // authChecked = true
+      setLoadingUser(false);
+      return;
+    }
 
 
     if (token) {
