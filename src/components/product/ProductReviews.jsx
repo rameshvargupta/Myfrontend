@@ -13,11 +13,17 @@ const ProductReviews = ({ productId }) => {
   const [editRating, setEditRating] = useState(5);
   const [editComment, setEditComment] = useState("");
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user"));
+    } catch {
+      return null;
+    }
+  })();
+
   const token = localStorage.getItem("token");
   const isAdmin = user?.role === "admin";
-  console.log(user.role);
-  
+
   // fetch reviews
   const fetchReviews = async () => {
     try {
@@ -231,9 +237,17 @@ const ProductReviews = ({ productId }) => {
                     </div>
                   </div>
 
-                  <p className="text-yellow-500 font-semibold">
-                    {"★".repeat(r.rating)}
-                  </p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <span
+                        key={i}
+                        className={i <= r.rating ? "text-yellow-400" : "text-gray-300"}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
+
                 </div>
 
                 {/* body */}
@@ -279,28 +293,28 @@ const ProductReviews = ({ productId }) => {
                     <p className="mt-4 text-gray-600">{r.comment}</p>
 
                     {/* action buttons */}
-{(isOwner || isAdmin) && (
-  <div className="flex gap-4 mt-3 text-sm">
-    
-    {/* Edit only owner */}
-    {isOwner && (
-      <button
-        onClick={() => handleEdit(r)}
-        className="text-blue-600"
-      >
-        Edit
-      </button>
-    )}
+                    {(isOwner || isAdmin) && (
+                      <div className="flex gap-4 mt-3 text-sm">
 
-    {/* Delete owner OR admin */}
-    <button
-      onClick={() => deleteReview(r._id)}
-      className="text-red-500"
-    >
-      Delete
-    </button>
-  </div>
-)}
+                        {/* Edit only owner */}
+                        {isOwner && (
+                          <button
+                            onClick={() => handleEdit(r)}
+                            className="text-blue-600"
+                          >
+                            Edit
+                          </button>
+                        )}
+
+                        {/* Delete owner OR admin */}
+                        <button
+                          onClick={() => deleteReview(r._id)}
+                          className="text-red-500"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
 
                   </>
                 )}

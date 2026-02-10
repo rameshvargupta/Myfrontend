@@ -3,16 +3,24 @@ import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
 import ProductSkeleton from "@/components/skeletons/ProductDetailsSkeleton";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/redux/cartSlice";
+import ProductReviews from "@/components/product/ProductReviews";
+import SimilarProducts from "@/components/product/SimilarProduct";
+import axios from "axios";
 
 const ProductDetails = () => {
   const { slug } = useParams();
   const [product, setProduct] = useState(null);
+  const [sold30Days, setSold30Days] = useState(0);
   const [activeImage, setActiveImage] = useState("");
   const [loading, setLoading] = useState(true);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const cartItems = useSelector(
+    (state) => state.cart?.cartItems || []
+  );
+  const dispatch = useDispatch();
+
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -35,6 +43,25 @@ const ProductDetails = () => {
     fetchProduct();
   }, [slug]);
 
+  useEffect(() => {
+    const fetchSoldCount = async () => {
+      try {
+        const { data } = await axios.get(
+          `http://localhost:5000/api/v1/orders/${product._id}/last-30-days-sold`
+        );
+
+        setSold30Days(data.soldLast30Days);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+
+    if (product?._id) {
+      fetchSoldCount();
+    }
+  }, [product?._id]);
+  console.log(sold30Days);
+
   const handleAddToCart = () => {
     if (product.stock === 0) return;
 
@@ -54,6 +81,8 @@ const ProductDetails = () => {
 
   if (loading) return <ProductSkeleton />;
   if (!product) return null;
+
+
 
   return (
     <>
@@ -85,10 +114,9 @@ const ProductDetails = () => {
                     key={img.public_id}
                     onClick={() => setActiveImage(img.url)}
                     className={`flex-shrink-0 rounded-xl border p-1 transition
-                      ${
-                        activeImage === img.url
-                          ? "border-pink-500 ring-2 ring-pink-200"
-                          : "border-gray-200 hover:border-gray-400"
+                      ${activeImage === img.url
+                        ? "border-pink-500 ring-2 ring-pink-200"
+                        : "border-gray-200 hover:border-gray-400"
                       }`}
                   >
                     <img
@@ -126,7 +154,7 @@ const ProductDetails = () => {
                       {Math.round(
                         ((product.price - product.discountPrice) /
                           product.price) *
-                          100
+                        100
                       )}
                       % OFF
                     </span>
@@ -136,25 +164,60 @@ const ProductDetails = () => {
 
               {/* STOCK */}
               <p
-                className={`mt-3 font-medium ${
-                  product.stock > 0
-                    ? "text-green-600"
-                    : "text-red-600"
-                }`}
+                className={`mt-3 font-medium ${product.stock > 0
+                  ? "text-green-600"
+                  : "text-red-600"
+                  }`}
               >
                 {product.stock > 0 ? "✔ In Stock" : "✖ Out of Stock"}
               </p>
+
+              {sold30Days > 0 && (
+                <p className="text-sm text-green-600 font-medium mt-2">
+                  🔥 {sold30Days}+ sold in last 30 days
+                </p>
+              )}
+
 
               {/* CTA */}
               <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   disabled={product.stock === 0}
-                  onClick={handleAddToCart}
+          onClick={() => {
+            if (product.stock === 0) return;
+
+            const alreadyInCart = cartItems.find(
+              (item) => item.productId === product._id
+            );
+
+            if (alreadyInCart) {
+              toast.info("Product already added to cart");
+              return;
+            }
+
+            dispatch(
+              addToCart({
+                productId: product._id,
+                name: product.name,
+                price: product.finalPrice,
+                image: product.images?.[0]?.url,
+                quantity: 1,
+              })
+            );
+
+            toast.success("Product added to cart");
+          }}
+
+
+          className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition
+            ${product.stock > 0
+              ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
+              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+            }`}
                   className={`py-3 rounded-xl text-lg font-semibold transition
-                    ${
-                      product.stock === 0
-                        ? "bg-gray-300 cursor-not-allowed"
-                        : "bg-pink-500 text-white hover:bg-pink-600"
+                    ${product.stock === 0
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-pink-500 text-white hover:bg-pink-600"
                     }`}
                 >
                   Add to Cart
@@ -164,10 +227,9 @@ const ProductDetails = () => {
                   disabled={product.stock === 0}
                   onClick={handleAddToCart}
                   className={`py-3 rounded-xl text-lg font-semibold border transition
-                    ${
-                      product.stock === 0
-                        ? "border-gray-300 text-gray-400"
-                        : "border-pink-500 text-pink-600 hover:bg-pink-50"
+                    ${product.stock === 0
+                      ? "border-gray-300 text-gray-400"
+                      : "border-pink-500 text-pink-600 hover:bg-pink-50"
                     }`}
                 >
                   Buy Now
@@ -188,6 +250,15 @@ const ProductDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* REVIEWS */}
+      <ProductReviews productId={product._id} />
+
+      {/* SIMILAR PRODUCTS */}
+      <SimilarProducts
+        productId={product._id}
+        categoryId={product.category?._id}
+      />
     </>
   );
 };
@@ -195,11 +266,5 @@ const ProductDetails = () => {
 export default ProductDetails;
 
 
-{/* SIMILAR PRODUCTS */ }
-{/* <SimilarProducts
-        productId={product._id}
-        categoryId={product.category?._id}
-      /> */}
 
-{/* REVIEWS */ }
-{/* <ProductReviews productId={product._id} /> */ }
+

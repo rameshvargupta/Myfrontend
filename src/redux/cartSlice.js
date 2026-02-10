@@ -9,24 +9,25 @@ const cartSlice = createSlice({
   initialState,
   reducers: {
     /* ================= ADD TO CART ================= */
-    addToCart: (state, action) => {
-      const item = state.cartItems.find(
-        (i) => i.productId === action.payload.productId
-      );
+  addToCart: (state, action) => {
+  const exists = state.cartItems.find(
+    (item) => item.productId === action.payload.productId
+  );
 
-      if (item) {
-        item.quantity += 1;
-      } else {
-        state.cartItems.push({
-          productId: action.payload.productId,
-          slug: action.payload.slug, // ✅ MUST
-          name: action.payload.name,
-          price: action.payload.price,
-          image: action.payload.image,
-          quantity: 1,
-        });
-      }
-    },
+  // ❌ same product dubara add mat karo
+  if (exists) return;
+
+  // ✅ naya (different) product add karo
+  state.cartItems.push({
+    productId: action.payload.productId,
+    name: action.payload.name,
+    price: action.payload.price,
+    image: action.payload.image,
+    quantity: 1,
+  });
+},
+
+
 
 
 

@@ -3,7 +3,7 @@ import { fetchUserProducts } from "@/api/productApi";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/redux/cartSlice";
 
 const Products = () => {
@@ -14,6 +14,13 @@ const Products = () => {
   const [sort, setSort] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [rating, setRating] = useState("");
+  const [inStock, setInStock] = useState(false);
+  const cartItems = useSelector(
+    (state) => state.cart?.cartItems || []
+  );
+
 
   const dispatch = useDispatch();
   const LIMIT = 12;
@@ -32,6 +39,7 @@ const Products = () => {
     fetchCategories();
   }, []);
 
+
   /* ================= FETCH PRODUCTS ================= */
   useEffect(() => {
     fetchProducts();
@@ -41,20 +49,27 @@ const Products = () => {
     setLoading(true);
     try {
       let query = `?page=${page}&limit=${LIMIT}`;
+
       if (selectedCategory) query += `&category=${selectedCategory}`;
       if (sort) query += `&sort=${sort}`;
+      if (priceRange[0] > 0) query += `&minPrice=${priceRange[0]}`;
+      if (priceRange[1] < 100000) query += `&maxPrice=${priceRange[1]}`;
+      if (rating) query += `&rating=${rating}`;
+      if (inStock) query += `&inStock=true`;
 
       const data = await fetchUserProducts(query);
+
       if (data.success) {
         setProducts(data.products);
         setTotalPages(data.totalPages || 1);
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to fetch products");
     } finally {
       setLoading(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -73,38 +88,73 @@ const Products = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* ================= HEADER ================= */}
-        <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8  mt-20 bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">
           Explore Products
         </h1>
 
         {/* ================= FILTER BAR ================= */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between mb-8">
-          <select
-            className="border rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-            value={selectedCategory}
-            onChange={(e) => {
-              setPage(1);
-              setSelectedCategory(e.target.value);
-            }}
-          >
-            <option value="">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat._id} value={cat._id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+        {/* DESKTOP FILTERS */}
+        <div className="hidden md:block w-64 space-y-6 border-r pr-4">
+          {/* CATEGORY */}
+          <div>
+            <h3 className="font-bold mb-2">Category</h3>
+            <select
+              className="w-full border rounded px-3 py-2"
+              value={selectedCategory}
+              onChange={(e) => {
+                setPage(1);
+                setSelectedCategory(e.target.value);
+              }}
+            >
+              <option value="">All</option>
+              {categories.map(cat => (
+                <option key={cat._id} value={cat._id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
 
-          <select
-            className="border rounded-full px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-          >
-            <option value="">Sort By</option>
-            <option value="price_asc">Price: Low → High</option>
-            <option value="price_desc">Price: High → Low</option>
-          </select>
+          {/* PRICE */}
+          <div>
+            <h3 className="font-bold mb-2">Price</h3>
+            <input
+              type="range"
+              min="0"
+              max="100000"
+              step="1000"
+              value={priceRange[1]}
+              onChange={(e) => setPriceRange([0, Number(e.target.value)])}
+              className="w-full"
+            />
+            <p className="text-sm mt-1">Up to ₹{priceRange[1]}</p>
+          </div>
+
+          {/* RATING */}
+          <div>
+            <h3 className="font-bold mb-2">Rating</h3>
+            {[4, 3, 2].map(r => (
+              <button
+                key={r}
+                onClick={() => setRating(r)}
+                className={`block w-full text-left px-3 py-1 rounded mb-1
+          ${rating === r ? "bg-indigo-100 text-indigo-700" : "hover:bg-gray-100"}
+        `}
+              >
+                ⭐ {r} & above
+              </button>
+            ))}
+          </div>
+
+          {/* STOCK */}
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => setInStock(e.target.checked)}
+            />
+            In Stock Only
+          </label>
         </div>
+
 
         {/* ================= PRODUCT GRID ================= */}
         <div
@@ -156,9 +206,12 @@ const Products = () => {
                   {p.name}
                 </h2>
 
-                <p className="text-xs text-gray-500 line-clamp-2">
-                  {p.description}
+                <p className="text-xs text-gray-500">
+                  {p.description.length > 50
+                    ? p.description.slice(0, 40) + "..."
+                    : p.description}
                 </p>
+
 
                 {/* PRICE */}
                 <div className="flex items-center justify-between mt-1">
@@ -175,10 +228,9 @@ const Products = () => {
 
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-medium
-                      ${
-                        p.stock > 0
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
+                      ${p.stock > 0
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
                       }`}
                   >
                     {p.stock > 0 ? "In Stock" : "Out"}
@@ -199,6 +251,15 @@ const Products = () => {
                   onClick={() => {
                     if (p.stock === 0) return;
 
+                    const alreadyInCart = cartItems.find(
+                      (item) => item.productId === p._id
+                    );
+
+                    if (alreadyInCart) {
+                      toast.info("Product already added to cart");
+                      return;
+                    }
+
                     dispatch(
                       addToCart({
                         productId: p._id,
@@ -209,8 +270,9 @@ const Products = () => {
                       })
                     );
 
-                    toast.success(`${p.name} added to cart`);
+                    toast.success("Product added to cart");
                   }}
+
                   className={`
                     mt-3
                     w-full
@@ -219,10 +281,9 @@ const Products = () => {
                     font-semibold
                     rounded-full
                     transition
-                    ${
-                      p.stock > 0
-                        ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
-                        : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                    ${p.stock > 0
+                      ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
+                      : "bg-gray-300 text-gray-600 cursor-not-allowed"
                     }
                   `}
                 >
@@ -256,6 +317,9 @@ const Products = () => {
           </button>
         </div>
       </div>
+
+
+
     </>
   );
 };
