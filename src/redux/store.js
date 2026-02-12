@@ -2,6 +2,7 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import userReducer from "./userSlice";
 import cartReducer from "./cartSlice";
 import addressReducer from "./addressSlice";
+import orderReducer from "./orderSlice";
 
 import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
@@ -22,6 +23,7 @@ const rootReducer = combineReducers({
    user: userReducer,
    cart: cartReducer,
    address: addressReducer,
+   order: orderReducer,
 });
 
 /* =========================

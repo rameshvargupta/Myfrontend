@@ -13,7 +13,7 @@ import Home from "./pages/Home";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
-import Profile from "./pages/Profile";
+import Profile from "./pages/profile/Profile";
 import Products from "./pages/user/Products";
 import ProductDetails from "./pages/user/ProductDetails";
 import Checkout from "./pages/user/Checkout";
@@ -88,39 +88,55 @@ const App = () => {
   const dispatch = useDispatch();
   const [loadingUser, setLoadingUser] = useState(true);
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+ useEffect(() => {
+  const token = localStorage.getItem("token");
+  const storedUser = localStorage.getItem("user");
 
-    if (storedUser && token) {
-      dispatch(setUser({ user: JSON.parse(storedUser), token }));
-    }
+  let parsedUser = null;
 
-    if (!token) {
-      dispatch(logoutUser());
-      setLoadingUser(false);
-      return;
-    }
+  // ✅ Safe JSON parse
+  try {
+    parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  } catch (error) {
+    console.error("Invalid user in localStorage");
+    localStorage.removeItem("user");
+  }
 
-    fetch("http://localhost:5000/api/v1/user/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.success) {
-          localStorage.clear();
-          dispatch(logoutUser());
-        } else {
-          dispatch(setUser({ user: data.user, token }));
-        }
-        setLoadingUser(false);
-      })
-      .catch(() => {
+  // ✅ Agar token aur user dono hain to redux me set karo
+  if (parsedUser && token) {
+    dispatch(setUser({ user: parsedUser, token }));
+  }
+
+  // ❌ Agar token nahi hai
+  if (!token) {
+    dispatch(logoutUser());
+    setLoadingUser(false);
+    return;
+  }
+
+  // ✅ Server se fresh user fetch karo
+  fetch("http://localhost:5000/api/v1/user/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (!data.success) {
         localStorage.clear();
         dispatch(logoutUser());
-        setLoadingUser(false);
-      });
-  }, [dispatch]);
+      } else {
+        localStorage.setItem("user", JSON.stringify(data.user)); // important
+        dispatch(setUser({ user: data.user, token }));
+      }
+      setLoadingUser(false);
+    })
+    .catch(() => {
+      localStorage.clear();
+      dispatch(logoutUser());
+      setLoadingUser(false);
+    });
+
+}, [dispatch]);
+
 
   if (loadingUser) {
     return (

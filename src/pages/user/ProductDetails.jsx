@@ -183,41 +183,34 @@ const ProductDetails = () => {
               <div className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   disabled={product.stock === 0}
-          onClick={() => {
-            if (product.stock === 0) return;
+                  onClick={() => {
+                    if (product.stock === 0) return;
 
-            const alreadyInCart = cartItems.find(
-              (item) => item.productId === product._id
-            );
+                    const alreadyInCart = cartItems.find(
+                      (item) => item.productId === product._id
+                    );
 
-            if (alreadyInCart) {
-              toast.info("Product already added to cart");
-              return;
-            }
+                    if (alreadyInCart) {
+                      toast.info("Product already added to cart");
+                      return;
+                    }
 
-            dispatch(
-              addToCart({
-                productId: product._id,
-                name: product.name,
-                price: product.finalPrice,
-                image: product.images?.[0]?.url,
-                quantity: 1,
-              })
-            );
+                    dispatch(
+                      addToCart({
+                        productId: product._id,
+                        name: product.name,
+                        price: product.finalPrice,
+                        image: product.images?.[0]?.url,
+                        quantity: 1,
+                      })
+                    );
 
-            toast.success("Product added to cart");
-          }}
-
-
-          className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition
-            ${product.stock > 0
-              ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
-              : "bg-gray-300 text-gray-600 cursor-not-allowed"
-            }`}
-                  className={`py-3 rounded-xl text-lg font-semibold transition
-                    ${product.stock === 0
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-pink-500 text-white hover:bg-pink-600"
+                    toast.success("Product added to cart");
+                  }}
+                  className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition
+                    ${product.stock > 0
+                      ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
+                      : "bg-gray-300 text-gray-600 cursor-not-allowed"
                     }`}
                 >
                   Add to Cart

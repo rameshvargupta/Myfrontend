@@ -10,6 +10,11 @@ import {
   clearCart,
 } from "@/redux/cartSlice";
 import { toast } from "sonner";
+import {
+  fetchAddresses,
+  saveAddress,
+  deleteAddress,
+} from "@/api/addressApi";
 
 const Checkout = () => {
   const dispatch = useDispatch();
@@ -55,31 +60,19 @@ const Checkout = () => {
   );
 
   useEffect(() => {
-    const fetchAddresses = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const res = await fetch("http://localhost:5000/api/v1/user/address", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = await res.json();
-        if (data.success) {
-          dispatch(setAddresses(data.addresses));
-
-          // 🔥 Auto-select first address if none selected
-          if (data.addresses.length > 0) {
-            dispatch(selectAddress(data.addresses[0]));
-          }
+    const loadAddresses = async () => {
+      const data = await fetchAddresses();
+      if (data.success) {
+        dispatch(setAddresses(data.addresses));
+        if (data.addresses.length > 0) {
+          dispatch(selectAddress(data.addresses[0]));
         }
-      } catch (err) {
-        console.error("FETCH ADDRESS ERROR", err);
       }
     };
 
-    fetchAddresses();
-  }, [dispatch]); // only run once
+    loadAddresses();
+  }, [dispatch]);
+
 
 
   /* ================= CART QTY ================= */
@@ -127,38 +120,67 @@ const Checkout = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const data = await saveAddress(addressForm, editId);
 
-      const res = await fetch(
-        "http://localhost:5000/api/v1/user/address",
-        {
-          method: editId ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            addressId: editId,
-            ...addressForm,
-          }),
-        }
-      );
-
-      const data = await res.json();
-      toast.success("Login successful 👋");
       if (!data.success) {
         alert(data.message || "Address save failed");
         return;
       }
 
-      dispatch(setAddresses(data.addresses)); // 🔥 always sync with backend
-      dispatch(selectAddress(data.addresses[data.addresses.length - 1])); // select last added
+      dispatch(setAddresses(data.addresses));
+      dispatch(selectAddress(data.addresses[data.addresses.length - 1]));
+      toast.success("Address Added successfully");
       resetForm();
     } catch (err) {
       console.error("SAVE ADDRESS ERROR", err);
       alert("Something went wrong");
     }
   };
+
+  const handleEditAddress = (addr) => {
+    setEditId(addr._id);
+
+    // 🔥 clone object to avoid direct reference issue
+    setAddressForm({
+      fullName: addr.fullName || "",
+      phone: addr.phone || "",
+      address: addr.address || "",
+      city: addr.city || "",
+      state: addr.state || "",
+      pincode: addr.pincode || "",
+    });
+    toast.success("Address Updated successfully");
+    setShowAddressForm(true);
+  };
+
+
+  const handleDeleteAddress = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this address?")) {
+      return;
+    }
+
+    try {
+      const data = await deleteAddress(id);
+
+      if (!data.success) {
+        toast.error(data.message || "Delete failed");
+        return;
+      }
+
+      dispatch(setAddresses(data.addresses));
+
+      // 🔥 if deleted address was selected, reset selection
+      if (selectedAddress?._id === id) {
+        dispatch(selectAddress(data.addresses[0] || null));
+      }
+
+      toast.success("Address deleted successfully");
+    } catch (err) {
+      console.error("DELETE ERROR:", err);
+      toast.error("Something went wrong");
+    }
+  };
+
 
   /* ================= PLACE ORDER ================= */
   const handlePlaceOrder = async () => {
@@ -393,32 +415,16 @@ const Checkout = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              setEditId(addr._id);
-                              setAddressForm(addr);
-                              setShowAddressForm(true);
-                            }}
+                            onClick={() => handleEditAddress(addr)}
                           >
                             Edit
                           </Button>
 
+
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={async () => {
-                              const token = localStorage.getItem("token");
-                              const res = await fetch(
-                                `http://localhost:5000/api/v1/user/address/${addr._id}`,
-                                {
-                                  method: "DELETE",
-                                  headers: {
-                                    Authorization: `Bearer ${token}`,
-                                  },
-                                }
-                              );
-                              const data = await res.json();
-                              dispatch(setAddresses(data.addresses));
-                            }}
+                            onClick={() => handleDeleteAddress(addr._id)}   // ✅ correct
                           >
                             Delete
                           </Button>

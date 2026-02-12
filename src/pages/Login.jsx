@@ -46,7 +46,6 @@ const Login = () => {
       setLoading(true);
 
       // 1️⃣ LOGIN API
-      // 1️⃣ LOGIN API
       const res = await fetch("http://localhost:5000/api/v1/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,7 +65,6 @@ const Login = () => {
           token: data.token,
         })
       );
-      console.log("LOGIN RESPONSE 👉", data);
       localStorage.setItem("user", JSON.stringify(data.user));
 
       toast.success("Login successful 👋");
