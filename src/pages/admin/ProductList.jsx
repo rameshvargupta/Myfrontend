@@ -148,7 +148,7 @@ const ProductList = () => {
   return (
     <>
       <Navbar />
-      <div className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6 pt-20">
+      <div className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen p-6">
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -229,89 +229,123 @@ const ProductList = () => {
         </div>
 
         {/* PRODUCT LIST */}
-        <div className="space-y-5">
+        <div className="grid gap-6 
+  grid-cols-1 
+  sm:grid-cols-2 
+  lg:grid-cols-3 
+">
           {currentProducts.map((p) => (
             <div
               key={p._id}
-              className={`rounded-2xl shadow-sm hover:shadow-md transition p-5 flex flex-col lg:flex-row gap-5
-                ${p.isActive ? "bg-white border border-gray-200" : "bg-red-50 border border-red-400"}`}
+              className={`relative bg-white rounded-2xl border shadow-sm 
+        hover:shadow-lg transition-all duration-300 hover:-translate-y-1
+        ${p.isActive ? "border-gray-200" : "border-red-400 bg-red-50/40"}
+      `}
             >
               {/* IMAGE */}
-              <div className="w-28 h-28 shrink-0">
+              <div className="relative h-48 w-full">
                 <img
                   src={p.images?.[0]?.url}
                   alt={p.name}
-                  className={`w-full h-full object-cover rounded-xl border ${p.isActive ? "border-gray-200" : "border-red-500"}`}
+                  className="w-full h-full object-cover rounded-t-2xl"
                 />
+
+                {/* STATUS BADGE */}
+                <span
+                  className={`absolute top-3 left-3 px-3 py-1 text-xs font-semibold rounded-full
+            ${p.isActive
+                      ? "bg-emerald-500 text-white"
+                      : "bg-red-500 text-white"}
+          `}
+                >
+                  {p.isActive ? "Active" : "Blocked"}
+                </span>
               </div>
 
-              {/* DETAILS */}
-              <div className={`flex-1 ${p.isActive ? "" : "text-red-600"}`}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className={`text-lg font-semibold ${p.isActive ? "text-gray-800" : "text-red-700"}`}>
+              {/* CONTENT */}
+              <div className="p-4 space-y-3">
+
+                {/* TITLE */}
+                <div>
+                  <h2 className={`font-semibold text-sm line-clamp-1
+            ${p.isActive ? "text-gray-800" : "text-red-700"}
+          `}>
                     {p.name}
                   </h2>
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full
-                    ${p.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-                  >
-                    {p.isActive ? "Active" : "Blocked"}
-                  </span>
-                </div>
-                <p className="text-sm mt-1 line-clamp-2">{p.description}</p>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 text-sm">
+                  <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+                    {p.description}
+                  </p>
+                </div>
+
+                {/* PRICE */}
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400">Category</p>
-                    <p className={`font-medium ${p.isActive ? "" : "text-red-700"}`}>{p.category?.name || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Stock</p>
-                    <p className={`font-medium ${p.isActive ? "" : "text-red-700"}`}>{p.stock}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Created</p>
-                    <p className={`font-medium ${p.isActive ? "" : "text-red-700"}`}>{new Date(p.createdAt).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-400">Pricing</p>
-                    <p className={`font-semibold ${p.isActive ? "text-gray-800" : "text-red-700"}`}>
+                    <p className="font-bold text-gray-900 text-base">
                       ₹{p.finalPrice}
-                      <span className={`text-xs line-through ml-2 ${p.isActive ? "text-gray-400" : "text-red-500"}`}>
-                        ₹{p.price}
-                      </span>
+                    </p>
+                    <p className="text-xs text-gray-400 line-through">
+                      ₹{p.price}
                     </p>
                   </div>
+
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full
+            ${p.stock > 10
+                      ? "bg-green-100 text-green-700"
+                      : p.stock > 0
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"}
+          `}>
+                    {p.stock} left
+                  </span>
                 </div>
-              </div>
 
-              {/* ACTIONS */}
-              <div className="flex lg:flex-col gap-2 justify-end min-w-[140px]">
-                <button
-                  onClick={() => toggleStatus(p._id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    p.isActive ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200" : "bg-green-100 text-green-800 hover:bg-green-200"
-                  }`}
-                >
-                  {p.isActive ? "Block" : "Activate"}
-                </button>
+                {/* CATEGORY + DATE */}
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>{p.category?.name || "-"}</span>
+                  <span>
+                    {new Date(p.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
 
-                <Link
-                  to={`/admin/product/edit/${p._id}`}
-                  className={`px-4 py-2 rounded-lg text-sm text-white text-center ${!p.isActive ? "bg-gray-400 pointer-events-none" : "bg-blue-600 hover:bg-blue-700"}`}
-                >
-                  Edit
-                </Link>
+                {/* ACTIONS */}
+                <div className="flex gap-2 pt-2">
 
-                <button
-                  onClick={() => deleteHandler(p._id)}
-                  className="px-4 py-2 rounded-lg text-sm bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Delete
-                </button>
+                  <button
+                    onClick={() => toggleStatus(p._id)}
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium transition
+              ${p.isActive
+                        ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                        : "bg-green-100 text-green-800 hover:bg-green-200"}
+            `}
+                  >
+                    {p.isActive ? "Block" : "Activate"}
+                  </button>
+
+                  <Link
+                    to={`/admin/product/edit/${p._id}`}
+                    className={`flex-1 py-2 rounded-lg text-xs font-medium text-center transition
+              ${p.isActive
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-300 text-gray-500 pointer-events-none"}
+            `}
+                  >
+                    Edit
+                  </Link>
+
+                  <button
+                    onClick={() => deleteHandler(p._id)}
+                    className="px-3 py-2 rounded-lg text-xs bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    ✕
+                  </button>
+
+                </div>
               </div>
             </div>
           ))}
         </div>
+
 
         {/* PAGINATION */}
         {totalPages > 1 && (

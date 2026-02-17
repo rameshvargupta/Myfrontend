@@ -40,14 +40,14 @@ const AddressModal = ({
         <div className="flex justify-end gap-4 pt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-500 rounded-lg"
+            className="px-4 py-2 bg-gray-500 rounded-lg text-white"
           >
             Cancel
           </button>
 
           <button
-            onClick={onSave}
-            className="px-4 py-2 bg-indigo-600 rounded-lg"
+            onClick={onSave}   // ✅ Correct
+            className="px-4 py-2 bg-indigo-600 rounded-lg text-white"
           >
             {editId ? "Update" : "Save"}
           </button>

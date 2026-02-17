@@ -31,7 +31,7 @@ const AdminDashboard = () => {
       <Navbar />
 
       {/* ===== DASHBOARD CONTENT ===== */}
-      <div className="max-w-7xl mx-auto px-4 pt-30 pb-5 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 pb-5 space-y-8">
         
         {/* HEADER */}
         <div>

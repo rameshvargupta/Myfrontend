@@ -48,7 +48,7 @@ const OrderSuccess = () => {
 
       {/* PAGE WRAPPER */}
       <div className="bg-gradient-to-br from-green-50 via-white to-pink-50">
-        <div className="max-w-5xl mx-auto px-4 py-10">
+        <div className="max-w-5xl mx-auto px-4">
           {/* ================= SUCCESS CARD ================= */}
           <div className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.12)]
                           p-6 sm:p-10 text-center">

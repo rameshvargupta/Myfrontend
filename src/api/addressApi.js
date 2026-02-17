@@ -18,7 +18,7 @@ export const saveAddress = async (addressForm, editId = null) => {
   const token = localStorage.getItem("token");
 
   const url = editId
-    ? `${BASE_URL}/${editId}`   // ✅ id URL me bhejo
+    ? `${BASE_URL}/${editId}`
     : BASE_URL;
 
   const res = await fetch(url, {
@@ -27,11 +27,18 @@ export const saveAddress = async (addressForm, editId = null) => {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(addressForm), // ❌ addressId mat bhejo
+    body: JSON.stringify(addressForm),
   });
 
-  return res.json();
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Address save failed");
+  }
+
+  return data;
 };
+
 
 
 /* ================= DELETE ADDRESS ================= */

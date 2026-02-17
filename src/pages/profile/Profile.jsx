@@ -7,6 +7,7 @@ import {
   FaMapMarkerAlt,
   FaShieldAlt,
   FaBoxOpen,
+  FaGlobe,
 } from "react-icons/fa";
 import EditProfileModal from "./EditProfileModal";
 import { useEffect } from "react";
@@ -16,7 +17,11 @@ import { setOrders } from "../../redux/orderSlice";
 import AddressModal from "./AddressModal";
 import { toast } from "sonner";
 import { setUser } from "../../redux/userSlice";
-
+import { ChevronDown } from "lucide-react";
+import { logoutUser } from "../../redux/userSlice";
+import { useNavigate } from "react-router-dom";
+import Avatar from "./Avatar";
+import { saveAddress } from "@/api/addressApi";
 
 const Profile = () => {
   const { user } = useSelector((state) => state.user);
@@ -32,11 +37,19 @@ const Profile = () => {
     state: "",
     pincode: "",
   });
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
 
   const [activeTab, setActiveTab] = useState("profile");
   const [editOpen, setEditOpen] = useState(false);
   const [showTable, setShowTable] = useState(false);
   const [filterType, setFilterType] = useState("all");
+  const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 5;
@@ -76,70 +89,161 @@ const Profile = () => {
   const totalOrders = orders.length;
 
 const handleSaveAddress = async () => {
+  const { fullName, phone, address, city, state, pincode } = addressForm;
+
+  if (!fullName || !phone || !address || !city || !state || !pincode) {
+    toast.error("Please fill all address fields");
+    return;
+  }
+
   try {
-    const token = localStorage.getItem("token");
+    const data = await saveAddress(addressForm, editId);
 
-    const url = editId
-      ? `http://localhost:5000/api/v1/user/address/${editId}`
-      : `http://localhost:5000/api/v1/user/address`;
-
-    const method = editId ? "put" : "post";
-
-    const { data } = await axios({
-      method,
-      url,
-      data: addressForm,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (data?.addresses) {
-      dispatch(setUser({ user: { ...user, addresses: data.addresses }, token }));
-      localStorage.setItem("user", JSON.stringify({ ...user, addresses: data.addresses }));
+    if (!data || !data.addresses) {
+      toast.error("Address save failed");
+      return;
     }
 
-    toast.success(editId ? "Address Updated ✅" : "Address Added ✅");
-
-    setShowAddressModal(false);
-    setEditId(null);
-
-  } catch (error) {
-    toast.error("Failed to save address ❌");
-    console.error(error);
-  }
-};
-
-
-const handleDeleteAddress = async (id) => {
-  try {
     const token = localStorage.getItem("token");
 
-    const { data } = await axios.delete(
-      `http://localhost:5000/api/v1/user/address/${id}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+    dispatch(
+      setUser({
+        user: { ...user, addresses: data.addresses },
+        token,
+      })
     );
 
-    if (data?.addresses) {
-      dispatch(setUser({ user: { ...user, addresses: data.addresses }, token }));
-      localStorage.setItem("user", JSON.stringify({ ...user, addresses: data.addresses }));
-    }
+    toast.success(
+      editId
+        ? "Address updated successfully"
+        : "Address added successfully"
+    );
 
-    toast.success("Address Deleted 🗑️");
+    setEditId(null);
+    setShowAddressModal(false);
+    setAddressForm({
+      fullName: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      pincode: "",
+    });
 
-  } catch (error) {
-    toast.error("Delete Failed ❌");
-    console.error(error);
+  } catch (err) {
+    console.error("SAVE ADDRESS ERROR:", err);
+    toast.error(err.message || "Something went wrong");
   }
 };
 
 
-const dispatch = useDispatch();
-if (!user) return null;
+  const handleDeleteAddress = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const { data } = await axios.delete(
+        `http://localhost:5000/api/v1/user/address/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (data?.addresses) {
+        dispatch(setUser({ user: { ...user, addresses: data.addresses }, token }));
+        localStorage.setItem("user", JSON.stringify({ ...user, addresses: data.addresses }));
+      }
+
+      toast.success("Address Deleted 🗑️");
+
+    } catch (error) {
+      toast.error("Delete Failed ❌");
+      console.error(error);
+    }
+  };
+
+  const handleChange = (e) => {
+    setAddressForm({
+      ...addressForm,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error("New password and confirm password do not match ❌");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      await axios.put(
+        "http://localhost:5000/api/v1/user/change-password",
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      toast.success("Password changed successfully ✅");
+      setShowPasswordModal(false);
+
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Password change failed ❌");
+    }
+  };
+
+
+  const logoutHandler = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        await axios.post(
+          "http://localhost:5000/api/v1/user/logout",
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      }
+
+      // Clear storage
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // Clear redux
+      dispatch(logoutUser());
+
+      toast.success("Logged out successfully 👋");
+
+      navigate("/login");
+
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Logout failed ❌");
+    }
+  };
+
+
+  const dispatch = useDispatch();
+  if (!user) return null;
 
 
   useEffect(() => {
@@ -176,7 +280,7 @@ if (!user) return null;
       <div className="absolute top-[-200px] left-[-200px] w-[500px] h-[500px] bg-purple-600/30 blur-[160px] rounded-full" />
       <div className="absolute bottom-[-200px] right-[-200px] w-[500px] h-[500px] bg-indigo-600/30 blur-[160px] rounded-full" />
 
-      <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-[280px_1fr] gap-10 mt-20">
+      <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-20 grid md:grid-cols-[280px_1fr] gap-5">
 
         {/* ================= SIDEBAR ================= */}
         <motion.div
@@ -210,11 +314,19 @@ if (!user) return null;
           />
 
           <SidebarBtn
+            icon={<FaGlobe />}
+            label="Language"
+            active={activeTab === "language"}
+            onClick={() => setActiveTab("language")}
+          />
+
+          <SidebarBtn
             icon={<FaShieldAlt />}
             label="Security"
             active={activeTab === "security"}
             onClick={() => setActiveTab("security")}
           />
+
         </motion.div>
 
         {/* ================= MAIN CONTENT ================= */}
@@ -226,54 +338,92 @@ if (!user) return null;
               <>
                 <PremiumCard key="profile">
 
-                  {/* Top Right Edit Icon */}
-                  <div className="flex justify-end">
+                  {/* Header Row */}
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold text-white/80">
+                      Profile Overview
+                    </h3>
+
                     <button
                       onClick={() => setEditOpen(true)}
-                      className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition"
+                      className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition"
                     >
-                      <FaEdit />
+                      <FaEdit size={14} />
                     </button>
                   </div>
 
-                  <div className="flex flex-col md:flex-row gap-10 items-center mt-6">
+                  {/* Main Section */}
+                  <div className="mt-8 flex flex-col md:flex-row items-center md:items-start gap-8">
 
-                    {/* Avatar */}
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 blur-md opacity-70" />
-                      <img
-                        src={user.profilePic || "/default-user.png"}
-                        className="relative w-36 h-36 rounded-full border-4 border-white/20 object-cover"
-                      />
+                    {/* ================= AVATAR ================= */}
+                    <div className="relative flex-shrink-0">
+
+                      {/* Glow Ring */}
+                      <div className="absolute -inset-2 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 blur-xl opacity-40" />
+
+                      {/* Bigger Avatar */}
+                      <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full p-[3px] bg-gradient-to-tr from-indigo-500 to-purple-600">
+                        <div className="w-full h-full rounded-full bg-[#111827] p-1">
+                          <Avatar user={user} className="w-full h-full" />
+                        </div>
+                      </div>
                     </div>
 
-                    {/* User Details */}
-                    <div className="flex-1 text-center md:text-left space-y-3">
+                    {/* ================= USER INFO ================= */}
+                    <div className="flex-1 text-center md:text-left">
 
-                      <h2 className="text-4xl font-semibold tracking-tight">
+                      {/* Name */}
+                      <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
                         {user.firstName} {user.lastName}
                       </h2>
 
-                      <p className="text-gray-400">{user.email}</p>
-                      <p className="text-gray-400">{user.phoneNo}</p>
-
-                      {/* Status Badge */}
-                      <div>
+                      {/* Status */}
+                      <div className="mt-2">
                         <span
-                          className={`px-4 py-1 rounded-full text-sm font-medium ${user.status === "blocked"
+                          className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide ${user.status === "blocked"
                             ? "bg-red-500/20 text-red-400"
                             : "bg-green-500/20 text-green-400"
                             }`}
                         >
-                          {user.status === "blocked" ? "Blocked" : "Active"}
+                          {user.status === "blocked" ? "Blocked" : "Active Account"}
                         </span>
                       </div>
 
-                      {/* Created Date */}
-                      <p className="text-gray-500 text-sm mt-2">
-                        Member since{" "}
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </p>
+                      {/* Divider */}
+                      <div className="w-full h-px bg-white/10 my-6" />
+
+                      {/* Info Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+
+                        <div>
+                          <p className="text-gray-400 mb-1">Email</p>
+                          <p className="text-white font-medium break-all">
+                            {user.email}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-gray-400 mb-1">Mobile</p>
+                          <p className="text-white font-medium">
+                            {user.phoneNo}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-gray-400 mb-1">Member Since</p>
+                          <p className="text-white font-medium">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-gray-400 mb-1">User ID</p>
+                          <p className="text-white font-medium truncate">
+                            {user._id}
+                          </p>
+                        </div>
+
+                      </div>
                     </div>
                   </div>
                 </PremiumCard>
@@ -492,10 +642,9 @@ if (!user) return null;
                   <h3 className="text-2xl font-semibold">
                     Saved Addresses
                   </h3>
-
                   <button
                     onClick={() => {
-                      setEditId(null);
+                      setEditId(null);   // ✅ null because new address
                       setAddressForm({
                         fullName: "",
                         phone: "",
@@ -507,10 +656,11 @@ if (!user) return null;
                       setShowAddressModal(true);
                     }}
                     className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 
-    hover:scale-105 transition rounded-xl text-white shadow-lg"
+  hover:scale-105 transition rounded-xl text-white shadow-lg"
                   >
                     + Add Address
                   </button>
+
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-8">
@@ -569,6 +719,17 @@ if (!user) return null;
               </PremiumCard>
             )}
 
+            {activeTab === "language" && (
+              <PremiumCard key="language">
+                <h3 className="text-2xl font-semibold mb-8">
+                  Language
+                </h3>
+
+                <LanguageSelector />
+              </PremiumCard>
+            )}
+
+
             {activeTab === "security" && (
               <PremiumCard key="security">
                 <h3 className="text-2xl font-semibold mb-8">
@@ -576,12 +737,24 @@ if (!user) return null;
                 </h3>
 
                 <div className="space-y-5">
-                  <SecurityBtn label="Change Password" />
-                  <SecurityBtn label="Enable 2FA" />
-                  <SecurityBtn label="Logout From All Devices" danger />
+                  <SecurityBtn
+                    label="Change Password"
+                    onClick={() => {
+                      setPasswordData({
+                        currentPassword: "",
+                        newPassword: "",
+                        confirmPassword: "",
+                      });
+                      setShowPasswordModal(true);
+                    }}
+                  />
+
+                  <SecurityBtn onClick={logoutHandler} label="Logout From All Devices" danger />
                 </div>
               </PremiumCard>
             )}
+
+
 
           </AnimatePresence>
         </div>
@@ -596,6 +769,16 @@ if (!user) return null;
           editId={editId}
         />
       )}
+
+      {showPasswordModal && (
+        <PasswordModal
+          passwordData={passwordData}
+          setPasswordData={setPasswordData}
+          onClose={() => setShowPasswordModal(false)}
+          onSubmit={handleChangePassword}
+        />
+      )}
+
 
     </div>
   );
@@ -657,10 +840,10 @@ const ModernStat = ({ title, value, type, active, onClick }) => {
   );
 };
 
-
-const SecurityBtn = ({ label, danger }) => (
+const SecurityBtn = ({ label, danger, onClick }) => (
   <motion.button
     whileHover={{ scale: 1.02 }}
+    onClick={onClick}
     className={`w-full px-6 py-4 rounded-xl text-left border border-white/10 transition ${danger
       ? "bg-red-600/20 hover:bg-red-600/40 text-red-300"
       : "bg-white/5 hover:bg-white/10"
@@ -669,3 +852,119 @@ const SecurityBtn = ({ label, danger }) => (
     {label}
   </motion.button>
 );
+
+
+const LanguageSelector = () => {
+  const languages = [
+    { code: "hi", label: "Hindi" },
+    { code: "en", label: "English" },
+    { code: "gj", label: "Gujrati" },
+  ];
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(languages[0]);
+
+  return (
+    <div className="relative w-64">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition"
+      >
+        <span>{selected.label}</span>
+        <ChevronDown size={18} />
+      </button>
+
+      {open && (
+        <div className="absolute mt-2 w-full bg-[#1e293b] border border-white/10 rounded-xl shadow-lg z-50">
+          {languages.map((lang) => (
+            <div
+              key={lang.code}
+              onClick={() => {
+                setSelected(lang);
+                setOpen(false);
+              }}
+              className="px-4 py-3 hover:bg-white/10 cursor-pointer transition"
+            >
+              {lang.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+const PasswordModal = ({
+  passwordData,
+  setPasswordData,
+  onClose,
+  onSubmit,
+}) => {
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-[#1e293b] p-8 rounded-2xl w-full max-w-md border border-white/10">
+        <h2 className="text-xl font-semibold mb-6 text-white">
+          Change Password
+        </h2>
+
+        <div className="space-y-4">
+
+          <input
+            type="password"
+            placeholder="Current Password"
+            value={passwordData.currentPassword}
+            onChange={(e) =>
+              setPasswordData({
+                ...passwordData,
+                currentPassword: e.target.value,
+              })
+            }
+            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none"
+          />
+
+          <input
+            type="password"
+            placeholder="New Password"
+            value={passwordData.newPassword}
+            onChange={(e) =>
+              setPasswordData({
+                ...passwordData,
+                newPassword: e.target.value,
+              })
+            }
+            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none"
+          />
+
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={passwordData.confirmPassword}
+            onChange={(e) =>
+              setPasswordData({
+                ...passwordData,
+                confirmPassword: e.target.value,
+              })
+            }
+            className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:outline-none"
+          />
+        </div>
+
+        <div className="flex justify-end gap-4 mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-600 rounded-lg"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={onSubmit}
+            className="px-4 py-2 bg-indigo-600 rounded-lg hover:bg-indigo-700"
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

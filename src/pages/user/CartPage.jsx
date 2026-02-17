@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { updateQuantity, removeFromCart } from "@/redux/cartSlice";
 import { Link, useNavigate } from "react-router-dom";
 import { Trash2 } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.cartItems);
@@ -20,7 +21,9 @@ const CartPage = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <>
+    <Navbar/>
+    <div className="max-w-7xl mx-auto px-4 ">
       {/* HEADER */}
       <h1 className="text-3xl font-bold mb-8 text-gray-900">
         Shopping Cart
@@ -178,6 +181,7 @@ const CartPage = () => {
         </div>
       )}
     </div>
+    </>
   );
 };
 

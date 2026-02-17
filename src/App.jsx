@@ -29,6 +29,7 @@ import AdminDashboard from "./pages/admin/dashboard/AdminDashboard";
 import AdminUserDetails from "./pages/admin/dashboard/components/AdminUserDetails";
 import AddBanner from "./pages/admin/dashboard/AddBanners";
 import MainLayout from "./components/MainLayout";
+import AdminProductView from "./pages/admin/AdminProductView";
 
 /* =========================
    ROUTER
@@ -77,6 +78,7 @@ const router = createBrowserRouter([
       { path: "/admin/users/:id", element: <AdminUserDetails /> },
       { path: "/admin/add-banner", element: <AddBanner /> },
       { path: "/adminDashboard", element: <AdminDashboard /> },
+      { path: "/admin/product/view/:slug/", element: <AdminProductView /> },
     ],
   },
 ]);

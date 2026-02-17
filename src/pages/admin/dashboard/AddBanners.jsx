@@ -68,8 +68,8 @@ const AddBanners = () => {
   return (
     <>
     <Navbar/>
-    <div className="max-w-7xl mx-auto pt-20 space-y-12">
-      <h1 className="text-3xl font-bold">Banner Manager</h1>
+    <div className="max-w-7xl mx-auto  space-y-2">
+      <h1 className="text-3xl font-bold pl-6">Banner Manager</h1>
 
       {POSITIONS.map((pos) => {
         const banner = banners[pos];

@@ -7,6 +7,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /* ================= TIME BUTTONS ================= */
 const timeButtons = [
@@ -26,7 +27,7 @@ const OrdersPanel = () => {
   const [amountSort, setAmountSort] = useState(null); // asc | desc
   const [dateSort, setDateSort] = useState(null); // asc | desc
   const [categoryFilter, setCategoryFilter] = useState("all");
-
+  const navigate = useNavigate();
 
   const [openOrder, setOpenOrder] = useState(null);
 
@@ -477,12 +478,17 @@ const OrdersPanel = () => {
                             {order.orderItems.map(item => (
                               <div
                                 key={item._id}
-                                className="flex items-center gap-4 p-3 rounded-xl border hover:shadow-md transition"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/admin/product/view/${item.slug}`);
+
+                                }}
+                                className="flex items-center gap-4 p-3 rounded-xl border hover:shadow-md transition cursor-pointer"
                               >
                                 <img
                                   src={item.image}
                                   alt={item.productName}
-                                  className="w-16 h-16 rounded-xl object-cover"
+                                  className="w-16 h-16 rounded-xl object-cover cursor-pointer hover:scale-105 transition"
                                 />
 
                                 <div className="flex-1">
@@ -501,6 +507,7 @@ const OrdersPanel = () => {
                             ))}
                           </div>
                         </div>
+                        
                       </div>
                     </td>
                   </tr>
@@ -508,6 +515,8 @@ const OrdersPanel = () => {
               </Fragment>
             ))}
           </tbody>
+
+          
         </table>
       </div>
 

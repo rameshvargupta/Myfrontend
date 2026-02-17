@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/userSlice";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import Avatar from "@/pages/profile/Avatar";
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -48,143 +49,164 @@ const Navbar = () => {
       navigate("/login");
     }
   };
-
- 
+  console.log(user?.profilePic);
 
 
   return (
-    <header className="bg-white fixed w-full z-50 shadow-md">
-      <div className="max-w-7xl mx-auto flex justify-between items-center p-4">
-        {/* Logo */}
-        <Link to="/">
-          <img src="./download.png" alt="Ecart" className="w-32 md:w-36" />
-        </Link>
+    <>
+      <header className="fixed top-0 w-full z-50 backdrop-blur-md bg-white/70 border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
 
-        {/* Desktop Menu */}
-        <nav className="hidden md:flex items-center gap-6 font-medium">
-          <Link className="hover:text-pink-600 transition" to="/">Home</Link>
-          <Link className="hover:text-pink-600 transition" to="/products">Products</Link>
-
-          {isAdmin && (
-            <>
-              <Link to="/adminDashboard">Dashboard</Link>
-              <Link to="/admin/products">Admin Products</Link>
-              <Link to="/admin/add-product">Add Product</Link>
-              <Link to="/admin/add-banner">Add Banner</Link>
-            </>
-          )}
-        </nav>
-
-        {/* Right section */}
-        <div className="flex items-center gap-4">
-          {/* Cart */}
-          <Link to="/cartpage" className="relative">
-            <ShoppingCart size={28} className="hover:text-pink-600 transition" />
-            {totalQty > 0 && (
-              <span className="absolute -top-2 -right-3 bg-pink-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold">
-                {cartItems.length}
-              </span>
-            )}
+          {/* ================= LOGO ================= */}
+          <Link to="/" className="flex items-center gap-2">
+            <img
+              src="./download1.png"
+              alt="Ecart"
+              className="w-25 md:w-25 object-contain"
+            />
           </Link>
 
-          {/* User / Profile */}
-          {isAuth ? (
-            <div className="relative">
-              <button
-                onClick={() => setProfileDropdown(!profileDropdown)}
-                className="flex items-center gap-2 border px-3 py-1 rounded hover:bg-gray-100 transition"
-              >
-                {/* Use avatar.url safely */}
-                <img
-                  src={user?.avatar?.url || "/download.png"}
-                  alt={user?.name || "User"}
-                  className="w-6 h-6 rounded-full"
-                />
-                <span>{user?.name?.split(" ")[0] || "Guest"}</span>
-                <ChevronDown size={16} />
-              </button>
+          {/* ================= DESKTOP NAV ================= */}
+          <nav className="hidden md:flex items-center gap-8 font-medium text-gray-700">
+            <Link className="hover:text-pink-600 transition" to="/">Home</Link>
+            <Link className="hover:text-pink-600 transition" to="/products">Products</Link>
 
-              {profileDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg border rounded-md overflow-hidden z-50">
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2 hover:bg-pink-50 transition"
-                    onClick={() => setProfileDropdown(false)}
-                  >
-                    Profile
-                  </Link>
-                  <Link
-                    to="/myorders"
-                    className="block px-4 py-2 hover:bg-pink-50 transition"
-                    onClick={() => setProfileDropdown(false)}
-                  >
-                    Orders
-                  </Link>
-                  <button
-                    onClick={logoutHandler}
-                    className="w-full text-left px-4 py-2 hover:bg-pink-50 transition"
-                  >
-                    Logout
-                  </button>
-                </div>
+            {isAdmin && (
+              <>
+                <Link className="hover:text-pink-600 transition" to="/adminDashboard">Dashboard</Link>
+                <Link className="hover:text-pink-600 transition" to="/admin/products">Admin Products</Link>
+                <Link className="hover:text-pink-600 transition" to="/admin/add-product">Add Product</Link>
+                <Link className="hover:text-pink-600 transition" to="/admin/add-banner">Add Banner</Link>
+              </>
+            )}
+          </nav>
+
+          {/* ================= RIGHT SIDE ================= */}
+          <div className="flex items-center gap-4">
+
+            {/* CART */}
+            <Link to="/cartpage" className="relative group">
+              <ShoppingCart size={26} className="text-gray-700 group-hover:text-pink-600 transition" />
+              {totalQty > 0 && (
+                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-pink-500 to-purple-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow">
+                  {totalQty}
+                </span>
               )}
-            </div>
-          ) : (
-            <Link to="/login">
-              <Button className="bg-gradient-to-tl from-blue-600 to-purple-600 text-white">
-                Login
-              </Button>
             </Link>
-          )}
 
+            {/* USER PROFILE */}
+            {isAuth ? (
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdown(!profileDropdown)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 hover:bg-gray-200 transition"
+                >
+                  <Avatar user={user} />
 
-          {/* Mobile Menu Toggle */}
-          <button
-            className="md:hidden p-2 rounded-md border"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-      </div>
+                  <span className="hidden md:block text-sm font-medium">
+                    {user?.firstName || "User"}
+                  </span>
+                  <ChevronDown size={16} />
+                </button>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-white shadow-md border-t p-4 space-y-3">
-          <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Home</Link>
-          <Link to="/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Products</Link>
+                {/* DROPDOWN */}
+                {profileDropdown && (
+                  <div className="absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-fadeIn">
+                    <Link
+                      to="/profile"
+                      onClick={() => setProfileDropdown(false)}
+                      className="block px-4 py-3 hover:bg-gray-50 transition"
+                    >
+                      Profile
+                    </Link>
 
-          {isAdmin && (
-            <>
-              <Link to="/adminDashboard" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Dashboard</Link>
-              <Link to="/admin/products" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Admin Products</Link>
-              <Link to="/admin/add-product" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Add Product</Link>
-              <Link to="/admin/add-banner" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Add Banners</Link>
-            </>
-          )}
+                    <Link
+                      to="/myorders"
+                      onClick={() => setProfileDropdown(false)}
+                      className="block px-4 py-3 hover:bg-gray-50 transition"
+                    >
+                      Orders
+                    </Link>
 
-          {isAuth && !isAdmin && (
-            <Link to="/profile" onClick={() => setMobileMenuOpen(false)} className="block py-2 hover:text-pink-600 transition">Hello {firstName}</Link>
-          )}
+                    <button
+                      onClick={logoutHandler}
+                      className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50 transition"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link to="/login">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full px-5">
+                  Login
+                </Button>
+              </Link>
+            )}
 
-          {isAuth ? (
+            {/* MOBILE TOGGLE */}
             <button
-              onClick={logoutHandler}
-              className="w-full bg-pink-500 text-white py-2 rounded"
+              className="md:hidden p-2 rounded-md hover:bg-gray-100 transition"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              Logout
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-          ) : (
-            <Link to="/login">
-              <Button className="w-full bg-gradient-to-tl from-blue-600 to-purple-600 text-white">
-                Login
-              </Button>
-            </Link>
-          )}
+          </div>
         </div>
-      )}
-    </header>
+
+        {/* ================= MOBILE MENU ================= */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-white border-t shadow-lg px-6 py-6 space-y-4 animate-slideDown">
+            <Link to="/" onClick={() => setMobileMenuOpen(false)} className="block font-medium hover:text-pink-600">
+              Home
+            </Link>
+
+            <Link to="/products" onClick={() => setMobileMenuOpen(false)} className="block font-medium hover:text-pink-600">
+              Products
+            </Link>
+
+            {isAdmin && (
+              <>
+                <Link to="/adminDashboard" onClick={() => setMobileMenuOpen(false)} className="block hover:text-pink-600">
+                  Dashboard
+                </Link>
+                <Link to="/admin/products" onClick={() => setMobileMenuOpen(false)} className="block hover:text-pink-600">
+                  Admin Products
+                </Link>
+                <Link to="/admin/add-product" onClick={() => setMobileMenuOpen(false)} className="block hover:text-pink-600">
+                  Add Product
+                </Link>
+                <Link to="/admin/add-banner" onClick={() => setMobileMenuOpen(false)} className="block hover:text-pink-600">
+                  Add Banner
+                </Link>
+              </>
+            )}
+
+            {isAuth ? (
+              <button
+                onClick={logoutHandler}
+                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-2 rounded-lg"
+              >
+                Logout
+              </button>
+            ) : (
+              <Link to="/login">
+                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                  Login
+                </Button>
+              </Link>
+            )}
+          </div>
+        )}
+
+      </header>
+      <br />
+      <br />
+      <br />
+    </>
   );
+
 };
 
 export default Navbar;

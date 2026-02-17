@@ -111,31 +111,43 @@ const Checkout = () => {
     });
   };
 
-  const handleSaveAddress = async () => {
-    const { fullName, phone, address, city, pincode, state } = addressForm;
+ const handleSaveAddress = async () => {
+  const { fullName, phone, address, city, pincode, state } = addressForm;
 
-    if (!fullName || !phone || !address || !city || !pincode || !state) {
-      alert("Please fill all address fields");
+  if (!fullName || !phone || !address || !city || !pincode || !state) {
+    toast.error("Please fill all address fields");
+    return;
+  }
+
+  try {
+    const data = await saveAddress(addressForm, editId);
+
+    if (!data.success) {
+      toast.error(data.message || "Address save failed");
       return;
     }
 
-    try {
-      const data = await saveAddress(addressForm, editId);
+    dispatch(setAddresses(data.addresses));
 
-      if (!data.success) {
-        alert(data.message || "Address save failed");
-        return;
-      }
-
-      dispatch(setAddresses(data.addresses));
+    // ✅ If updating → select updated one
+    if (editId) {
+      const updated = data.addresses.find(a => a._id === editId);
+      dispatch(selectAddress(updated));
+      toast.success("Address updated successfully");
+    } 
+    // ✅ If adding → select last added one
+    else {
       dispatch(selectAddress(data.addresses[data.addresses.length - 1]));
-      toast.success("Address Added successfully");
-      resetForm();
-    } catch (err) {
-      console.error("SAVE ADDRESS ERROR", err);
-      alert("Something went wrong");
+      toast.success("Address added successfully");
     }
-  };
+
+    resetForm();
+  } catch (err) {
+    console.error("SAVE ADDRESS ERROR", err);
+    toast.error("Something went wrong");
+  }
+};
+
 
   const handleEditAddress = (addr) => {
     setEditId(addr._id);
@@ -149,7 +161,6 @@ const Checkout = () => {
       state: addr.state || "",
       pincode: addr.pincode || "",
     });
-    toast.success("Address Updated successfully");
     setShowAddressForm(true);
   };
 
@@ -255,8 +266,8 @@ const Checkout = () => {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gray-50 pt-24 pb-10">
-        <div className="max-w-5xl mx-auto px-4 space-y-6 mt-10">
+      <div className="min-h-screen bg-gray-50 pb-10 ">
+        <div className="max-w-5xl mx-auto px-4 space-y-6">
           <h1 className="text-3xl font-bold">Checkout</h1>
 
           {cartItems.length === 0 ? (

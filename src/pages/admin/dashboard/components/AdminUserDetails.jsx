@@ -113,10 +113,6 @@ const AdminUserDetails = () => {
   0
 );
 
-
-
-
-
     const chartData = [
         { name: "Total Orders", value: totalOrders },
         { name: "Delivered", value: deliveredOrders },

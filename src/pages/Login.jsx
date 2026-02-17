@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
@@ -66,10 +66,12 @@ const Login = () => {
         })
       );
       localStorage.setItem("user", JSON.stringify(data.user));
+      const name =
+        `${data?.user?.firstName || ""} ${data?.user?.lastName || ""}`.trim();
 
-      toast.success("Login successful 👋");
+      toast.success(`Welcome back ${name || "User"} 👋`);
+
       navigate("/");
-
 
     } catch (error) {
       toast.error(error.message);

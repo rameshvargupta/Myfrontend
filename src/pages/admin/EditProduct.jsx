@@ -134,7 +134,7 @@ const EditProduct = () => {
 
     <>
       <Navbar />
-      <div className="max-w-4xl mx-auto space-y-6 p-6 pt-20">
+      <div className="max-w-4xl mx-auto space-y-6 p-6">
         <Card className="rounded-3xl shadow-xl ">
           <CardHeader>
             <CardTitle className="text-2xl font-bold">

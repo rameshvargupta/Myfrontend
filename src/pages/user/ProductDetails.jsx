@@ -89,8 +89,9 @@ const ProductDetails = () => {
       <Navbar />
 
       {/* ===== PAGE WRAPPER (NAVBAR FIX) ===== */}
-      <div className="pt-24 bg-gray-50 min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-10">
+<div className="bg-gray-50 min-h-screen pt-20">
+
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
 
             {/* ================= LEFT : IMAGE GALLERY ================= */}
@@ -207,7 +208,7 @@ const ProductDetails = () => {
 
                     toast.success("Product added to cart");
                   }}
-                  className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition
+                  className={`z
                     ${product.stock > 0
                       ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
                       : "bg-gray-300 text-gray-600 cursor-not-allowed"
