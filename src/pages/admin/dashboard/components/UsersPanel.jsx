@@ -215,190 +215,187 @@ const UsersPanel = () => {
           Loading users...
         </div>
       ) : (
-       <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
 
-  {/* TABLE WRAPPER */}
-  <div className="overflow-x-auto">
-    <table className="min-w-full text-sm">
+          {/* TABLE WRAPPER */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
 
-      {/* ===== HEADER ===== */}
-      <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 text-xs uppercase tracking-wider sticky top-0 z-10">
-        <tr>
-          <th className="px-6 py-4 text-left font-semibold">User</th>
+              {/* ===== HEADER ===== */}
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600 text-xs uppercase tracking-wider sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-4 text-left font-semibold">User</th>
 
-          <th className="px-6 py-4 text-center font-semibold">
-            Mobile
-          </th>
+                  <th className="px-6 py-4 text-center font-semibold">
+                    Mobile
+                  </th>
 
-          <th
-            className="px-6 py-4 text-center font-semibold cursor-pointer select-none"
-            onClick={() =>
-              setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-            }
-          >
-            <div className="flex items-center justify-center gap-1">
-              Orders
-              {sortOrder === "asc" ? (
-                <ChevronUp size={14} />
-              ) : (
-                <ChevronDown size={14} />
-              )}
-            </div>
-          </th>
-
-          <th className="px-6 py-4 text-center font-semibold">
-            Cancelled
-          </th>
-
-          <th className="px-6 py-4 text-center font-semibold">
-            Status
-          </th>
-
-          <th className="px-6 py-4 text-center font-semibold">
-            Joined
-          </th>
-
-          <th className="px-6 py-4 text-right font-semibold">
-            Actions
-          </th>
-        </tr>
-      </thead>
-
-      {/* ===== BODY ===== */}
-      <tbody className="divide-y divide-gray-100">
-
-        {filteredUsers.map((user) => (
-          <tr
-            key={user._id}
-            className={`transition duration-200 ease-in-out
-              ${user.isBlocked
-                ? "bg-red-50/60"
-                : "hover:bg-gray-50"
-              }
-            `}
-          >
-
-            {/* USER */}
-            <td className="px-6 py-5">
-              <div className="flex items-center gap-4">
-                <img
-                  src={user.avatar}
-                  className="w-12 h-12 rounded-2xl object-cover border shadow-sm"
-                  alt="User"
-                />
-
-                <div>
-                  <p className={`font-semibold text-sm ${
-                    user.isBlocked ? "text-red-600" : "text-gray-800"
-                  }`}>
-                    {user.name}
-                  </p>
-
-                  <p className="text-xs text-gray-500 mt-1">
-                    {user.email}
-                  </p>
-                </div>
-              </div>
-            </td>
-
-            {/* MOBILE */}
-            <td className="px-6 py-5 text-center text-gray-600">
-              {user.mobile}
-            </td>
-
-            {/* ORDERS */}
-            <td className="px-6 py-5 text-center">
-              <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-semibold text-xs">
-                {user.totalOrders}
-              </span>
-            </td>
-
-            {/* CANCELLED */}
-            <td className="px-6 py-5 text-center">
-              <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 font-semibold text-xs">
-                {user.cancelledOrders}
-              </span>
-            </td>
-
-            {/* ROLE / BLOCK */}
-            <td className="px-6 py-5 text-center">
-              <span
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold
-                  ${
-                    user.isBlocked
-                      ? "bg-red-100 text-red-700"
-                      : user.role === "admin"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : "bg-blue-100 text-blue-700"
-                  }
-                `}
-              >
-                {user.isBlocked ? "Blocked" : user.role}
-              </span>
-            </td>
-
-            {/* JOINED */}
-            <td className="px-6 py-5 text-center text-gray-500 text-xs">
-              {new Date(user.createdAt).toLocaleDateString()}
-            </td>
-
-            {/* ACTIONS */}
-            <td className="px-6 py-5">
-              <div className="flex justify-end items-center gap-3">
-
-                <button
-                  onClick={() =>
-                    navigate(`/admin/users/${user._id}`)
-                  }
-                  className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
-                >
-                  <Eye size={16} />
-                </button>
-
-                <button
-                  onClick={() => handleBlock(user._id)}
-                  className={`p-2 rounded-xl transition
-                    ${
-                      user.isBlocked
-                        ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
-                        : "bg-yellow-50 text-yellow-600 hover:bg-yellow-100"
+                  <th
+                    className="px-6 py-4 text-center font-semibold cursor-pointer select-none"
+                    onClick={() =>
+                      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
                     }
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      Orders
+                      {sortOrder === "asc" ? (
+                        <ChevronUp size={14} />
+                      ) : (
+                        <ChevronDown size={14} />
+                      )}
+                    </div>
+                  </th>
+
+                  <th className="px-6 py-4 text-center font-semibold">
+                    Cancelled
+                  </th>
+
+                  <th className="px-6 py-4 text-center font-semibold">
+                    Status
+                  </th>
+
+                  <th className="px-6 py-4 text-center font-semibold">
+                    Joined
+                  </th>
+
+                  <th className="px-6 py-4 text-right font-semibold">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+
+              {/* ===== BODY ===== */}
+              <tbody className="divide-y divide-gray-100">
+
+                {filteredUsers.map((user) => (
+                  <tr
+                    key={user._id}
+                    className={`transition duration-200 ease-in-out
+              ${user.isBlocked
+                        ? "bg-red-50/60"
+                        : "hover:bg-gray-50"
+                      }
+            `}
+                  >
+
+                    {/* USER */}
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={user.avatar}
+                          className="w-12 h-12 rounded-2xl object-cover border shadow-sm"
+                          alt="User"
+                        />
+
+                        <div>
+                          <p className={`font-semibold text-sm ${user.isBlocked ? "text-red-600" : "text-gray-800"
+                            }`}>
+                            {user.name}
+                          </p>
+
+                          <p className="text-xs text-gray-500 mt-1">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* MOBILE */}
+                    <td className="px-6 py-5 text-center text-gray-600">
+                      {user.mobile}
+                    </td>
+
+                    {/* ORDERS */}
+                    <td className="px-6 py-5 text-center">
+                      <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-semibold text-xs">
+                        {user.totalOrders}
+                      </span>
+                    </td>
+
+                    {/* CANCELLED */}
+                    <td className="px-6 py-5 text-center">
+                      <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 font-semibold text-xs">
+                        {user.cancelledOrders}
+                      </span>
+                    </td>
+
+                    {/* ROLE / BLOCK */}
+                    <td className="px-6 py-5 text-center">
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-xs font-semibold
+                  ${user.isBlocked
+                            ? "bg-red-100 text-red-700"
+                            : user.role === "admin"
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-blue-100 text-blue-700"
+                          }
+                `}
+                      >
+                        {user.isBlocked ? "Blocked" : user.role}
+                      </span>
+                    </td>
+
+                    {/* JOINED */}
+                    <td className="px-6 py-5 text-center text-gray-500 text-xs">
+                      {new Date(user.createdAt).toLocaleDateString()}
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="px-6 py-5">
+                      <div className="flex justify-end items-center gap-3">
+
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/users/${user._id}`)
+                          }
+                          className="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition"
+                        >
+                          <Eye size={16} />
+                        </button>
+
+                        <button
+                          onClick={() => handleBlock(user._id)}
+                          className={`p-2 rounded-xl transition
+                    ${user.isBlocked
+                              ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                              : "bg-yellow-50 text-yellow-600 hover:bg-yellow-100"
+                            }
                   `}
-                >
-                  {user.isBlocked ? (
-                    <UserCheck size={16} />
-                  ) : (
-                    <UserX size={16} />
-                  )}
-                </button>
+                        >
+                          {user.isBlocked ? (
+                            <UserCheck size={16} />
+                          ) : (
+                            <UserX size={16} />
+                          )}
+                        </button>
 
-                <button
-                  onClick={() => handleDelete(user._id)}
-                  className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition"
-                >
-                  <Trash2 size={16} />
-                </button>
+                        <button
+                          onClick={() => handleDelete(user._id)}
+                          className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
 
-              </div>
-            </td>
-          </tr>
-        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
 
-        {filteredUsers.length === 0 && (
-          <tr>
-            <td
-              colSpan="7"
-              className="text-center py-12 text-gray-400"
-            >
-              No users found
-            </td>
-          </tr>
-        )}
+                {filteredUsers.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      className="text-center py-12 text-gray-400"
+                    >
+                      No users found
+                    </td>
+                  </tr>
+                )}
 
-      </tbody>
-    </table>
-  </div>
-</div>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
       )}
     </div>

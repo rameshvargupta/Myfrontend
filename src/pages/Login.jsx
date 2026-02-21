@@ -15,7 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/userSlice";
-
+import { loadUserCart } from "@/redux/cartSlice";
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -45,7 +45,7 @@ const Login = () => {
     try {
       setLoading(true);
 
-      // 1️⃣ LOGIN API
+      // 1️⃣ LOGIN
       const res = await fetch("http://localhost:5000/api/v1/user/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -55,19 +55,35 @@ const Login = () => {
       const data = await res.json();
       if (!data.success) throw new Error(data.message);
 
-      // 2️⃣ SAVE TOKEN ONLY
-      localStorage.setItem("token", data.token);
+      const token = data.token;
 
-      // 3️⃣ TEMP USER (login response user)
+      // 2️⃣ FETCH FULL PROFILE (IMPORTANT)
+      const profileRes = await fetch(
+        "http://localhost:5000/api/v1/user/my-profile",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const profileData = await profileRes.json();
+
+      if (!profileData.success)
+        throw new Error("Failed to fetch profile");
+
+      // 3️⃣ SET COMPLETE USER (including addresses)
       dispatch(
         setUser({
-          user: data.user,
-          token: data.token,
+          user: profileData.user,
+          token: token,
         })
       );
-      localStorage.setItem("user", JSON.stringify(data.user));
+      dispatch(loadUserCart(profileData.user._id));
+
       const name =
-        `${data?.user?.firstName || ""} ${data?.user?.lastName || ""}`.trim();
+        `${profileData.user?.firstName || ""} ${profileData.user?.lastName || ""
+          }`.trim();
 
       toast.success(`Welcome back ${name || "User"} 👋`);
 

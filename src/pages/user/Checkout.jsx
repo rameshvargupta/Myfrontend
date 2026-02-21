@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -43,8 +43,7 @@ const Checkout = () => {
   const { addresses, selectedAddress } = useSelector(
     (state) => state.address
   );
-  const defaultAddress =
-    selectedAddress || (addresses.length > 0 ? addresses[0] : null);
+  const defaultAddress = selectedAddress;
 
   const addressToShow = showAllAddresses
     ? addresses
@@ -54,26 +53,34 @@ const Checkout = () => {
 
 
   /* ================= TOTAL ================= */
-  const totalAmount = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  const totalAmount = useMemo(() => {
+    return cartItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  }, [cartItems]);
 
   useEffect(() => {
     const loadAddresses = async () => {
       const data = await fetchAddresses();
-      if (data.success) {
-        dispatch(setAddresses(data.addresses));
-        if (data.addresses.length > 0) {
-          dispatch(selectAddress(data.addresses[0]));
-        }
+      if (!data.success) return;
+
+      dispatch(setAddresses(data.addresses));
+
+      if (data.addresses.length === 0) {
+        dispatch(selectAddress(null));
+        return;
       }
+
+      const backendDefault =
+        data.addresses.find(a => a.isDefault) ||
+        data.addresses[0];
+
+      dispatch(selectAddress(backendDefault));
     };
 
     loadAddresses();
-  }, [dispatch]);
-
-
+  }, []);
 
   /* ================= CART QTY ================= */
   const handleIncreaseQty = (id) => {
@@ -111,42 +118,47 @@ const Checkout = () => {
     });
   };
 
- const handleSaveAddress = async () => {
-  const { fullName, phone, address, city, pincode, state } = addressForm;
+  const handleSaveAddress = async () => {
+    const { fullName, phone, address, city, pincode, state } = addressForm;
 
-  if (!fullName || !phone || !address || !city || !pincode || !state) {
-    toast.error("Please fill all address fields");
-    return;
-  }
-
-  try {
-    const data = await saveAddress(addressForm, editId);
-
-    if (!data.success) {
-      toast.error(data.message || "Address save failed");
+    if (!fullName || !phone || !address || !city || !pincode || !state) {
+      toast.error("Please fill all address fields");
       return;
     }
 
-    dispatch(setAddresses(data.addresses));
+    try {
+      const data = await saveAddress(addressForm, editId);
 
-    // ✅ If updating → select updated one
-    if (editId) {
-      const updated = data.addresses.find(a => a._id === editId);
-      dispatch(selectAddress(updated));
-      toast.success("Address updated successfully");
-    } 
-    // ✅ If adding → select last added one
-    else {
-      dispatch(selectAddress(data.addresses[data.addresses.length - 1]));
-      toast.success("Address added successfully");
+      if (!data.success) {
+        toast.error(data.message || "Address save failed");
+        return;
+      }
+
+      dispatch(setAddresses(data.addresses));
+
+      // ✅ If updating → select updated one
+      if (editId) {
+        const updated = data.addresses.find(a => a._id === editId);
+        dispatch(selectAddress(updated));
+        toast.success("Address updated successfully");
+      }
+      // ✅ If adding → select last added one
+      else {
+        const backendDefault = data.addresses.find(a => a.isDefault);
+        dispatch(
+          selectAddress(
+            backendDefault || data.addresses[data.addresses.length - 1]
+          )
+        );
+        toast.success("Address added successfully");
+      }
+
+      resetForm();
+    } catch (err) {
+      console.error("SAVE ADDRESS ERROR", err);
+      toast.error("Something went wrong");
     }
-
-    resetForm();
-  } catch (err) {
-    console.error("SAVE ADDRESS ERROR", err);
-    toast.error("Something went wrong");
-  }
-};
+  };
 
 
   const handleEditAddress = (addr) => {
@@ -182,9 +194,9 @@ const Checkout = () => {
 
       // 🔥 if deleted address was selected, reset selection
       if (selectedAddress?._id === id) {
-        dispatch(selectAddress(data.addresses[0] || null));
+        const backendDefault = data.addresses.find(a => a.isDefault);
+        dispatch(selectAddress(backendDefault || data.addresses[0] || null));
       }
-
       toast.success("Address deleted successfully");
     } catch (err) {
       console.error("DELETE ERROR:", err);
@@ -195,8 +207,7 @@ const Checkout = () => {
 
   /* ================= PLACE ORDER ================= */
   const handlePlaceOrder = async () => {
-    // fallback to first address if selectedAddress is null
-    const shippingAddress = selectedAddress || addresses[0];
+    const shippingAddress = selectedAddress;
 
     if (!shippingAddress) {
       alert("Please add a delivery address");
@@ -204,6 +215,10 @@ const Checkout = () => {
     }
     if (!paymentMethod) {
       toast.error("Please select a payment method");
+      return;
+    }
+    if (cartItems.length === 0) {
+      toast.error("Cart is empty");
       return;
     }
 
@@ -249,8 +264,8 @@ const Checkout = () => {
         setLoading(false);
         return;
       }
-
       dispatch(clearCart());
+      toast.success("Order placed successfully!");
       navigate(`/ordersuccess/${data.order._id}`);
     } catch (error) {
       console.error("PLACE ORDER ERROR:", error);
@@ -412,7 +427,15 @@ const Checkout = () => {
                           onChange={() => dispatch(selectAddress(addr))}
                         />
                         <div>
-                          <p className="font-semibold">{addr.fullName}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">{addr.fullName}</p>
+
+                            {addr.isDefault && (
+                              <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">
+                                Default
+                              </span>
+                            )}
+                          </div>
                           <p className="text-sm text-gray-600">
                             {addr.address}, {addr.city}, {addr.state} - {addr.pincode}
                           </p>

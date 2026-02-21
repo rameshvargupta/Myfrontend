@@ -21,7 +21,7 @@ import { ChevronDown } from "lucide-react";
 import { logoutUser } from "../../redux/userSlice";
 import { useNavigate } from "react-router-dom";
 import Avatar from "./Avatar";
-import { saveAddress } from "@/api/addressApi";
+import { makeDefaultAddress, saveAddress } from "@/api/addressApi";
 
 const Profile = () => {
   const { user } = useSelector((state) => state.user);
@@ -88,53 +88,53 @@ const Profile = () => {
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
   const totalOrders = orders.length;
 
-const handleSaveAddress = async () => {
-  const { fullName, phone, address, city, state, pincode } = addressForm;
+  const handleSaveAddress = async () => {
+    const { fullName, phone, address, city, state, pincode } = addressForm;
 
-  if (!fullName || !phone || !address || !city || !state || !pincode) {
-    toast.error("Please fill all address fields");
-    return;
-  }
-
-  try {
-    const data = await saveAddress(addressForm, editId);
-
-    if (!data || !data.addresses) {
-      toast.error("Address save failed");
+    if (!fullName || !phone || !address || !city || !state || !pincode) {
+      toast.error("Please fill all address fields");
       return;
     }
 
-    const token = localStorage.getItem("token");
+    try {
+      const data = await saveAddress(addressForm, editId);
 
-    dispatch(
-      setUser({
-        user: { ...user, addresses: data.addresses },
-        token,
-      })
-    );
+      if (!data || !data.addresses) {
+        toast.error("Address save failed");
+        return;
+      }
 
-    toast.success(
-      editId
-        ? "Address updated successfully"
-        : "Address added successfully"
-    );
+      const token = localStorage.getItem("token");
 
-    setEditId(null);
-    setShowAddressModal(false);
-    setAddressForm({
-      fullName: "",
-      phone: "",
-      address: "",
-      city: "",
-      state: "",
-      pincode: "",
-    });
+      dispatch(
+        setUser({
+          user: { ...user, addresses: data.addresses },
+          token,
+        })
+      );
 
-  } catch (err) {
-    console.error("SAVE ADDRESS ERROR:", err);
-    toast.error(err.message || "Something went wrong");
-  }
-};
+      toast.success(
+        editId
+          ? "Address updated successfully"
+          : "Address added successfully"
+      );
+
+      setEditId(null);
+      setShowAddressModal(false);
+      setAddressForm({
+        fullName: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        pincode: "",
+      });
+
+    } catch (err) {
+      console.error("SAVE ADDRESS ERROR:", err);
+      toast.error(err.message || "Something went wrong");
+    }
+  };
 
 
   const handleDeleteAddress = async (id) => {
@@ -250,6 +250,7 @@ const handleSaveAddress = async () => {
     const getOrders = async () => {
       try {
         const token = localStorage.getItem("token");
+
         const { data } = await axios.get(
           "http://localhost:5000/api/v1/orders/my-orders",
           {
@@ -259,19 +260,78 @@ const handleSaveAddress = async () => {
           }
         );
 
-
         dispatch(setOrders(data.orders));
       } catch (error) {
         console.error("Order fetch error:", error.response?.data);
       }
     };
 
-    if (user?._id) {
+    if (user?._id && orders.length === 0) {
       getOrders();
     }
-  }, [dispatch, user]);
+  }, [user?._id]);
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const token = localStorage.getItem("token");
 
+        const { data } = await axios.get(
+          "http://localhost:5000/api/v1/user/my-profile",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
+        if (data?.user?.addresses) {
+          dispatch(
+            setUser({
+              user: {
+                ...user,
+                addresses: data.user.addresses,
+              },
+              token,
+            })
+          );
+        }
+      } catch (error) {
+        console.error("Address fetch error:", error);
+      }
+    };
+
+    // ✅ Only fetch if:
+    // 1. Address tab open
+    // 2. User exist
+    // 3. Addresses not already loaded
+
+    if (
+      activeTab === "address" &&
+      user?._id &&
+      (!user.addresses || user.addresses.length === 0)
+    ) {
+      fetchAddresses();
+    }
+  }, [activeTab, user?._id]);
+
+  const handleMakeDefault = async (id) => {
+    try {
+      const data = await makeDefaultAddress(id);
+
+      if (data?.addresses) {
+        dispatch(
+          setUser({
+            user: { ...user, addresses: data.addresses },
+            token: localStorage.getItem("token"),
+          })
+        );
+
+        toast.success("Default address updated ✅");
+      }
+    } catch (error) {
+      toast.error("Failed to update default address ❌");
+    }
+  };
 
   return (
     <div className="min-h-screen relative bg-[#0f172a] text-white overflow-hidden ">
@@ -665,55 +725,70 @@ const handleSaveAddress = async () => {
 
                 <div className="grid md:grid-cols-2 gap-8">
 
-                  {user.addresses?.map((addr) => (
-                    <div
-                      key={addr._id}
-                      className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300"
-                    >
-                      {/* Top Section */}
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-semibold text-white">
-                            {addr.fullName}
-                          </h3>
-                          <p className="text-sm text-gray-400">{addr.phone}</p>
+                  {[...(user.addresses || [])]
+                    .sort((a, b) => b.isDefault - a.isDefault)
+                    .map((addr) => (
+                      <div
+                        key={addr._id}
+                        className="bg-[#1e293b] border border-white/10 rounded-2xl p-5 shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        {/* Top Section */}
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="text-lg font-semibold text-white">
+                              {addr.fullName}
+                              {addr.isDefault && (
+                                <span className="ml-2 px-2 py-0.5 text-xs bg-green-600 text-white rounded-full">
+                                  Default
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-sm text-gray-400">{addr.phone}</p>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            {!addr.isDefault && (
+                              <button
+                                onClick={() => handleMakeDefault(addr._id)}
+                                className="px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 rounded-lg text-white transition"
+                              >
+                                Make Default
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => {
+                                setEditId(addr._id);
+                                setAddressForm(addr);
+                                setShowAddressModal(true);
+                              }}
+                              className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white transition"
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteAddress(addr._id)}
+                              className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 rounded-lg text-white transition"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
-                              setEditId(addr._id);
-                              setAddressForm(addr);
-                              setShowAddressModal(true);
-                            }}
-                            className="px-3 py-1.5 text-sm bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white transition"
-                          >
-                            Edit
-                          </button>
+                        {/* Divider */}
+                        <div className="border-t border-white/10 my-4"></div>
 
-                          <button
-                            onClick={() => handleDeleteAddress(addr._id)}
-                            className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-700 rounded-lg text-white transition"
-                          >
-                            Delete
-                          </button>
+                        {/* Address Details */}
+                        <div className="text-gray-300 text-sm leading-relaxed space-y-1">
+                          <p>{addr.address}</p>
+                          <p>
+                            {addr.city}, {addr.state} - {addr.pincode}
+                          </p>
                         </div>
                       </div>
-
-                      {/* Divider */}
-                      <div className="border-t border-white/10 my-4"></div>
-
-                      {/* Address Details */}
-                      <div className="text-gray-300 text-sm leading-relaxed space-y-1">
-                        <p>{addr.address}</p>
-                        <p>
-                          {addr.city}, {addr.state} - {addr.pincode}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-
+                    ))}
 
                 </div>
               </PremiumCard>

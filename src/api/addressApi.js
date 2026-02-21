@@ -54,3 +54,22 @@ export const deleteAddress = async (id) => {
 
   return res.json();
 };
+
+export const makeDefaultAddress = async (id) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${BASE_URL}/default/${id}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Default update failed");
+  }
+
+  return data;
+};

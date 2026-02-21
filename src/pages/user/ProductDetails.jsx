@@ -21,27 +21,33 @@ const ProductDetails = () => {
   );
   const dispatch = useDispatch();
 
+useEffect(() => {
+  const fetchProduct = async () => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/v1/products/${slug}`
+      );
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const res = await fetch(
-          `http://localhost:5000/api/v1/products/${slug}`
-        );
-        const data = await res.json();
-        if (!data.success) throw new Error();
+      const data = await res.json();
 
-        setProduct(data.product);
-        setActiveImage(data.product.images?.[0]?.url);
-      } catch {
-        toast.error("Product not found");
-      } finally {
-        setLoading(false);
+      if (!data.success || !data.product) {
+        setProduct(null);
+        return;
       }
-    };
 
-    fetchProduct();
-  }, [slug]);
+      setProduct(data.product);
+      setActiveImage(data.product.images?.[0]?.url);
+
+    } catch (error) {
+      setProduct(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchProduct();
+}, [slug]);
+
 
   useEffect(() => {
     const fetchSoldCount = async () => {
@@ -78,10 +84,31 @@ const ProductDetails = () => {
 
     navigate("/checkout");
   };
+if (loading) return <ProductSkeleton />;
 
-  if (loading) return <ProductSkeleton />;
-  if (!product) return null;
-
+if (!product) {
+  return (
+    <>
+      <Navbar />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-20">
+        <div className="bg-white shadow-lg rounded-2xl p-8 text-center max-w-md">
+          <h2 className="text-2xl font-bold text-gray-800">
+            This product is no longer available
+          </h2>
+          <p className="text-gray-500 mt-2">
+            The product you are looking for has been removed or deleted.
+          </p>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-6 px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
 
 
   return (
@@ -89,7 +116,7 @@ const ProductDetails = () => {
       <Navbar />
 
       {/* ===== PAGE WRAPPER (NAVBAR FIX) ===== */}
-<div className="bg-gray-50 min-h-screen pt-20">
+      <div className="bg-gray-50 min-h-screen pt-20">
 
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">

@@ -206,6 +206,7 @@ const OrdersPanel = () => {
       </div>
     </div>
   );
+  console.log(orders);
 
 
   return (
@@ -454,7 +455,32 @@ const OrdersPanel = () => {
                 {openOrder === order._id && (
                   <tr>
                     <td colSpan={7} className="bg-gradient-to-br from-gray-50 to-indigo-50 p-6">
-                      <div className="grid md:grid-cols-2 gap-6">
+                      <div className="grid md:grid-cols-3 gap-4">
+                        {/* USER DETAILS CARD */}
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (order.user?._id) {
+                              navigate(`/admin/users/${order.user._id}`);
+                            }
+                          }}
+                          className="bg-white rounded-2xl p-5 border shadow-sm hover:shadow-md hover:border-indigo-400 transition cursor-pointer"
+                        >
+                          <h4 className="font-bold text-gray-800 mb-2">
+                            👤 User Details
+                          </h4>
+
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {order.user?.firstName} {order.user?.lastName}<br />
+                            {order.user?.email}
+                          </p>
+
+                          <p className="text-xs text-indigo-600 mt-3 font-medium">
+                            Click to view full profile →
+                          </p>
+                        </div>
+
+
                         {/* ADDRESS CARD */}
                         <div className="bg-white rounded-2xl p-5 border shadow-sm">
                           <h4 className="font-bold text-gray-800 mb-2">
@@ -507,7 +533,7 @@ const OrdersPanel = () => {
                             ))}
                           </div>
                         </div>
-                        
+
                       </div>
                     </td>
                   </tr>
@@ -516,7 +542,7 @@ const OrdersPanel = () => {
             ))}
           </tbody>
 
-          
+
         </table>
       </div>
 
