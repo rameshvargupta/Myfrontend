@@ -232,7 +232,7 @@ const Home = () => {
       <div className="px-4 md:px-8">
         <HeroSlider
           position="TOP"
-          className="h-[180px] sm:h-[240px] md:h-[300px] lg:h-[380px]"
+          className="h-[130px] sm:h-[180px] md:h-[220px] lg:h-[260px]"
         />
       </div>
 
@@ -245,7 +245,7 @@ const Home = () => {
       <div className="px-4 md:px-8">
         <HeroSlider
           position="MIDDLE"
-          className="h-[150px] sm:h-[200px] md:h-[250px] lg:h-[300px]"
+          className="h-[120px] sm:h-[150px] md:h-[230px] lg:h-[250px]"
         />
       </div>
 

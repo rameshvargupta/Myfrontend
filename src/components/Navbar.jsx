@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, Menu, X, User, ChevronDown } from "lucide-react";
+import { ShoppingCart, Menu, X, User, ChevronDown, Heart } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/userSlice";
-import { Button } from "./ui/button";
 import { toast } from "sonner";
-import { clearCart, loadUserCart } from "@/redux/cartSlice";
+import { loadUserCart } from "@/redux/cartSlice";
 import Avatar from "@/pages/profile/Avatar";
 import { clearAddressState } from "@/redux/addressSlice";
 import { Search } from "lucide-react";
@@ -90,6 +89,10 @@ const Navbar = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+
+
+  const wishlistItems = useSelector(state => state.wishlist.items);
+  const wishlistCount = wishlistItems.length;
   return (
     <>
       <header className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b shadow-sm z-50">
@@ -97,14 +100,6 @@ const Navbar = () => {
 
           {/* ================= LEFT ================= */}
           <div className="flex items-center gap-8">
-            {/* MOBILE MENU BUTTON */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="md:hidden"
-            >
-              <Menu size={24} />
-            </button>
-
             {/* LOGO */}
             <Link to="/" className="text-2xl font-bold text-pink-600 tracking-wide">
               Ecart
@@ -211,6 +206,15 @@ const Navbar = () => {
 
           {/* ================= RIGHT ================= */}
           <div className="flex items-center gap-5">
+            {/* WISHLIST */}
+            <Link to="/wishlist" className="relative">
+              <Heart size={24} />
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
 
             {/* CART */}
             <Link to="/cartpage" className="relative">
@@ -263,8 +267,9 @@ const Navbar = () => {
 
           </div>
         </div>
+
       </header>
-      
+
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/40 z-50">
           <div className="fixed left-0 top-0 h-full w-72 bg-white shadow-xl p-6 space-y-5">

@@ -3,7 +3,7 @@ import userReducer from "./userSlice";
 import cartReducer from "./cartSlice";
 import addressReducer from "./addressSlice";
 import orderReducer from "./orderSlice";
-
+import wishlistReducer from "./wishlistSlice";
 import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 
@@ -24,6 +24,7 @@ const rootReducer = combineReducers({
    cart: cartReducer,
    address: addressReducer,
    order: orderReducer,
+   wishlist: wishlistReducer,
 });
 
 /* =========================

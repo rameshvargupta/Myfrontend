@@ -30,6 +30,7 @@ import AdminUserDetails from "./pages/admin/dashboard/components/AdminUserDetail
 import AddBanner from "./pages/admin/dashboard/AddBanners";
 import MainLayout from "./components/MainLayout";
 import AdminProductView from "./pages/admin/AdminProductView";
+import Wishlist from "./pages/Wishlist";
 
 /* =========================
    ROUTER
@@ -68,7 +69,8 @@ const router = createBrowserRouter([
       { path: "/product/:slug", element: <ProductDetails /> },
       { path: "/checkout", element: <Checkout /> },
       { path: "/cartpage", element: <CartPage /> },
-      { path: "/myorders", element: <MyOrders /> },
+      { path: "/cartpage", element: <CartPage /> },
+      { path: "/wishlist", element: <Wishlist /> },
       { path: "/ordersuccess/:orderId", element: <OrderSuccess /> },
 
       /* ADMIN */
@@ -90,54 +92,54 @@ const App = () => {
   const dispatch = useDispatch();
   const [loadingUser, setLoadingUser] = useState(true);
 
- useEffect(() => {
-  const token = localStorage.getItem("token");
-  const storedUser = localStorage.getItem("user");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
 
-  let parsedUser = null;
+    let parsedUser = null;
 
-  // ✅ Safe JSON parse
-  try {
-    parsedUser = storedUser ? JSON.parse(storedUser) : null;
-  } catch (error) {
-    console.error("Invalid user in localStorage");
-    localStorage.removeItem("user");
-  }
+    // ✅ Safe JSON parse
+    try {
+      parsedUser = storedUser ? JSON.parse(storedUser) : null;
+    } catch (error) {
+      console.error("Invalid user in localStorage");
+      localStorage.removeItem("user");
+    }
 
-  // ✅ Agar token aur user dono hain to redux me set karo
-  if (parsedUser && token) {
-    dispatch(setUser({ user: parsedUser, token }));
-  }
+    // ✅ Agar token aur user dono hain to redux me set karo
+    if (parsedUser && token) {
+      dispatch(setUser({ user: parsedUser, token }));
+    }
 
-  // ❌ Agar token nahi hai
-  if (!token) {
-    dispatch(logoutUser());
-    setLoadingUser(false);
-    return;
-  }
-
-  // ✅ Server se fresh user fetch karo
-  fetch("http://localhost:5000/api/v1/user/me", {
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.success) {
-        localStorage.clear();
-        dispatch(logoutUser());
-      } else {
-        localStorage.setItem("user", JSON.stringify(data.user)); // important
-        dispatch(setUser({ user: data.user, token }));
-      }
-      setLoadingUser(false);
-    })
-    .catch(() => {
-      localStorage.clear();
+    // ❌ Agar token nahi hai
+    if (!token) {
       dispatch(logoutUser());
       setLoadingUser(false);
-    });
+      return;
+    }
 
-}, [dispatch]);
+    // ✅ Server se fresh user fetch karo
+    fetch("http://localhost:5000/api/v1/user/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          localStorage.clear();
+          dispatch(logoutUser());
+        } else {
+          localStorage.setItem("user", JSON.stringify(data.user)); // important
+          dispatch(setUser({ user: data.user, token }));
+        }
+        setLoadingUser(false);
+      })
+      .catch(() => {
+        localStorage.clear();
+        dispatch(logoutUser());
+        setLoadingUser(false);
+      });
+
+  }, [dispatch]);
 
 
   if (loadingUser) {

@@ -5,6 +5,12 @@ import Navbar from "@/components/Navbar";
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/redux/cartSlice";
+import { Heart } from "lucide-react";
+import {
+  loadWishlist,
+  addWishlistItem,
+  removeWishlistItem,
+} from "@/redux/wishlistSlice";
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -20,7 +26,12 @@ const Products = () => {
   const cartItems = useSelector(
     (state) => state.cart?.cartItems || []
   );
+  const { token } = useSelector((state) => state.user);
+  const isAuth = !!token;
 
+  const wishlistItems = useSelector(
+    (state) => state.wishlist.items || []
+  );
 
   const dispatch = useDispatch();
   const LIMIT = 12;
@@ -69,7 +80,11 @@ const Products = () => {
       setLoading(false);
     }
   };
-
+  useEffect(() => {
+    if (isAuth) {
+      dispatch(loadWishlist());
+    }
+  }, [isAuth, dispatch]);
 
   if (loading) {
     return (
@@ -81,6 +96,7 @@ const Products = () => {
       </>
     );
   }
+
 
   return (
     <>
@@ -167,10 +183,14 @@ const Products = () => {
             md:gap-6
           "
         >
-          {products.map((p) => (
-            <div
-              key={p._id}
-              className="
+          {products.map((p) => {
+            const isInWishlist = wishlistItems.some(
+              (item) => item._id?.toString() === p._id?.toString()
+            );
+            return (
+              <div
+                key={p._id}
+                className="
                 bg-white
                 rounded-2xl
                 overflow-hidden
@@ -179,101 +199,155 @@ const Products = () => {
                 transition-all
                 group
               "
-            >
-              {/* IMAGE */}
-              <Link to={`/product/${p.slug}`}>
-                <div className="relative">
-                  <img
-                    src={p.images?.[0]?.url}
-                    alt={p.name}
-                    className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+              >
+                {/* IMAGE */}
+                <Link to={`/product/${p.slug}`}>
+                  <div className="relative">
+                    <img
+                      src={p.images?.[0]?.url}
+                      alt={p.name}
+                      className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
 
-                  {p.discountPrice > 0 && (
-                    <span className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      {Math.round(
-                        ((p.price - p.discountPrice) / p.price) * 100
-                      )}
-                      % OFF
-                    </span>
-                  )}
-                </div>
-              </Link>
-
-              {/* CONTENT */}
-              <div className="p-3 sm:p-4 flex flex-col gap-1">
-                <h2 className="font-semibold text-sm sm:text-base line-clamp-1">
-                  {p.name}
-                </h2>
-
-                <p className="text-xs text-gray-500">
-                  {p.description.length > 50
-                    ? p.description.slice(0, 40) + "..."
-                    : p.description}
-                </p>
-
-
-                {/* PRICE */}
-                <div className="flex items-center justify-between mt-1">
-                  <div>
-                    <span className="text-base sm:text-lg font-bold text-gray-900">
-                      ₹{p.finalPrice}
-                    </span>
                     {p.discountPrice > 0 && (
-                      <span className="ml-1 text-xs text-gray-400 line-through">
-                        ₹{p.price}
+                      <span className="absolute top-2 left-2 bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                        {Math.round(
+                          ((p.price - p.discountPrice) / p.price) * 100
+                        )}
+                        % OFF
                       </span>
                     )}
+
+                    <div
+                      className="absolute top-3 right-3 z-10"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        if (!isAuth) {
+                          toast.error("Please login first");
+                          return;
+                        }
+
+                        if (isInWishlist) {
+                          dispatch(removeWishlistItem(p._id))
+                            .unwrap()
+                            .then(() => toast.success("Removed from wishlist"))
+                            .catch(() => toast.error("Failed to remove"));
+                        } else {
+                          dispatch(addWishlistItem(p._id))
+                            .unwrap()
+                            .then(() => toast.success("Added to wishlist ❤️"))
+                            .catch(() => toast.error("Failed to add"));
+                        }
+                      }}
+                    >
+                      <div
+                        className={`
+      relative flex items-center justify-center
+      w-9 h-9 rounded-full
+      backdrop-blur-md
+      transition-all duration-300
+      ${isInWishlist
+                            ? "bg-pink-50 shadow-md scale-110"
+                            : "bg-white/80 hover:bg-pink-50"
+                          }
+    `}
+                      >
+                        <Heart
+                          size={20}
+                          className={`
+        transition-all duration-300
+        ${isInWishlist
+                              ? "fill-pink-600 text-pink-600 animate-pulse"
+                              : "text-gray-600 group-hover:text-pink-500"
+                            }
+      `}
+                        />
+                      </div>
+                    </div>
+
                   </div>
 
-                  <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+                </Link>
+
+                {/* CONTENT */}
+                <div className="p-3 sm:p-4 flex flex-col gap-1">
+                  <h2 className="font-semibold text-sm sm:text-base line-clamp-1">
+                    {p.name}
+                  </h2>
+
+                  <p className={`transition ${isInWishlist
+                    ? "fill-pink-600 text-pink-600"
+                    : "text-gray-600"
+                    }`}>
+                    {p.description?.length > 50
+                      ? p.description.slice(0, 40) + "..."
+                      : p.description}
+                  </p>
+
+
+                  {/* PRICE */}
+                  <div className="flex items-center justify-between mt-1">
+                    <div>
+                      <span className="text-base sm:text-lg font-bold text-gray-900">
+                        ₹{p.finalPrice}
+                      </span>
+                      {p.discountPrice > 0 && (
+                        <span className="ml-1 text-xs text-gray-400 line-through">
+                          ₹{p.price}
+                        </span>
+                      )}
+                    </div>
+
+                    <span
+                      className={`text-[10px] px-2 py-0.5 rounded-full font-medium
                       ${p.stock > 0
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                      }`}
-                  >
-                    {p.stock > 0 ? "In Stock" : "Out"}
-                  </span>
-                </div>
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                      {p.stock > 0 ? "In Stock" : "Out"}
+                    </span>
+                  </div>
 
-                {/* RATING + CATEGORY */}
-                <div className="flex justify-between items-center text-xs text-gray-600 mt-1">
-                  <span>{p.category?.name}</span>
-                  <span className="text-yellow-500 font-semibold">
-                    ★ {p.rating?.toFixed(1) || 0}
-                  </span>
-                </div>
+                  {/* RATING + CATEGORY */}
+                  <div className="flex justify-between items-center text-xs text-gray-600 mt-1">
+                    <span>{p.category?.name}</span>
+                    <span className="text-yellow-500 font-semibold">
+                      ★ {p.rating?.toFixed(1) || 0}
+                    </span>
+                  </div>
 
-                {/* ADD TO CART */}
-                <button
-                  disabled={p.stock === 0}
-                  onClick={() => {
-                    if (p.stock === 0) return;
+                  {/* ADD TO CART */}
+                  <button
+                    disabled={p.stock === 0}
+                    onClick={() => {
+                      if (p.stock === 0) return;
 
-                    const alreadyInCart = cartItems.find(
-                      (item) => item.productId === p._id
-                    );
+                      const alreadyInCart = cartItems.find(
+                        (item) => item.productId === p._id
+                      );
 
-                    if (alreadyInCart) {
-                      toast.info("Product already added to cart");
-                      return;
-                    }
+                      if (alreadyInCart) {
+                        toast.info("Product already added to cart");
+                        return;
+                      }
 
-                    dispatch(
-                      addToCart({
-                        productId: p._id,
-                        name: p.name,
-                        price: p.finalPrice,
-                        image: p.images?.[0]?.url,
-                        quantity: 1,
-                      })
-                    );
+                      dispatch(
+                        addToCart({
+                          productId: p._id,
+                          name: p.name,
+                          price: p.finalPrice,
+                          image: p.images?.[0]?.url,
+                          quantity: 1,
+                        })
+                      );
 
-                    toast.success("Product added to cart");
-                  }}
+                      toast.success("Product added to cart");
+                    }}
 
-                  className={`
+                    className={`
                     mt-3
                     w-full
                     py-2
@@ -282,16 +356,18 @@ const Products = () => {
                     rounded-full
                     transition
                     ${p.stock > 0
-                      ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
-                      : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                    }
+                        ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
+                        : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                      }
                   `}
-                >
-                  Add to Cart
-                </button>
+                  >
+                    Add to Cart
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+
+          })}
         </div>
 
         {/* ================= PAGINATION ================= */}

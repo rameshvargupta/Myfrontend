@@ -13,7 +13,7 @@ const HEIGHTS = {
   BOTTOM: "h-[100px] sm:h-[140px] md:h-[200px]",
 };
 
-const HeroSlider = ({ position = "TOP" }) => {
+const HeroSlider = ({ position = "TOP", className = "" }) => {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,7 +58,8 @@ const HeroSlider = ({ position = "TOP" }) => {
             "swiper-pagination-bullet !bg-white/50 !opacity-100",
           bulletActiveClass: "!bg-white",
         }}
-        className={`group relative rounded-2xl overflow-hidden shadow-xl ${HEIGHTS[position]}`}
+        className={`group relative rounded-2xl overflow-hidden shadow-xl 
+  ${className || HEIGHTS[position]}`}
       >
         {images.map((img) => (
           <SwiperSlide key={img._id}>

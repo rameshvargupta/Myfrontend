@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from "recharts";
+import Navbar from "@/components/Navbar";
 const ORDERS_PER_PAGE = 2;
 
 const AdminUserDetails = () => {
@@ -122,6 +123,8 @@ const AdminUserDetails = () => {
         },
     ];
     return (
+        <>
+        <Navbar/>
         <div className="p-6 space-y-6 max-w-7xl mx-auto">
 
             {/* ===== USER PROFILE ===== */}
@@ -373,6 +376,7 @@ const AdminUserDetails = () => {
             </div>
 
         </div>
+        </>
     );
 };
 

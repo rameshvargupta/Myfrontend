@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/userSlice";
 import { loadUserCart } from "@/redux/cartSlice";
+import { loadWishlist } from "@/redux/wishlistSlice";
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -80,7 +81,7 @@ const Login = () => {
         })
       );
       dispatch(loadUserCart(profileData.user._id));
-
+      dispatch(loadWishlist());
       const name =
         `${profileData.user?.firstName || ""} ${profileData.user?.lastName || ""
           }`.trim();
