@@ -9,8 +9,9 @@ export const fetchAdminProducts = async () => {
   return res.json();
 };
 
-export const fetchUserProducts = async () => {
-  const res = await fetch(`${BASE_URL}/products`);
+// ✅ UPDATED (query support added)
+export const fetchUserProducts = async (query = "") => {
+  const res = await fetch(`${BASE_URL}/products${query}`);
   return res.json();
 };
 
@@ -28,5 +29,10 @@ export const updateProductApi = async (id, formData) => {
     headers: { Authorization: `Bearer ${getToken()}` },
     body: formData,
   });
+  return res.json();
+};
+
+export const fetchCategories = async () => {
+  const res = await fetch(`${BASE_URL}/categories`);
   return res.json();
 };

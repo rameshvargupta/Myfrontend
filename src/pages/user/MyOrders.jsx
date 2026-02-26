@@ -14,7 +14,8 @@ const MyOrders = () => {
     const [comment, setComment] = useState("");
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [expandedOrder, setExpandedOrder] = useState(null);
-
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("All");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -180,61 +181,94 @@ const MyOrders = () => {
         }
     };
 
-    const handleDeleteReview = async (reviewId, productId) => {
-        try {
-            const token = localStorage.getItem("token");
+    // const handleDeleteReview = async (reviewId, productId) => {
+    //     try {
+    //         const token = localStorage.getItem("token");
 
-            const res = await fetch(
-                `http://localhost:5000/api/v1/reviews/${reviewId}`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+    //         const res = await fetch(
+    //             `http://localhost:5000/api/v1/reviews/${reviewId}`,
+    //             {
+    //                 method: "DELETE",
+    //                 headers: {
+    //                     Authorization: `Bearer ${token}`,
+    //                 },
+    //             }
+    //         );
 
-            const data = await res.json();
+    //         const data = await res.json();
 
-            if (!data.success) {
-                return toast.error(data.message);
+    //         if (!data.success) {
+    //             return toast.error(data.message);
+    //         }
+
+    //         toast.success("Review deleted");
+
+    //         // ✅ Update UI instantly
+    //         setOrders((prevOrders) =>
+    //             prevOrders.map((order) => ({
+    //                 ...order,
+    //                 orderItems: order.orderItems.map((item) => {
+    //                     if (
+    //                         item.productId === productId ||
+    //                         item.productId?._id === productId
+    //                     ) {
+    //                         return {
+    //                             ...item,
+    //                             isReviewed: false,
+    //                             userReview: null,
+    //                         };
+    //                     }
+    //                     return item;
+    //                 }),
+    //             }))
+    //         );
+
+    //     } catch (error) {
+    //         toast.error("Failed to delete review");
+    //     }
+    // };
+
+    const filteredOrders = orders.filter((order) => {
+        // 🔹 Status Filter
+        if (statusFilter !== "All") {
+            if (statusFilter === "Failed") {
+                if (order.paymentStatus !== "Failed") return false;
+            } else {
+                if (order.orderStatus !== statusFilter) return false;
             }
-
-            toast.success("Review deleted");
-
-            // ✅ Update UI instantly
-            setOrders((prevOrders) =>
-                prevOrders.map((order) => ({
-                    ...order,
-                    orderItems: order.orderItems.map((item) => {
-                        if (
-                            item.productId === productId ||
-                            item.productId?._id === productId
-                        ) {
-                            return {
-                                ...item,
-                                isReviewed: false,
-                                userReview: null,
-                            };
-                        }
-                        return item;
-                    }),
-                }))
-            );
-
-        } catch (error) {
-            toast.error("Failed to delete review");
         }
-    };
 
+        // 🔹 Search Logic
+        const lowerSearch = searchTerm.toLowerCase().trim();
+        if (!lowerSearch) return true;
 
+        const matchOrderId = order._id
+            ?.toLowerCase()
+            .includes(lowerSearch);
+
+        const matchProduct = order.orderItems?.some((item) => {
+            const productName =
+                item.productName ||
+                item.productId?.name ||
+                "";
+
+            return productName
+                .toLowerCase()
+                .includes(lowerSearch);
+        });
+
+        return matchOrderId || matchProduct;
+    });
 
     const totalOrders = orders.length;
     const deliveredOrders = orders.filter(
         (o) => o.orderStatus === "Delivered"
     ).length;
-    const pendingOrders = orders.filter(
-        (o) => o.orderStatus === "Pending"
+
+    const cancelledOrders = orders.filter(
+        (o) =>
+            o.orderStatus === "Cancelled" ||
+            o.paymentStatus === "Failed"
     ).length;
 
     if (loading)
@@ -271,7 +305,36 @@ const MyOrders = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
                         <StatCard title="Total Orders" value={totalOrders} />
                         <StatCard title="Delivered" value={deliveredOrders} />
-                        <StatCard title="Pending" value={pendingOrders} />
+                        <StatCard title="Canceled" value={cancelledOrders} />
+                    </div>
+
+                    {/* SEARCH & FILTER - Always Single Line */}
+                    <div className="bg-white p-4 rounded-2xl shadow-sm mb-8 border">
+                        <div className="flex items-center gap-3 flex-nowrap">
+
+                            {/* Search */}
+                            <input
+                                type="text"
+                                placeholder="Search by Order ID or Product..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="flex-1 min-w-0 px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                            />
+
+                            {/* Status Filter */}
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="w-40 shrink-0 px-4 py-2 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                            >
+                                <option value="All">All</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="Failed">Failed</option>
+                            </select>
+
+                        </div>
                     </div>
 
                     {/* EMPTY STATE */}
@@ -292,22 +355,19 @@ const MyOrders = () => {
                     {/* ORDER GRID */}
                     {orders.length > 0 && (
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                            {orders.map((order) => {
-                                const firstItem = order.orderItems[0];
-
-                                return (
-
+                            {filteredOrders.map((order) =>
+                                order.orderItems.map((item, index) => (
                                     <div
-                                        key={order._id}
-                                        className="bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 border overflow-hidden flex flex-col"
+                                        key={`${order._id}-${index}`}
+                                        className="bg-white rounded-2xl shadow-sm hover:shadow-md transition border p-4 flex flex-col justify-between"
                                     >
-                                        {/* HEADER */}
-                                        <div className="px-6 py-4 bg-gray-50 flex justify-between items-center">
+                                        {/* Top Header */}
+                                        <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-[11px] text-gray-400">
                                                     {new Date(order.createdAt).toLocaleDateString()}
                                                 </p>
-                                                <p className="text-xs text-gray-500 mt-1">
+                                                <p className="text-[11px] text-gray-500">
                                                     Order ID: {order._id.slice(-6)}
                                                 </p>
                                             </div>
@@ -315,158 +375,109 @@ const MyOrders = () => {
                                             <StatusBadge status={order.orderStatus} />
                                         </div>
 
-                                        {/* PRODUCT SECTION */}
+                                        {/* Product Row */}
                                         <div
-                                            className="p-6 flex gap-4 cursor-pointer hover:bg-gray-50 transition"
-                                            onClick={() => handleProductClick(firstItem)}
+                                            className="flex gap-3 cursor-pointer"
+                                            onClick={() => handleProductClick(item)}
                                         >
                                             <img
-                                                src={firstItem?.image || "/placeholder.png"}
-                                                alt={firstItem?.productName}
-                                                className="w-24 h-24 object-cover rounded-2xl border"
+                                                src={item?.image || "/placeholder.png"}
+                                                alt={item?.productName}
+                                                className="w-16 h-16 object-cover rounded-lg border"
                                             />
 
                                             <div className="flex-1">
-                                                <h3 className="font-semibold text-gray-800 text-sm line-clamp-2 hover:text-indigo-600 transition">
-                                                    {firstItem?.productName || "Product Removed"}
+                                                <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 hover:text-indigo-600 transition">
+                                                    {item?.productName || "Product Removed"}
                                                 </h3>
 
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {order.orderItems.length} item(s)
+                                                <p className="text-[12px] text-gray-500 mt-1">
+                                                    Qty: {item.quantity}
                                                 </p>
 
-                                                <p className="text-indigo-600 font-bold text-lg mt-2">
-                                                    ₹ {order.totalAmount}
+                                                <p className="text-sm font-bold text-indigo-600 mt-1">
+                                                    ₹ {item.price}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        {/* ACTION BAR */}
-                                        <div className="px-6 py-4 border-t flex gap-3">
+                                        {/* Bottom Section */}
+                                        <div className="mt-4 pt-3 border-t flex flex-col gap-2">
 
-                                            <button
-                                                onClick={() =>
-                                                    setExpandedOrder(
-                                                        expandedOrder === order._id ? null : order._id
-                                                    )
-                                                }
-                                                className="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-sm hover:bg-indigo-700 transition"
-                                            >
-                                                {expandedOrder === order._id ? "Hide Details" : "View Details"}
-                                            </button>
+                                            {/* Total */}
+                                            <div className="flex justify-between text-xs text-gray-500">
+                                                <span>Total Items: {order.orderItems.length}</span>
+                                                <span className="font-semibold text-gray-800">
+                                                    ₹ {order.totalAmount}
+                                                </span>
+                                            </div>
 
+                                            {/* Buttons */}
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() =>
+                                                        setExpandedOrder(
+                                                            expandedOrder === `${order._id}-${index}`
+                                                                ? null
+                                                                : `${order._id}-${index}`
+                                                        )
+                                                    }
+                                                    className="flex-1 bg-indigo-600 text-white py-1.5 rounded-lg text-xs hover:bg-indigo-700 transition"
+                                                >
+                                                    Details
+                                                </button>
 
-                                            <button
-                                                onClick={() => openCancelModal(order._id)}
-                                                disabled={order.orderStatus !== "Pending"}
-                                                className={`flex-1 py-2 rounded-xl text-sm transition ${order.orderStatus === "Pending"
-                                                    ? "bg-red-500 text-white hover:bg-red-600"
-                                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                                    }`}
-                                            >
-                                                Cancel
-                                            </button>
+                                                <button
+                                                    onClick={() => openCancelModal(order._id)}
+                                                    disabled={order.orderStatus !== "Pending"}
+                                                    className={`flex-1 py-1.5 rounded-lg text-xs transition ${order.orderStatus === "Pending"
+                                                        ? "bg-red-500 text-white hover:bg-red-600"
+                                                        : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                                        }`}
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        {/* EXPANDABLE SECTION */}
-                                        {expandedOrder === order._id && (
-                                            <div className="px-6 pb-6 border-t bg-gray-50 animate-fadeIn">
+                                        {/* Expandable Details */}
+                                        {expandedOrder === `${order._id}-${index}` && (
+                                            <div className="mt-3 bg-gray-50 rounded-lg p-3 text-xs space-y-2 border">
 
-                                                {/* ORDER INFO */}
-                                                <div className="mb-6">
-                                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                                                        Order Information
-                                                    </h4>
-
-                                                    <div className="space-y-1 text-xs text-gray-600">
-                                                        <p>Payment Method: {order.paymentMethod}</p>
-                                                        <p>Payment Status: {order.paymentStatus}</p>
-                                                        <p>Shipping City: {order.addresses?.city}</p>
-                                                    </div>
+                                                <div>
+                                                    <p>Payment: {order.paymentMethod}</p>
+                                                    <p>Status: {order.paymentStatus}</p>
+                                                    <p>City: {order.addresses?.city}</p>
                                                 </div>
 
-                                                {/* REVIEW SECTION */}
-                                                <div>
-                                                    <h4 className="text-sm font-semibold text-gray-700 mb-3">
-                                                        Your Review
-                                                    </h4>
-
-                                                    {firstItem.userReview ? (
-                                                        <div className="bg-gray-50 p-4 rounded-2xl border text-sm">
-                                                            <div className="flex justify-between items-center mb-2">
-                                                                <div>
-                                                                    <p className="font-semibold text-yellow-600">
-                                                                        ⭐ {firstItem.userReview.rating} / 5
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-400">
-                                                                        {new Date(
-                                                                            firstItem.userReview.createdAt
-                                                                        ).toLocaleDateString()}{" "}
-                                                                        •{" "}
-                                                                        {new Date(
-                                                                            firstItem.userReview.createdAt
-                                                                        ).toLocaleTimeString()}
-                                                                    </p>
-                                                                </div>
-
-                                                                <div className="flex gap-3">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setSelectedProduct(firstItem);
-                                                                            setRating(firstItem.userReview.rating);
-                                                                            setComment(firstItem.userReview.comment);
-                                                                            setShowReviewModal(true);
-                                                                        }}
-                                                                        className="text-xs text-indigo-600 hover:underline"
-                                                                    >
-                                                                        Edit
-                                                                    </button>
-
-                                                                    <button
-                                                                        onClick={() =>
-                                                                            handleDeleteReview(
-                                                                                firstItem.userReview._id,
-                                                                                firstItem.productId
-                                                                            )
-                                                                        }
-                                                                        className="text-xs text-red-500 hover:underline"
-                                                                    >
-                                                                        Delete
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-
-                                                            <p className="text-gray-600">
-                                                                {firstItem.userReview.comment}
+                                                <div className="border-t pt-2">
+                                                    {item.userReview ? (
+                                                        <div>
+                                                            <p className="text-yellow-600 font-semibold">
+                                                                ⭐ {item.userReview.rating} / 5
+                                                            </p>
+                                                            <p className="text-gray-600 mt-1">
+                                                                {item.userReview.comment}
                                                             </p>
                                                         </div>
                                                     ) : (
-                                                        // <button
-                                                        //     onClick={() => openReviewModal(firstItem)}
-                                                        //     disabled={order.orderStatus !== "Delivered"}
-                                                        //     className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600 transition"
-                                                        // >
-                                                        //     Add Your Review
-                                                        // </button>
-
                                                         <button
-                                                            onClick={() => openReviewModal(firstItem)}
+                                                            onClick={() => openReviewModal(item)}
                                                             disabled={order.orderStatus !== "Delivered"}
-                                                            className={`flex-1 py-2 rounded-xl text-sm transition ${order.orderStatus !== "Delivered"
-                                                                ? "bg-gray-300 text-gray-500 cursor-not-allowed p-3"
-                                                                : "bg-yellow-500 text-white hover:bg-yellow-600 p-3"
+                                                            className={`mt-1 w-full py-1.5 rounded-lg text-xs ${order.orderStatus !== "Delivered"
+                                                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                                : "bg-yellow-500 text-white hover:bg-yellow-600"
                                                                 }`}
                                                         >
-                                                            Add Your Review
+                                                            Add Review
                                                         </button>
                                                     )}
                                                 </div>
                                             </div>
                                         )}
                                     </div>
-
-                                );
-                            })}
+                                ))
+                            )}
                         </div>
                     )
                     }

@@ -20,33 +20,32 @@ const ProductDetails = () => {
     (state) => state.cart?.cartItems || []
   );
   const dispatch = useDispatch();
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const res = await fetch(
+          `http://localhost:5000/api/v1/products/${slug}`
+        );
 
-useEffect(() => {
-  const fetchProduct = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/v1/products/${slug}`
-      );
+        const data = await res.json();
 
-      const data = await res.json();
+        if (!data.success || !data.product) {
+          setProduct(null);
+          return;
+        }
 
-      if (!data.success || !data.product) {
+        setProduct(data.product);
+        setActiveImage(data.product.images?.[0]?.url);
+
+      } catch (error) {
         setProduct(null);
-        return;
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setProduct(data.product);
-      setActiveImage(data.product.images?.[0]?.url);
-
-    } catch (error) {
-      setProduct(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchProduct();
-}, [slug]);
+    fetchProduct();
+  }, [slug]);
 
 
   useEffect(() => {
@@ -84,31 +83,55 @@ useEffect(() => {
 
     navigate("/checkout");
   };
-if (loading) return <ProductSkeleton />;
 
-if (!product) {
-  return (
-    <>
-      <Navbar />
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-20">
-        <div className="bg-white shadow-lg rounded-2xl p-8 text-center max-w-md">
-          <h2 className="text-2xl font-bold text-gray-800">
-            This product is no longer available
-          </h2>
-          <p className="text-gray-500 mt-2">
-            The product you are looking for has been removed or deleted.
-          </p>
-          <button
-            onClick={() => navigate("/")}
-            className="mt-6 px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
-          >
-            Continue Shopping
-          </button>
+  const token = useSelector((state) => state.user?.token);
+  useEffect(() => {
+    const saveRecentlyViewed = async () => {
+      try {
+        if (!token || !product?._id) return;
+
+        await axios.post(
+          "http://localhost:5000/api/v1/user/recently-viewed",
+          { productId: product._id },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } catch (error) {
+        console.log("Recently viewed error:", error.response?.data || error.message);
+      }
+    };
+
+    saveRecentlyViewed();
+
+  }, [product?._id, token]);
+  if (loading) return <ProductSkeleton />;
+
+  if (!product) {
+    return (
+      <>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 pt-20">
+          <div className="bg-white shadow-lg rounded-2xl p-8 text-center max-w-md">
+            <h2 className="text-2xl font-bold text-gray-800">
+              This product is no longer available
+            </h2>
+            <p className="text-gray-500 mt-2">
+              The product you are looking for has been removed or deleted.
+            </p>
+            <button
+              onClick={() => navigate("/")}
+              className="mt-6 px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition"
+            >
+              Continue Shopping
+            </button>
+          </div>
         </div>
-      </div>
-    </>
-  );
-}
+      </>
+    );
+  }
 
 
   return (

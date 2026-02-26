@@ -144,12 +144,11 @@ const Checkout = () => {
       }
       // ✅ If adding → select last added one
       else {
-        const backendDefault = data.addresses.find(a => a.isDefault);
-        dispatch(
-          selectAddress(
-            backendDefault || data.addresses[data.addresses.length - 1]
-          )
-        );
+        const backendDefault =
+          user.addresses?.find(a => a.isDefault) ||
+          user.addresses?.[0];
+
+        dispatch(selectAddress(backendDefault));
         toast.success("Address added successfully");
       }
 

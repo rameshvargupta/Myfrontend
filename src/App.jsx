@@ -31,6 +31,7 @@ import AddBanner from "./pages/admin/dashboard/AddBanners";
 import MainLayout from "./components/MainLayout";
 import AdminProductView from "./pages/admin/AdminProductView";
 import Wishlist from "./pages/Wishlist";
+import ProductCategoryDetails from "./pages/ProductCategoryDetails";
 
 /* =========================
    ROUTER
@@ -69,9 +70,10 @@ const router = createBrowserRouter([
       { path: "/product/:slug", element: <ProductDetails /> },
       { path: "/checkout", element: <Checkout /> },
       { path: "/cartpage", element: <CartPage /> },
-      { path: "/cartpage", element: <CartPage /> },
       { path: "/wishlist", element: <Wishlist /> },
+      { path: "/myorders", element: <MyOrders /> },
       { path: "/ordersuccess/:orderId", element: <OrderSuccess /> },
+      { path: "/category/:id", element: <ProductCategoryDetails /> },
 
       /* ADMIN */
       { path: "/admin/products", element: <ProductList /> },

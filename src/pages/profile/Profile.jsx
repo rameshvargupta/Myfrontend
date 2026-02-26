@@ -270,6 +270,7 @@ const Profile = () => {
       getOrders();
     }
   }, [user?._id]);
+
   useEffect(() => {
     const fetchAddresses = async () => {
       try {
@@ -312,7 +313,7 @@ const Profile = () => {
     ) {
       fetchAddresses();
     }
-  }, [activeTab, user?._id]);
+  }, [activeTab, user?._id, user.addresses]);
 
   const handleMakeDefault = async (id) => {
     try {

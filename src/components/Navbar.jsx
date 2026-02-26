@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, Menu, X, User, ChevronDown, Heart } from "lucide-react";
+import { ShoppingCart, Menu, X, User, ChevronDown, Heart, MapPin } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "@/redux/userSlice";
 import { toast } from "sonner";
@@ -80,6 +80,7 @@ const Navbar = () => {
 
     setKeyword("");
   };
+
   useEffect(() => {
     const handleClickOutside = () => {
       setShowDropdown(false);
@@ -89,14 +90,13 @@ const Navbar = () => {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-
-
   const wishlistItems = useSelector(state => state.wishlist.items);
   const wishlistCount = wishlistItems.length;
+
   return (
     <>
       <header className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b shadow-sm z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 h-12 flex items-center justify-between">
 
           {/* ================= LEFT ================= */}
           <div className="flex items-center gap-8">
@@ -104,6 +104,7 @@ const Navbar = () => {
             <Link to="/" className="text-2xl font-bold text-pink-600 tracking-wide">
               Ecart
             </Link>
+
 
             {/* DESKTOP NAV */}
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">
@@ -205,7 +206,7 @@ const Navbar = () => {
           </div>
 
           {/* ================= RIGHT ================= */}
-          <div className="flex items-center gap-5">
+          <div className="md:flex flex items-center gap-5">
             {/* WISHLIST */}
             <Link to="/wishlist" className="relative">
               <Heart size={24} />
@@ -227,46 +228,53 @@ const Navbar = () => {
             </Link>
 
             {/* USER */}
-            {isAuth ? (
-              <div className="relative">
-                <button
-                  onClick={() => setProfileDropdown(!profileDropdown)}
-                  className="flex items-center gap-2"
-                >
-                  <Avatar user={user} />
-                  <span className="hidden md:block text-sm font-medium">
-                    {user?.firstName}
-                  </span>
-                  <ChevronDown size={16} />
-                </button>
+            <span className="hidden md:flex">
+              {isAuth ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setProfileDropdown(!profileDropdown)}
+                    className="flex items-center gap-2"
+                  >
+                    <Avatar user={user} />
+                    <span className="hidden md:block text-sm font-medium">
+                      {user?.firstName}
+                    </span>
+                    <ChevronDown size={16} />
+                  </button>
 
-                {profileDropdown && (
-                  <div className="absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg border overflow-hidden">
-                    <Link to="/profile" className="block px-4 py-3 hover:bg-gray-50">
-                      My Profile
-                    </Link>
-                    <Link to="/myorders" className="block px-4 py-3 hover:bg-gray-50">
-                      My Orders
-                    </Link>
-                    <button
-                      onClick={logoutHandler}
-                      className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link to="/login">
-                <button className="bg-pink-600 text-white px-4 py-1.5 rounded-full text-sm">
-                  Login
-                </button>
-              </Link>
-            )}
+                  {profileDropdown && (
+                    <div className="absolute right-0 mt-3 w-52 bg-white rounded-xl shadow-lg border overflow-hidden">
+                      <Link to="/profile" className="block px-4 py-3 hover:bg-gray-50">
+                        My Profile
+                      </Link>
+                      <Link to="/myorders" className="block px-4 py-3 hover:bg-gray-50">
+                        My Orders
+                      </Link>
+                      <button
+                        onClick={logoutHandler}
+                        className="w-full text-left px-4 py-3 text-red-500 hover:bg-red-50"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link to="/login">
+                  <button className="bg-pink-600 text-white px-4 py-1.5 rounded-full text-sm">
+                    Login
+                  </button>
+                </Link>
+              )}
+            </span>
+
 
           </div>
+
+
         </div>
+
+
 
       </header>
 
