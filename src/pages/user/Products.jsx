@@ -80,7 +80,7 @@ const Products = () => {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     if (isAuth) {
       dispatch(loadWishlist());

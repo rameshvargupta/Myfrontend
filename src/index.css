@@ -117,3 +117,15 @@
   @apply bg-card text-card-foreground rounded-2xl p-6 w-full max-w-md shadow-xl;
   animation: scaleIn 0.2s ease-out;
 }
+
+
+/* globals.css or index.css */
+
+/* Hide scrollbar completely across all browsers */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

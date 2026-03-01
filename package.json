@@ -15,6 +15,7 @@
     "@radix-ui/react-tabs": "^1.1.13",
     "@reduxjs/toolkit": "^2.11.2",
     "axios": "^1.13.4",
+    "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.0",

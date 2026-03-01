@@ -24,6 +24,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [showAddressModal, setShowAddressModal] = useState(false);
 
   const { user } = useSelector((state) => state.user);
@@ -32,20 +33,34 @@ const Home = () => {
 
   useEffect(() => {
     const loadAddresses = async () => {
-      const data = await fetchAddresses();
-      dispatch(setAddresses(data.addresses));
+      try {
+        const data = await fetchAddresses();
 
-      const defaultAddr =
-        data.addresses.find((addr) => addr.isDefault) ||
-        data.addresses[0];
+        if (!data?.addresses) {
+          dispatch(setAddresses([]));
+          return;
+        }
 
-      if (defaultAddr) {
-        dispatch(selectAddress(defaultAddr));
+        dispatch(setAddresses(data.addresses));
+
+        const defaultAddr =
+          data.addresses.find((addr) => addr.isDefault) ||
+          data.addresses[0];
+
+        if (defaultAddr) {
+          dispatch(selectAddress(defaultAddr));
+        }
+
+      } catch (error) {
+        console.error("Address fetch error:", error);
+        dispatch(setAddresses([]));
       }
     };
 
-    loadAddresses();
-  }, [dispatch]);
+    if (user) {
+      loadAddresses();
+    }
+  }, [user, dispatch]);
 
   /* ================= ADDRESS ================= */
   const { addresses, selectedAddress } = useSelector(
@@ -79,6 +94,13 @@ const Home = () => {
     }
   }, [user]);
 
+
+  const searchHandler = (e) => {
+    e.preventDefault();
+    if (!keyword.trim()) return;
+
+    setSearchKeyword(keyword);
+  };
 
   const handleClosePopup = () => {
     setShowLoginPopup(false);
@@ -133,6 +155,20 @@ const Home = () => {
           token: token,
         })
       );
+      // After dispatch(setUser(...))
+
+      const addressData = await fetchAddresses();
+
+      if (addressData?.addresses) {
+        dispatch(setAddresses(addressData.addresses));
+
+        const defaultAddr =
+          addressData.addresses.find(a => a.isDefault) ||
+          addressData.addresses[0];
+
+        dispatch(selectAddress(defaultAddr));
+      }
+
       const name =
         `${profileData.user?.firstName || ""} ${profileData.user?.lastName || ""
           }`.trim();
@@ -146,18 +182,6 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const searchHandler = (e) => {
-    e.preventDefault();
-
-    if (keyword.trim()) {
-      navigate(`/products?keyword=${keyword}`);
-    } else {
-      navigate("/products");
-    }
-
-    setKeyword("");
   };
 
   const handleSelectAddress = async (address) => {
@@ -465,13 +489,15 @@ const Home = () => {
           />
         </div>
 
-        <RecentlyViewed />
+
 
         <Section title="Trending Products">
           {trendingProducts.map((p) => (
             <ProductCard key={p._id} product={p} />
           ))}
         </Section>
+
+        <RecentlyViewed />
 
         <div className="px-4 md:px-8">
           <HeroSlider

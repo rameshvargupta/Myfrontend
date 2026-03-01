@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import FooterNavbar from "@/components/user/FooterNavbar";
 
 const MyOrders = () => {
     const [orders, setOrders] = useState([]);
@@ -290,7 +291,7 @@ const MyOrders = () => {
         <>
             <Navbar />
 
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100  px-4 mb-20">
                 <div className="max-w-7xl mx-auto">
 
                     {/* HEADER */}
@@ -562,7 +563,7 @@ const MyOrders = () => {
                     </div>
                 </div>
             )}
-
+            <FooterNavbar />
         </>
     );
 };
