@@ -14,6 +14,7 @@ import { fetchAddresses, makeDefaultAddress } from "@/api/addressApi";
 import { setAddresses, selectAddress } from "@/redux/addressSlice";
 import ProductCategory from "./ProductCategory";
 import RecentlyViewed from "./user/RecentlyViewed";
+import Footer from "@/components/Footer";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -240,7 +241,6 @@ const Home = () => {
     )
     .slice(0, 8);
 
-  console.log(defaultAddress);
 
   return (
     <>
@@ -252,15 +252,16 @@ const Home = () => {
             <div className="bg-white w-[95%] max-w-4xl rounded-2xl shadow-2xl overflow-hidden grid md:grid-cols-2 relative animate-fadeIn">
 
               {/* Close */}
+
               <button
                 onClick={handleClosePopup}
-                className="absolute top-4 right-4 text-gray-500 hover:text-black"
+                className="absolute top-4 right-4 text-white md:text-gray-500 md:hover:text-black"
               >
                 <X size={22} />
               </button>
 
               {/* Left Side Image */}
-              <div className="hidden md:block bg-indigo-600 text-white p-10 flex flex-col justify-center">
+              <div className=" bg-indigo-600 text-white p-10 flex flex-col justify-center">
                 <h2 className="text-3xl font-bold mb-4">
                   Welcome to Ecart
                 </h2>
@@ -331,6 +332,7 @@ const Home = () => {
                   </span>
                 </p>
               </div>
+
             </div>
           </div>
         )}
@@ -527,7 +529,15 @@ const Home = () => {
 
 
       </div>
-      <FooterNavbar />
+      
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+
+      {/* Mobile Bottom Navbar */}
+      <div className="block md:hidden">
+        <FooterNavbar />
+      </div>
     </>
   );
 };

@@ -1,25 +1,45 @@
-const ProductCard = ({ product, addToCart }) => {
+import { Link } from "react-router-dom";
+import { Loader2, Trash2 } from "lucide-react";
+
+const ProductCard = ({ product, showRemove = false, onRemove, removing }) => {
+
   return (
-    <div className="border p-4 relative">
-      {!product.isActive && (
-        <span className="absolute top-2 left-2 bg-black text-white text-xs px-2">
-          Hidden
-        </span>
+    <div className="relative bg-white shadow-md rounded-xl p-3">
+
+      {/* REMOVE BUTTON */}
+      {showRemove && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();   // IMPORTANT
+            e.preventDefault();    // IMPORTANT
+            onRemove();
+          }}
+          disabled={removing}
+          className="absolute top-2 right-2 z-20 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"
+        >
+          {removing ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Trash2 size={16} />
+          )}
+        </button>
       )}
 
-      <h2>{product.name}</h2>
+      <Link to={`/product/${product._id}`}>
+        <img
+          src={product.images?.[0]}
+          alt={product.name}
+          className="w-full h-40 object-cover rounded-lg"
+        />
 
-      <button
-        disabled={!product.isActive}
-        onClick={() => addToCart(product._id)}
-        className={`mt-2 px-4 py-2 rounded ${
-          product.isActive
-            ? "bg-pink-500 text-white"
-            : "bg-gray-300 cursor-not-allowed"
-        }`}
-      >
-        {product.isActive ? "Add to Cart" : "Unavailable"}
-      </button>
+        <h2 className="mt-3 font-semibold text-sm line-clamp-2">
+          {product.name}
+        </h2>
+
+        <p className="text-pink-600 font-bold mt-1">
+          ₹{product.finalPrice}
+        </p>
+      </Link>
     </div>
   );
 };

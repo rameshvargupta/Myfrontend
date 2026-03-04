@@ -4,6 +4,7 @@ import { updateQuantity, removeFromCart } from "@/redux/cartSlice";
 import { Link, useNavigate } from "react-router-dom";
 import { Trash2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import FooterNavbar from "@/components/user/FooterNavbar";
 
 const CartPage = () => {
   const cartItems = useSelector((state) => state.cart.cartItems);
@@ -23,7 +24,7 @@ const CartPage = () => {
   return (
     <>
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 ">
+      <div className="max-w-7xl mx-auto px-4 mb-15">
         {/* HEADER */}
         <h1 className="text-3xl font-bold mb-8 text-gray-900">
           Shopping Cart
@@ -181,6 +182,7 @@ const CartPage = () => {
           </div>
         )}
       </div>
+      <FooterNavbar/>
     </>
   );
 };

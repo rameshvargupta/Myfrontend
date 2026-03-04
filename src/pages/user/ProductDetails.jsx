@@ -139,7 +139,7 @@ const ProductDetails = () => {
       <Navbar />
 
       {/* ===== PAGE WRAPPER (NAVBAR FIX) ===== */}
-      <div className="bg-gray-50 min-h-screen pt-20">
+      <div className="bg-gray-50 min-h-screen">
 
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">

@@ -157,13 +157,7 @@ const Navbar = () => {
 
           {/* LEFT */}
           <div className="flex items-center gap-8">
-            <button
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(true)}
-            >
-              <Menu size={24} />
-            </button>
-
+       
             <Link
               to="/"
               className="text-2xl font-bold text-pink-600 tracking-wide"
@@ -319,60 +313,6 @@ const Navbar = () => {
           </div>
         </div>
       </header>
-
-      {/* MOBILE MENU */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-black/40 z-50">
-          <div className="fixed left-0 top-0 h-full w-72 bg-white shadow-xl p-6 space-y-5">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Menu</h2>
-              <X size={22} onClick={() => setMobileMenuOpen(false)} />
-            </div>
-
-            <Link to="/" onClick={() => setMobileMenuOpen(false)}>
-              Home
-            </Link>
-            <Link to="/products" onClick={() => setMobileMenuOpen(false)}>
-              Products
-            </Link>
-
-            {isAdmin && (
-              <>
-                <button
-                  onClick={() => setMobileAdminOpen(!mobileAdminOpen)}
-                  className="flex justify-between w-full"
-                >
-                  Admin <ChevronDown size={16} />
-                </button>
-
-                {mobileAdminOpen && (
-                  <div className="pl-4 space-y-3 text-sm">
-                    <Link to="/adminDashboard">Dashboard</Link>
-                    <Link to="/admin/products">All Products</Link>
-                    <Link to="/admin/add-product">Add Product</Link>
-                    <Link to="/admin/add-banner">Add Banner</Link>
-                  </div>
-                )}
-              </>
-            )}
-
-            {isAuth ? (
-              <button
-                onClick={logoutHandler}
-                className="w-full bg-red-500 text-white py-2 rounded-lg mt-4"
-              >
-                Logout
-              </button>
-            ) : (
-              <Link to="/login">
-                <button className="w-full bg-pink-600 text-white py-2 rounded-lg mt-4">
-                  Login
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* spacing for fixed navbar */}
       <div className="h-16"></div>

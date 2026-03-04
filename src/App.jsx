@@ -32,6 +32,9 @@ import MainLayout from "./components/MainLayout";
 import AdminProductView from "./pages/admin/AdminProductView";
 import Wishlist from "./pages/Wishlist";
 import ProductCategoryDetails from "./pages/ProductCategoryDetails";
+import Menubar from "./components/user/Menubar";
+import UsersPanel from "./pages/admin/dashboard/components/UsersPanel";
+import OrdersPanel from "./pages/admin/dashboard/components/OrdersPanel";
 
 /* =========================
    ROUTER
@@ -46,7 +49,7 @@ const router = createBrowserRouter([
           <>
             <Navbar />
             <Home />
-            <Footer />
+            
           </>
         ),
       },
@@ -74,6 +77,8 @@ const router = createBrowserRouter([
       { path: "/myorders", element: <MyOrders /> },
       { path: "/ordersuccess/:orderId", element: <OrderSuccess /> },
       { path: "/category/:id", element: <ProductCategoryDetails /> },
+      { path: "/menubar", element: <Menubar /> },
+      { path: "/productCategoryDetails", element: <ProductCategoryDetails /> },
 
       /* ADMIN */
       { path: "/admin/products", element: <ProductList /> },
@@ -82,6 +87,8 @@ const router = createBrowserRouter([
       { path: "/admin/users/:id", element: <AdminUserDetails /> },
       { path: "/admin/add-banner", element: <AddBanner /> },
       { path: "/adminDashboard", element: <AdminDashboard /> },
+      { path: "/admin/OrderPannel", element: <OrdersPanel /> },
+      { path: "/admin/UserPannel", element: <UsersPanel /> },
       { path: "/admin/product/view/:slug/", element: <AdminProductView /> },
     ],
   },

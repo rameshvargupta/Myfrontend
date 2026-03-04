@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { loadWishlist, removeWishlistItem } from "@/redux/wishlistSlice";
 import ProductCard from "@/components/ProductCard";
 import Navbar from "@/components/Navbar";
 import { Heart, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 
 const Wishlist = () => {
     const dispatch = useDispatch();
@@ -12,10 +13,32 @@ const Wishlist = () => {
         (state) => state.wishlist
     );
 
+    const [removingId, setRemovingId] = useState(null);
+
     useEffect(() => {
         dispatch(loadWishlist());
     }, [dispatch]);
 
+    // 🔥 Remove Handler
+    const handleRemove = async (id) => {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to remove this item from wishlist?"
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            setRemovingId(id);
+            await dispatch(removeWishlistItem(id)).unwrap();
+            toast.success("Removed from wishlist ❤️");
+        } catch (err) {
+            toast.error(err || "Failed to remove item");
+        } finally {
+            setRemovingId(null);
+        }
+    };
+
+    // Empty State
     if (!loading && items.length === 0) {
         return (
             <>
@@ -38,7 +61,6 @@ const Wishlist = () => {
             </>
         );
     }
-
 
     return (
         <div>
@@ -67,17 +89,9 @@ const Wishlist = () => {
                         <ProductCard
                             key={item._id}
                             product={item}
-                            showRemove={true}
-                            onRemove={(id) => dispatch(removeWishlistItem(id))}
-                            onAfterAddToCart={(id) => {
-                                const confirmMove = window.confirm(
-                                    "Move this item to cart and remove from wishlist?"
-                                );
-
-                                if (confirmMove) {
-                                    dispatch(removeWishlistItem(id));
-                                }
-                            }}
+                            showRemove
+                            onRemove={() => handleRemove(item._id)}
+                            removing={removingId === item._id}
                         />
                     ))}
                 </div>
