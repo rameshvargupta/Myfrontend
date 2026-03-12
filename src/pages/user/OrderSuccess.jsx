@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useEffect, useState } from "react";
+import FooterNavbar from "@/components/user/FooterNavbar";
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -47,7 +48,7 @@ const OrderSuccess = () => {
       <Navbar />
 
       {/* PAGE WRAPPER */}
-      <div className="bg-gradient-to-br from-green-50 via-white to-pink-50">
+      <div className="bg-gradient-to-br from-green-50 via-white to-pink-50 mb-20">
         <div className="max-w-5xl mx-auto px-4">
           {/* ================= SUCCESS CARD ================= */}
           <div className="bg-white rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.12)]
@@ -196,6 +197,8 @@ const OrderSuccess = () => {
           </div>
         </div>
       </div>
+
+      <FooterNavbar />
     </>
   );
 };

@@ -344,6 +344,7 @@ const Products = () => {
                           price: p.finalPrice,
                           image: p.images?.[0]?.url,
                           quantity: 1,
+                          slug: p.slug,
                         })
                       );
 

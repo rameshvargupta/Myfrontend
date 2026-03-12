@@ -35,6 +35,7 @@ import ProductCategoryDetails from "./pages/ProductCategoryDetails";
 import Menubar from "./components/user/Menubar";
 import UsersPanel from "./pages/admin/dashboard/components/UsersPanel";
 import OrdersPanel from "./pages/admin/dashboard/components/OrdersPanel";
+import CouponPage from "./pages/admin/dashboard/couponePage/CouponPage";
 
 /* =========================
    ROUTER
@@ -90,6 +91,7 @@ const router = createBrowserRouter([
       { path: "/admin/OrderPannel", element: <OrdersPanel /> },
       { path: "/admin/UserPannel", element: <UsersPanel /> },
       { path: "/admin/product/view/:slug/", element: <AdminProductView /> },
+      { path: "/admin/couponPage", element: <CouponPage /> },
     ],
   },
 ]);

@@ -3,12 +3,9 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
     Home,
-    ShoppingCart,
-    Heart,
     User,
-    Package,
     LayoutDashboard,
-    Users,
+    Mail, Phone, Pencil,
     LogOut,
     LogIn,
     ChevronDown,
@@ -49,72 +46,72 @@ const Menubar = () => {
                     <X size={22} onClick={() => navigate(-1)} className="cursor-pointer" />
                 </div>
 
-                {/* 🔥 Premium Profile Card */}
+                {/* 🔥 Ultra Premium Profile Card */}
                 {user ? (
                     <div className="mx-4 mt-6 relative group">
 
-                        {/* Gradient Glow Background */}
+                        {/* Gradient Glow */}
                         <div className="absolute -inset-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-md opacity-70 group-hover:opacity-100 transition duration-500"></div>
 
-                        {/* Main Card */}
-                        <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl p-6 flex items-center gap-5 shadow-[0_15px_40px_rgba(0,0,0,0.12)] border border-white/40 group-hover:-translate-y-1 transition-all duration-300">
+                        {/* Card */}
+                        <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/40 transition-all duration-300 group-hover:-translate-y-1">
 
-                            {/* Avatar Section */}
-                            <div className="relative">
 
-                                {/* Animated Ring */}
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 blur-sm opacity-70 animate-pulse"></div>
 
-                                {user?.avatar ? (
-                                    <img
-                                        src={user.avatar}
-                                        alt="avatar"
-                                        className="relative w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
-                                    />
-                                ) : (
-                                    <div className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-                                        {user?.firstName?.charAt(0)}
+                            <div className="flex items-center gap-5">
+
+                                {/* Avatar */}
+                                <div className="relative">
+
+                                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 blur-sm opacity-70 animate-pulse"></div>
+
+                                    {user?.profilePic ? (
+                                        <img
+                                            src={user.profilePic}
+                                            alt="profilePic"
+                                            className="relative w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                                        />
+                                    ) : (
+                                        <div className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                            {user?.firstName?.charAt(0)}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* User Info */}
+                                <div className="flex-1 space-y-2">
+
+                                    {/* Name */}
+                                    <h3 className="text-xl font-bold text-gray-900 tracking-wide">
+                                        {user.firstName} {user.lastName}
+                                    </h3>
+
+                                    {/* Email */}
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Mail size={14} />
+                                        <span className="truncate">{user.email}</span>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* User Info */}
-                            <div className="flex-1 space-y-1">
-
-                                <h3 className="text-xl font-bold text-gray-900 tracking-wide">
-                                    {user.firstName} {user.lastName}
-                                </h3>
-
-                                <p className="text-sm text-gray-500 truncate">
-                                    {user.email}
-                                </p>
-
-                                {/* Role Badge */}
-                                <div className="mt-3 flex items-center gap-3">
-
-                                    <span
-                                        className={`px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide shadow-sm transition
-            ${user.role === "admin"
-                                                ? "bg-gradient-to-r from-purple-500 to-indigo-600 text-white"
-                                                : "bg-gradient-to-r from-indigo-400 to-blue-500 text-white"
-                                            }`}
-                                    >
-                                        {user.role === "admin" ? "👑 Admin" : "👤 User"}
-                                    </span>
-
-                                    {/* Status Dot */}
-                                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                                        <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></span>
-                                        Active
-                                    </span>
+                                    {/* Phone */}
+                                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                                        <Phone size={14} />
+                                        <span>{user.phoneNo || "Not Added"}</span>
+                                    </div>
 
                                 </div>
-                            </div>
 
+                                {/* 🔥 Left Floating Edit Button */}
+                                <button
+                                    onClick={() => navigate("/profile")}
+                                    className="absolute top-5 left-5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition"
+                                >
+                                    <Pencil size={16} />
+                                </button>
+
+                            </div>
                         </div>
                     </div>
                 ) : (
-                    /* 🔐 Not Logged In Card */
                     <div className="mx-4 mt-6 bg-white p-5 rounded-2xl shadow text-center">
                         <p className="text-gray-600 mb-4">You are not logged in</p>
                         <button
@@ -165,6 +162,7 @@ const Menubar = () => {
                         >
                             <SubItem text="Dashboard" onClick={() => navigate("/adminDashboard")} />
                             <SubItem text="Manage Orders" onClick={() => navigate("/admin/OrderPannel")} />
+                            <SubItem text="Coupon Sections" onClick={() => navigate("/admin/couponPage")} />
                             <SubItem text="Manage Products" onClick={() => navigate("/admin/products")} />
                             <SubItem text="Manage Users" onClick={() => navigate("/admin/UserPannel")} />
                             <SubItem text="Manage Banners" onClick={() => navigate("/admin/add-banner")} />
@@ -233,24 +231,5 @@ const SubItem = ({ text, onClick }) => (
 );
 
 
-/* Nested Dropdown */
-const NestedDropdown = ({ title, children, open, onClick }) => (
-    <div>
-        <div
-            onClick={onClick}
-            className="flex items-center justify-between text-sm text-gray-600 cursor-pointer hover:text-indigo-600"
-        >
-            <div className="flex items-center gap-2">
-                <ChevronRight size={14} />
-                {title}
-            </div>
-            <ChevronDown
-                size={14}
-                className={`transition-transform ${open ? "rotate-180" : ""}`}
-            />
-        </div>
-        {open && <div className="ml-5 mt-2 space-y-2">{children}</div>}
-    </div>
-);
 
 export default Menubar;
