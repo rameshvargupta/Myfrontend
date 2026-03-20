@@ -1,36 +1,38 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { toast } from "sonner";
-import FooterNavbar from "../user/FooterNavbar";
-import { MoreVertical } from "lucide-react";
+import {
+  Star,
+  CheckCircle2,
+  ThumbsUp,
+  ChevronDown,
+  ChevronUp,
+  MessageSquare
+} from "lucide-react";
 
 const ProductReviews = ({ productId }) => {
+
   const [reviews, setReviews] = useState([]);
+  const [expanded, setExpanded] = useState({});
+  const [filter, setFilter] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  const [editingReviewId, setEditingReviewId] = useState(null);
-  const [editRating, setEditRating] = useState(5);
-  const [editComment, setEditComment] = useState("");
-  const [openMenuId, setOpenMenuId] = useState(null);
-
-  const [showAll, setShowAll] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [expandedComments, setExpandedComments] = useState({});
-
-  const reviewsPerPage = 10;
-
-  const user = JSON.parse(localStorage.getItem("user"));
   const token = localStorage.getItem("token");
-  const isAdmin = user?.role === "admin";
 
   /* ================= FETCH ================= */
   const fetchReviews = async () => {
     try {
       setLoading(true);
+
       const res = await fetch(
-        `http://localhost:5000/api/v1/products/${productId}/reviews`
+        `http://localhost:5000/api/v1/products/${productId}/reviews`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
       );
+
       const data = await res.json();
       if (data.success) setReviews(data.reviews);
+
     } catch {
       toast.error("Failed to load reviews");
     } finally {
@@ -42,292 +44,233 @@ const ProductReviews = ({ productId }) => {
     if (productId) fetchReviews();
   }, [productId]);
 
-  /* ================= PAGINATION ================= */
-  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  /* ================= STATS ================= */
+  const stats = useMemo(() => {
+    const total = reviews.length;
+    const sum = reviews.reduce((a, r) => a + r.rating, 0);
 
-  const paginatedReviews = showAll
-    ? reviews.slice(
-      (currentPage - 1) * reviewsPerPage,
-      currentPage * reviewsPerPage
-    )
-    : reviews.slice(0, 5);
-
-  /* ================= EDIT ================= */
-  const handleEdit = (review) => {
-    setEditingReviewId(review._id);
-    setEditRating(review.rating);
-    setEditComment(review.comment);
-  };
-
-  const updateReview = async (reviewId) => {
-    if (!editComment.trim()) return toast.error("Comment required");
-
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/v1/reviews/${reviewId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            rating: editRating,
-            comment: editComment,
-          }),
-        }
-      );
-
-      const data = await res.json();
-      if (!data.success) return toast.error(data.message);
-
-      toast.success("Review updated");
-      setEditingReviewId(null);
-      fetchReviews();
-    } catch {
-      toast.error("Update failed");
-    }
-  };
-
-  /* ================= DELETE ================= */
-  const deleteReview = async (reviewId) => {
-    if (!confirm("Delete this review?")) return;
-
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/v1/reviews/${reviewId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await res.json();
-      if (!data.success) return toast.error(data.message);
-
-      toast.success("Review deleted");
-      fetchReviews();
-    } catch {
-      toast.error("Delete failed");
-    }
-  };
-
-  const toggleExpand = (id) => {
-    setExpandedComments((prev) => ({
-      ...prev,
-      [id]: !prev[id],
+    const distribution = [5, 4, 3, 2, 1].map(star => ({
+      star,
+      count: reviews.filter(r => r.rating === star).length
     }));
-  };
 
-  const formatDate = (date) =>
-    new Date(date).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
+    return {
+      total,
+      avg: total ? (sum / total).toFixed(1) : 0,
+      distribution
+    };
+  }, [reviews]);
 
+  /* ================= FILTER ================= */
+  const filtered = useMemo(() => {
+    if (filter === 0) return reviews;
+    return reviews.filter((r) => r.rating === filter);
+  }, [reviews, filter]);
+
+  /* ================= HELPERS ================= */
+  const toggle = (id) =>
+    setExpanded((p) => ({ ...p, [id]: !p[id] }));
+
+  const renderStars = (rating, size = 16) => (
+    <div className="flex">
+      {[1, 2, 3, 4, 5].map(i => (
+        <Star
+          key={i}
+          size={size}
+          className={
+            i <= rating
+              ? "text-yellow-400 fill-yellow-400"
+              : "text-gray-300"
+          }
+        />
+      ))}
+    </div>
+  );
+
+  /* ================= UI ================= */
   return (
-    <>
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <h2 className="text-2xl font-bold mb-6">
-          Customer Reviews ({reviews.length})
-        </h2>
+    <div className="bg-[#fafafa] py-5">
 
-        {loading && <p>Loading...</p>}
-        {!loading && reviews.length === 0 && (
-          <p className="text-gray-500">No reviews yet</p>
-        )}
+      <div className="max-w-7xl mx-auto px-0">
 
-        <div className="space-y-6">
-          {paginatedReviews.map((r) => {
-            const isOwner = user?._id === r.user?._id;
-            const initials =
-              r.user?.firstName?.[0]?.toUpperCase() +
-              r.user?.lastName?.[0]?.toUpperCase();
+        <div className="grid lg:grid-cols-12 gap-6">
 
-            const words = r.comment.split(" ");
-            const isLong = words.length > 25;
+          {/* ================= LEFT PANEL ================= */}
+          <div className="lg:col-span-4">
 
-            const displayText =
-              !expandedComments[r._id] && isLong
-                ? words.slice(0, 25).join(" ") + "..."
-                : r.comment;
+            <div className="sticky top-24 space-y-6">
 
-            return (
-              <div
-                key={r._id}
-                className="bg-white border rounded-lg p-5 shadow-sm"
-              >
-                {/* HEADER */}
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-3 items-center">
-                    <div className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center font-bold">
-                      {initials}
-                    </div>
-                    <div>
-                      <p className="font-semibold">
-                        {r.user.firstName} {r.user.lastName}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {formatDate(r.createdAt)}
-                      </p>
-                    </div>
+              <div className="bg-white rounded-3xl p-8 shadow-lg border">
+
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <MessageSquare size={20} />
+                  Customer Reviews
+                </h2>
+
+                {/* AVG */}
+                <div className="text-center mb-6">
+                  <h3 className="text-5xl font-extrabold">
+                    {stats.avg}
+                  </h3>
+
+                  <div className="flex justify-center mt-2">
+                    {renderStars(Math.round(stats.avg), 20)}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    {/* Stars */}
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((i) => (
-                        <span
-                          key={i}
-                          className={
-                            i <= r.rating
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-
-                    {/* 3 Dot Menu */}
-                    {(isOwner || isAdmin) && (
-                      <div className="relative">
-                        <button
-                          onClick={() =>
-                            setOpenMenuId(
-                              openMenuId === r._id ? null : r._id
-                            )
-                          }
-                          className="p-1 rounded-full hover:bg-gray-100"
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-
-                        {openMenuId === r._id && (
-                          <div className="absolute right-0 mt-2 w-32 bg-white border rounded-lg shadow-lg z-10">
-                            {isOwner && (
-                              <button
-                                onClick={() => {
-                                  handleEdit(r);
-                                  setOpenMenuId(null);
-                                }}
-                                className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
-                              >
-                                Edit
-                              </button>
-                            )}
-
-                            <button
-                              onClick={() => {
-                                deleteReview(r._id);
-                                setOpenMenuId(null);
-                              }}
-                              className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-500"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-gray-500 mt-2 text-sm">
+                    {stats.total} reviews
+                  </p>
                 </div>
 
-                {/* BODY */}
-                {editingReviewId === r._id ? (
-                  <div className="mt-4 space-y-3">
-                    <select
-                      value={editRating}
-                      onChange={(e) =>
-                        setEditRating(Number(e.target.value))
-                      }
-                      className="border rounded px-2 py-1 w-full"
-                    >
-                      {[5, 4, 3, 2, 1].map((n) => (
-                        <option key={n} value={n}>
-                          {n} Stars
-                        </option>
-                      ))}
-                    </select>
+                {/* DISTRIBUTION */}
+                <div className="space-y-2 mb-6">
+                  {stats.distribution.map(d => (
+                    <div key={d.star} className="flex items-center gap-2 text-sm">
 
-                    <textarea
-                      value={editComment}
-                      onChange={(e) => setEditComment(e.target.value)}
-                      className="border rounded px-3 py-2 w-full"
-                    />
+                      <span className="w-6">{d.star}★</span>
 
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => updateReview(r._id)}
-                        className="bg-green-500 text-white px-3 py-1 rounded"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditingReviewId(null)}
-                        className="border px-3 py-1 rounded"
-                      >
-                        Cancel
-                      </button>
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-yellow-400"
+                          style={{
+                            width: `${stats.total ? (d.count / stats.total) * 100 : 0}%`
+                          }}
+                        />
+                      </div>
+
+                      <span className="w-6 text-right text-gray-500">
+                        {d.count}
+                      </span>
+
                     </div>
-                  </div>
-                ) : (
-                  <p className="mt-4 text-gray-600">
-                    {displayText}
-                    {isLong && (
-                      <button
-                        onClick={() => toggleExpand(r._id)}
-                        className="ml-2 text-blue-600 text-sm"
-                      >
-                        {expandedComments[r._id]
-                          ? "Show Less"
-                          : "Read More"}
-                      </button>
-                    )}
-                  </p>
-                )}
+                  ))}
+                </div>
+
+                {/* FILTER */}
+                <div className="flex flex-wrap gap-2">
+                  {[5, 4, 3, 2, 1, 0].map(s => (
+                    <button
+                      key={s}
+                      onClick={() => setFilter(s)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition ${filter === s
+                        ? "bg-black text-white"
+                        : "bg-gray-100 hover:bg-gray-200"
+                        }`}
+                    >
+                      {s === 0 ? "All" : `${s}★`}
+                    </button>
+                  ))}
+                </div>
+
               </div>
-            );
-          })}
+
+            </div>
+          </div>
+
+          {/* ================= RIGHT PANEL ================= */}
+          <div className="lg:col-span-8 space-y-6">
+
+            {loading ? (
+              <div className="text-center py-20">Loading...</div>
+            ) : filtered.length === 0 ? (
+              <div className="text-center py-20 text-gray-500">
+                No reviews found
+              </div>
+            ) : (
+
+              filtered.map((r) => {
+
+                const words = r.comment.split(" ");
+                const isLong = words.length > 35;
+                const isExpanded = expanded[r._id];
+
+                return (
+                  <div
+                    key={r._id}
+                    className="bg-white rounded-3xl p-6 shadow-sm border hover:shadow-xl transition duration-300"
+                  >
+
+                    {/* HEADER */}
+                    <div className="flex justify-between items-start mb-4">
+
+                      <div className="flex items-center gap-4">
+
+                        {/* AVATAR */}
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-lg">
+                          {r.user?.firstName?.[0]}
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold">
+                            {r.user?.firstName} {r.user?.lastName}
+                          </h4>
+
+                          <div className="flex items-center gap-2 mt-1">
+                            {renderStars(r.rating)}
+
+                            {r.status === "approved" && (
+                              <span className="flex items-center gap-1 text-green-500 text-xs font-medium">
+                                <CheckCircle2 size={14} />
+                                Verified
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
+
+                      <span className="text-xs text-gray-400">
+                        {new Date(r.createdAt).toLocaleDateString()}
+                      </span>
+
+                    </div>
+
+                    {/* COMMENT */}
+                    <p className="text-gray-700 leading-relaxed text-sm">
+
+                      {isExpanded
+                        ? r.comment
+                        : words.slice(0, 35).join(" ")}
+
+                      {isLong && (
+                        <button
+                          onClick={() => toggle(r._id)}
+                          className="ml-2 text-indigo-600 font-medium text-sm"
+                        >
+                          {isExpanded ? (
+                            <span className="flex items-center gap-1">
+                              <ChevronUp size={14} /> Less
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1">
+                              <ChevronDown size={14} /> Read more
+                            </span>
+                          )}
+                        </button>
+                      )}
+
+                    </p>
+
+                    {/* FOOTER */}
+                    <div className="mt-5 flex items-center gap-6 text-sm">
+
+                      <button className="flex items-center gap-2 text-gray-500 hover:text-black transition">
+                        <ThumbsUp size={16} />
+                        Helpful
+                      </button>
+
+                    </div>
+
+                  </div>
+                );
+              })
+
+            )}
+
+          </div>
         </div>
-
-        {/* More Reviews */}
-        {!showAll && reviews.length > 5 && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => setShowAll(true)}
-              className="px-6 py-2 bg-black text-white rounded-lg"
-            >
-              More Reviews
-            </button>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {showAll && totalPages > 1 && (
-          <div className="flex justify-center gap-3 mt-8 flex-wrap">
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`px-3 py-1 rounded border ${currentPage === i + 1
-                    ? "bg-black text-white"
-                    : ""
-                  }`}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
-
-      <FooterNavbar />
-    </>
+    </div>
   );
 };
 

@@ -8,7 +8,8 @@ const OrderSummary = ({
   discount = 0,
   onIncrease,
   onDecrease,
-  onRemove
+  onRemove,
+  isOrderDetails = false,
 }) => {
 
   /* ================= CALCULATE ================= */

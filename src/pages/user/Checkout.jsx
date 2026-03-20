@@ -49,7 +49,6 @@ const Checkout = () => {
   }, []);
 
   const checkoutItems = buyNowProduct ? [buyNowProduct] : cartItems;
-console.log("Coupons:", coupons);
   /* ================= TOTAL ================= */
 
   const cartTotal = useMemo(() => {
@@ -174,7 +173,8 @@ console.log("Coupons:", coupons);
 
           totalAmount: finalTotal,
 
-          coupon: appliedCoupon,
+          // ⭐ FIX
+          couponCode: appliedCoupon?.code || null,
 
           paymentMethod:
             paymentMethod === "ONLINE"
@@ -188,7 +188,6 @@ console.log("Coupons:", coupons);
       });
 
       const data = await res.json();
-
       if (!data.success) {
 
         toast.error(data.message || "Order failed");
@@ -204,10 +203,8 @@ console.log("Coupons:", coupons);
       toast.success("Order placed successfully 🎉");
 
       navigate(`/ordersuccess/${data.order._id}`);
-
     } catch (error) {
 
-      console.error("ORDER ERROR:", error);
       toast.error("Something went wrong");
 
     } finally {
@@ -284,6 +281,7 @@ console.log("Coupons:", coupons);
                 onIncrease={handleIncrease}
                 onDecrease={handleDecrease}
                 onRemove={handleRemove}
+                isOrderDetails={true}
               />
 
             </div>

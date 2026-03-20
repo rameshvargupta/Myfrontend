@@ -166,7 +166,7 @@ const Menubar = () => {
                             <SubItem text="Manage Products" onClick={() => navigate("/admin/products")} />
                             <SubItem text="Manage Users" onClick={() => navigate("/admin/UserPannel")} />
                             <SubItem text="Manage Banners" onClick={() => navigate("/admin/add-banner")} />
-                            <SubItem text="Manage User Views" onClick={() => navigate("/admin/userViews")} />
+                            <SubItem text="Manage Reviews" onClick={() => navigate("/admin/UserReviews")} />
                         </Accordion>
                     )}
 

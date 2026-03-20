@@ -12,6 +12,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import FooterNavbar from "@/components/user/FooterNavbar";
+import Navbar from "@/components/Navbar";
 
 const UsersPanel = () => {
   const [users, setUsers] = useState([]);
@@ -189,7 +190,7 @@ const UsersPanel = () => {
   );
 
   return (
-    <>
+    <> <Navbar/>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-10 mb-15">
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">

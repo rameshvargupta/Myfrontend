@@ -212,7 +212,7 @@ const OrdersPanel = () => {
 
   return (
     <>
-      <div className="space-y-6 p-5 mb-15">
+      <div className="space-y-6  mb-15">
         {/* ================= HEADER ================= */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
           {/* TITLE */}

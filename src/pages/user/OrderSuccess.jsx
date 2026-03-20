@@ -173,7 +173,7 @@ const OrderSuccess = () => {
               </Link>
 
               <Link
-                to="/products"
+                to="/"
                 className="flex-1 flex items-center justify-center gap-2
                            border border-gray-300 py-4 rounded-2xl
                            font-semibold hover:bg-gray-100 transition"

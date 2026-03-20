@@ -6,7 +6,6 @@ import { logoutUser, setUser } from "@/redux/userSlice";
 import { Toaster } from "sonner";
 
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 
 /* pages */
 import Home from "./pages/Home";
@@ -36,6 +35,8 @@ import Menubar from "./components/user/Menubar";
 import UsersPanel from "./pages/admin/dashboard/components/UsersPanel";
 import OrdersPanel from "./pages/admin/dashboard/components/OrdersPanel";
 import CouponPage from "./pages/admin/dashboard/couponePage/CouponPage";
+import { UserReviews } from "./pages/admin/UserReviews";
+import MyOrdersDetails from "./pages/user/MyOrdersDetails";
 
 /* =========================
    ROUTER
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
       { path: "/cartpage", element: <CartPage /> },
       { path: "/wishlist", element: <Wishlist /> },
       { path: "/myorders", element: <MyOrders /> },
+      { path: "/myorders/:orderId", element: <MyOrdersDetails /> },
       { path: "/ordersuccess/:orderId", element: <OrderSuccess /> },
       { path: "/category/:id", element: <ProductCategoryDetails /> },
       { path: "/menubar", element: <Menubar /> },
@@ -90,6 +92,7 @@ const router = createBrowserRouter([
       { path: "/adminDashboard", element: <AdminDashboard /> },
       { path: "/admin/OrderPannel", element: <OrdersPanel /> },
       { path: "/admin/UserPannel", element: <UsersPanel /> },
+      { path: "/admin/UserReviews", element: <UserReviews /> },
       { path: "/admin/product/view/:slug/", element: <AdminProductView /> },
       { path: "/admin/couponPage", element: <CouponPage /> },
     ],

@@ -157,7 +157,7 @@ const Navbar = () => {
 
           {/* LEFT */}
           <div className="flex items-center gap-8">
-       
+
             <Link
               to="/"
               className="text-2xl font-bold text-pink-600 tracking-wide"
@@ -184,18 +184,28 @@ const Navbar = () => {
 
                   {adminDropdown && (
                     <div className="absolute top-8 left-0 w-52 bg-white rounded-xl shadow-lg border">
-                      <Link to="/adminDashboard" className="block px-4 py-3 hover:bg-gray-50">
+                      <Link to="/adminDashboard" className="block px-3 py-2 hover:bg-gray-50">
                         Dashboard
                       </Link>
-                      <Link to="/admin/products" className="block px-4 py-3 hover:bg-gray-50">
-                        All Products
+                      <Link to="/admin/OrderPannel" className="block px-3 py-2 hover:bg-gray-50">
+                        Manage Orders
                       </Link>
-                      <Link to="/admin/add-product" className="block px-4 py-3 hover:bg-gray-50">
-                        Add Product
+                      <Link to="/admin/couponPage" className="block px-3 py-2 hover:bg-gray-50">
+                        Coupon Sections
                       </Link>
-                      <Link to="/admin/add-banner" className="block px-4 py-3 hover:bg-gray-50">
-                        Add Banner
+                      <Link to="/admin/products" className="block px-3 py-2 hover:bg-gray-50">
+                        Manage Products
                       </Link>
+                      <Link to="/admin/UserPannel" className="block px-3 py-2 hover:bg-gray-50">
+                        Manage Users
+                      </Link>
+                      <Link to="/admin/UserReviews" className="block px-3 py-2 hover:bg-gray-50">
+                        Manage User Reviews
+                      </Link>
+                      <Link to="/admin/add-banner" className="block px-3 py-2 hover:bg-gray-50">
+                        Manage Banner
+                      </Link>
+
                     </div>
                   )}
                 </div>

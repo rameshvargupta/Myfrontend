@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import DeleteModal from "@/pages/DeleteModal";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import Navbar from "@/components/Navbar";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, TicketPercent, CheckCircle2, Clock, Ban } from "lucide-react";
 const CouponPage = () => {
 
     const [coupons, setCoupons] = useState([]);
@@ -15,7 +15,7 @@ const CouponPage = () => {
 
     const [deleteModal, setDeleteModal] = useState(false);
     const [selectedCoupon, setSelectedCoupon] = useState(null);
-
+    const [statusFilter, setStatusFilter] = useState("all");
     const [formData, setFormData] = useState({
         code: "",
         discountType: "percentage",
@@ -25,6 +25,27 @@ const CouponPage = () => {
         expiryDate: "",
         usageLimit: ""
     });
+    const [viewMode, setViewMode] = useState("table");
+    const [sortField, setSortField] = useState("expiryDate");
+    const [sortOrder, setSortOrder] = useState("asc");
+    const [currentPage, setCurrentPage] = useState(1);
+    const rowsPerPage = 6;
+
+    const isExpiringSoon = (date) => {
+        const today = new Date();
+        const expiry = new Date(date);
+        const diff = (expiry - today) / (1000 * 60 * 60 * 24);
+        return diff <= 3 && diff > 0;
+    };
+
+    const handleSort = (field) => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+        } else {
+            setSortField(field);
+            setSortOrder("asc");
+        }
+    };
 
     // FETCH
     const fetchCoupons = async () => {
@@ -58,15 +79,17 @@ const CouponPage = () => {
         }
 
     };
+
     useEffect(() => {
 
         const closeMenu = () => setOpenMenu(null);
 
-        window.addEventListener("click", closeMenu);
+        document.addEventListener("click", closeMenu);
 
-        return () => window.removeEventListener("click", closeMenu);
+        return () => document.removeEventListener("click", closeMenu);
 
     }, []);
+
     // INPUT
     const handleChange = (e) => {
 
@@ -81,7 +104,7 @@ const CouponPage = () => {
     const handleSubmit = async (e) => {
 
         e.preventDefault();
-
+        setLoading(true);
         let res;
 
         if (editId) {
@@ -111,6 +134,7 @@ const CouponPage = () => {
         } else {
             toast.error(res.message);
         }
+        setLoading(false);
     };
 
     // EDIT
@@ -161,26 +185,74 @@ const CouponPage = () => {
         setDeleteModal(false);
     };
 
-    // COPY
-    const copyCoupon = (code) => {
+    const expiredCoupons = coupons.filter(
+        (c) => new Date(c.expiryDate) < new Date()
+    ).length;
 
-        navigator.clipboard.writeText(code);
+    const activeCoupons = coupons.filter(
+        (c) => c.isActive && new Date(c.expiryDate) >= new Date()
+    ).length;
 
-        toast.success("Coupon copied");
+    const blockedCoupons = coupons.filter(
+        (c) => !c.isActive && new Date(c.expiryDate) >= new Date()
+    ).length;
 
+    const isExpired = (date) => {
+        return new Date(date) < new Date();
     };
 
     // FILTER
-    const filteredCoupons = coupons.filter((c) =>
-        c.code.toLowerCase().includes(search.toLowerCase())
+    const filteredCoupons = coupons.filter((coupon) => {
+
+        const matchSearch = coupon.code
+            .toLowerCase()
+            .includes(search.toLowerCase());
+
+        if (statusFilter === "active") {
+            return (
+                matchSearch &&
+                coupon.isActive &&
+                !isExpired(coupon.expiryDate)
+            );
+        }
+
+        if (statusFilter === "blocked") {
+            return matchSearch && !coupon.isActive;
+        }
+
+        if (statusFilter === "expired") {
+            return matchSearch && isExpired(coupon.expiryDate);
+        }
+
+        return matchSearch;
+    });
+
+    // FILTER
+    const sortedCoupons = [...filteredCoupons].sort((a, b) => {
+        let valA = a[sortField];
+        let valB = b[sortField];
+
+        if (sortField === "expiryDate") {
+            valA = new Date(valA);
+            valB = new Date(valB);
+        }
+
+        if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+        if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+        return 0;
+    });
+
+    const startIndex = (currentPage - 1) * rowsPerPage;
+
+    const paginatedCoupons = sortedCoupons.slice(
+        startIndex,
+        startIndex + rowsPerPage
     );
 
-    // STATS
-    const activeCoupons = coupons.filter(c => c.isActive).length;
+    const totalPages = Math.ceil(sortedCoupons.length / rowsPerPage);
 
-    const expiredCoupons = coupons.filter(
-        c => new Date(c.expiryDate) < new Date()
-    ).length;
+    // STATS
+
 
     return (
         <>
@@ -189,32 +261,89 @@ const CouponPage = () => {
 
                 {/* HEADER */}
 
-                <div className="flex justify-between items-center mb-10">
 
-                    <h1 className="text-3xl font-bold">
-                        Coupon Management
-                    </h1>
+                <div className="mb-10">
 
-                </div>
+                    {/* HEADER */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
 
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+                                Coupon Management
+                            </h1>
+                            <p className="text-gray-500 text-sm mt-1">
+                                Manage and track all discount coupons
+                            </p>
+                        </div>
 
-                {/* STATS */}
-
-                <div className="grid grid-cols-3 gap-6 mb-10">
-
-                    <div className="bg-white p-6 rounded-xl shadow">
-                        <p className="text-gray-500">Total Coupons</p>
-                        <h2 className="text-3xl font-bold">{coupons.length}</h2>
                     </div>
 
-                    <div className="bg-white p-6 rounded-xl shadow">
-                        <p className="text-gray-500">Active Coupons</p>
-                        <h2 className="text-3xl font-bold text-green-600">{activeCoupons}</h2>
-                    </div>
+                    {/* STATS CARDS */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-                    <div className="bg-white p-6 rounded-xl shadow">
-                        <p className="text-gray-500">Expired Coupons</p>
-                        <h2 className="text-3xl font-bold text-red-500">{expiredCoupons}</h2>
+                        {/* TOTAL COUPONS */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-between hover:shadow-md transition">
+
+                            <div>
+                                <p className="text-sm text-gray-500">Total Coupons</p>
+                                <h2 className="text-3xl font-semibold text-gray-900 mt-1">
+                                    {coupons.length}
+                                </h2>
+                            </div>
+
+                            <div className="p-3 bg-gray-100 rounded-lg">
+                                <TicketPercent size={26} className="text-gray-700" />
+                            </div>
+
+                        </div>
+
+                        {/* ACTIVE */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-between hover:shadow-md transition">
+
+                            <div>
+                                <p className="text-sm text-gray-500">Active Coupons</p>
+                                <h2 className="text-3xl font-semibold text-green-600 mt-1">
+                                    {activeCoupons}
+                                </h2>
+                            </div>
+
+                            <div className="p-3 bg-green-100 rounded-lg">
+                                <CheckCircle2 size={26} className="text-green-600" />
+                            </div>
+
+                        </div>
+
+                        {/* Blocked */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-between hover:shadow-md transition">
+                            <div>
+                                <p className="text-sm text-gray-500">Blocked Coupons</p>
+                                <h2 className="text-3xl font-semibold text-orange-600 mt-1">
+                                    {blockedCoupons}
+                                </h2>
+                            </div>
+
+                            <div className="p-3 bg-orange-100 rounded-lg">
+                                <Ban size={26} className="text-orange-600" />
+                            </div>
+
+                        </div>
+
+                        {/* EXPIRED */}
+                        <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-between hover:shadow-md transition">
+
+                            <div>
+                                <p className="text-sm text-gray-500">Expired Coupons</p>
+                                <h2 className="text-3xl font-semibold text-red-600 mt-1">
+                                    {expiredCoupons}
+                                </h2>
+                            </div>
+
+                            <div className="p-3 bg-red-100 rounded-lg">
+                                <Clock size={26} className="text-red-600" />
+                            </div>
+
+                        </div>
+
                     </div>
 
                 </div>
@@ -224,78 +353,139 @@ const CouponPage = () => {
 
                 <form
                     onSubmit={handleSubmit}
-                    className="grid grid-cols-4 gap-4 mb-5 bg-white p-8 rounded-xl shadow"
+                    className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 md:p-8 mb-8"
                 >
 
-                    <input
-                        name="code"
-                        value={formData.code}
-                        placeholder="Coupon Code"
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    />
+                    {/* FORM GRID */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
-                    <select
-                        name="discountType"
-                        value={formData.discountType}
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    >
-                        <option value="percentage">Percentage</option>
-                        <option value="flat">Flat</option>
-                    </select>
+                        {/* COUPON CODE */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Coupon Code
+                            </label>
+                            <input
+                                name="code"
+                                value={formData.code}
+                                placeholder="SAVE20"
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black focus:border-black outline-none"
+                            />
+                        </div>
 
-                    <input
-                        name="discountValue"
-                        value={formData.discountValue}
-                        placeholder="Discount"
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    />
+                        {/* DISCOUNT TYPE */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Discount Type
+                            </label>
+                            <select
+                                name="discountType"
+                                value={formData.discountType}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                            >
+                                <option value="percentage">Percentage</option>
+                                <option value="flat">Flat</option>
+                            </select>
+                        </div>
 
-                    <input
-                        name="minOrderValue"
-                        value={formData.minOrderValue}
-                        placeholder="Min Order"
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    />
+                        {/* DISCOUNT VALUE */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Discount Value
+                            </label>
+                            <input
+                                name="discountValue"
+                                value={formData.discountValue}
+                                placeholder="20"
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                            />
+                        </div>
 
-                    <input
-                        name="maxDiscount"
-                        value={formData.maxDiscount}
-                        placeholder="Max Discount"
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    />
+                        {/* MIN ORDER */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Min Order Value
+                            </label>
+                            <input
+                                name="minOrderValue"
+                                value={formData.minOrderValue}
+                                placeholder="1000"
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                            />
+                        </div>
 
-                    <input
-                        name="usageLimit"
-                        value={formData.usageLimit}
-                        placeholder="Usage Limit"
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    />
+                        {/* MAX DISCOUNT */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Max Discount
+                            </label>
+                            <input
+                                name="maxDiscount"
+                                value={formData.maxDiscount}
+                                placeholder="300"
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                            />
+                        </div>
 
-                    <input
-                        name="expiryDate"
-                        type="date"
-                        value={formData.expiryDate}
-                        onChange={handleChange}
-                        className="border p-3 rounded"
-                    />
+                        {/* USAGE LIMIT */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Usage Limit
+                            </label>
+                            <input
+                                name="usageLimit"
+                                value={formData.usageLimit}
+                                placeholder="100"
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                            />
+                        </div>
 
-                    <div className="flex gap-3">
+                        {/* EXPIRY DATE */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm font-medium text-gray-600">
+                                Expiry Date
+                            </label>
+                            <input
+                                name="expiryDate"
+                                type="date"
+                                value={formData.expiryDate}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                            />
+                        </div>
 
-                        <button className="bg-black text-white px-6 rounded">
-                            {editId ? "Update" : "Create"}
+                    </div>
+
+                    {/* BUTTONS */}
+                    <div className="flex flex-wrap gap-3 mt-6">
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition flex items-center gap-2 disabled:opacity-60"
+                        >
+
+                            {loading && (
+                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            )}
+
+                            {loading
+                                ? (editId ? "Updating..." : "Creating...")
+                                : (editId ? "Update Coupon" : "Create Coupon")
+                            }
+
                         </button>
 
                         {editId && (
                             <button
                                 type="button"
                                 onClick={() => setEditId(null)}
-                                className="bg-gray-300 px-6 rounded"
+                                className="border border-gray-300 px-6 py-2 rounded-lg hover:bg-gray-100"
                             >
                                 Cancel
                             </button>
@@ -305,158 +495,432 @@ const CouponPage = () => {
 
                 </form>
 
-                <div>
-                    <input
-                        placeholder="Search coupon..."
-                        className="border p-3 rounded-lg w-64 mb-5"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 mb-6">
+
+                    <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+
+                        {/* SEARCH */}
+                        <div className="flex-1">
+                            <input
+                                placeholder="Search coupon code..."
+                                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-black outline-none"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="flex gap-3 items-center">
+
+                            {/* FILTER */}
+                            <div className="w-40">
+                                <select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-black outline-none"
+                                >
+                                    <option value="all">All Coupons</option>
+                                    <option value="active">Active</option>
+                                    <option value="blocked">Blocked</option>
+                                    <option value="expired">Expired</option>
+                                </select>
+                            </div>
+
+                            {/* VIEW TOGGLE */}
+                            <button
+                                onClick={() =>
+                                    setViewMode(viewMode === "table" ? "card" : "table")
+                                }
+                                className="border px-4 py-2 rounded-lg hover:bg-gray-100 text-sm font-medium"
+                            >
+                                {viewMode === "table" ? "📱 Card View" : "🧾 Table View"}
+                            </button>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
                 {/* TABLE */}
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-visible">
 
-                <div className="bg-white rounded-xl shadow overflow-visible">
-                    <table className="w-full">
+                    {/* MOBILE / CARD VIEW */}
+                    {viewMode === "card" && (
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                        <thead className="bg-gray-100">
+                            {paginatedCoupons.map((coupon) => (
 
-                            <tr>
-                                <th className="p-4">Code</th>
-                                <th>Discount</th>
-                                <th>Min Order</th>
-                                <th>Usage</th>
-                                <th>Expiry</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
+                                <div
+                                    key={coupon._id}
+                                    className={`relative border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition
+                                  ${isExpired(coupon.expiryDate) ? "border-red-200 bg-red-50" : ""}`}
+                                >
 
-                        </thead>
+                                    {/* HEADER */}
+                                    <div className="flex justify-between items-start">
 
-                        <tbody>
-
-                            {loading ? (
-
-                                <tr>
-                                    <td colSpan="7" className="text-center p-6">
-                                        Loading...
-                                    </td>
-                                </tr>
-
-                            ) : filteredCoupons.length > 0 ? (
-
-                                filteredCoupons.map((coupon) => (
-
-                                    <tr key={coupon._id} className="border-t text-center">
-
-                                        <td className="p-4 flex justify-center gap-2">
-
-                                            <button
-                                                onClick={() => copyCoupon(coupon.code)}
-                                                className="text-blue-800 text-xs"
-                                            >
+                                        <div>
+                                            <h3 className="font-semibold text-blue-700 text-lg">
                                                 {coupon.code}
-                                            </button>
+                                            </h3>
 
-                                        </td>
+                                            <p className="text-xs text-gray-500">
+                                                {coupon.discountType === "percentage"
+                                                    ? `${coupon.discountValue}% Discount`
+                                                    : `₹${coupon.discountValue} Discount`}
+                                            </p>
+                                        </div>
 
-                                        <td>
-                                            {coupon.discountType === "percentage"
-                                                ? `${coupon.discountValue}%`
-                                                : `₹${coupon.discountValue}`}
-                                        </td>
+                                        {/* STATUS */}
+                                        <span
+                                            className={`text-xs px-3 py-1 mx-6 rounded-full
+                                            ${isExpired(coupon.expiryDate)
+                                                    ? "bg-red-100 text-red-600"
+                                                    : coupon.isActive
+                                                        ? "bg-green-100 text-green-600"
+                                                        : "bg-gray-200 text-gray-600"
+                                                }`}
+                                        >
+                                            {isExpired(coupon.expiryDate)
+                                                ? "Expired"
+                                                : coupon.isActive
+                                                    ? "Active"
+                                                    : "Blocked"}
+                                        </span>
 
-                                        <td>₹{coupon.minOrderValue}</td>
+                                    </div>
 
-                                        <td>
-                                            {coupon.usedCount}/{coupon.usageLimit}
-                                        </td>
+                                    {/* DETAILS */}
+                                    <div className="mt-3 text-sm text-gray-700 space-y-1">
 
-                                        <td>
+                                        <p>
+                                            <span className="text-gray-500">Min Order:</span>{" "}
+                                            ₹{coupon.minOrderValue}
+                                        </p>
+
+                                        <p>
+                                            <span className="text-gray-500">Expiry:</span>{" "}
                                             {new Date(coupon.expiryDate).toLocaleDateString()}
-                                        </td>
+                                        </p>
 
-                                        <td>
-                                            <span className={`px-3 py-1 rounded-full text-sm ${coupon.isActive
-                                                ? "bg-green-100 text-green-600"
-                                                : "bg-red-100 text-red-600"
-                                                }`}>
-                                                {coupon.isActive ? "Active" : "Disabled"}
+                                    </div>
+
+                                    {/* EXPIRING WARNING */}
+                                    {isExpiringSoon(coupon.expiryDate) && (
+                                        <p className="text-xs text-orange-500 mt-1">
+                                            ⚠ Expiring soon
+                                        </p>
+                                    )}
+
+                                    {/* USAGE PROGRESS */}
+                                    <div className="mt-3">
+
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span>Usage</span>
+                                            <span>
+                                                {coupon.usedCount}/{coupon.usageLimit}
                                             </span>
-                                        </td>
+                                        </div>
 
-                                        <td className="relative">
+                                        <div className="w-full bg-gray-200 rounded-full h-2">
 
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setOpenMenu(openMenu === coupon._id ? null : coupon._id);
+                                            <div
+                                                className="bg-blue-600 h-2 rounded-full"
+                                                style={{
+                                                    width: `${(coupon.usedCount / coupon.usageLimit) * 100}%`,
                                                 }}
-                                                className="p-2 hover:bg-gray-100 rounded"
+                                            />
+
+                                        </div>
+
+                                    </div>
+
+                                    {/* ACTION MENU */}
+                                    <div className="absolute top-3 right-1">
+
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMenu(openMenu === coupon._id ? null : coupon._id);
+                                            }}
+                                            className="p-2 hover:bg-gray-100 rounded"
+                                        >
+                                            <MoreVertical size={18} />
+                                        </button>
+
+                                        {openMenu === coupon._id && (
+
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="absolute right-0 top-8 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
                                             >
-                                                <MoreVertical size={18} />
-                                            </button>
 
-                                            {openMenu === coupon._id && (
-
-                                                <div
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="absolute right-0 top-8 w-40 bg-white border rounded-lg shadow-lg z-50"
+                                                <button
+                                                    disabled={isExpired(coupon.expiryDate)}
+                                                    onClick={() => {
+                                                        handleEdit(coupon);
+                                                        setOpenMenu(null);
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 disabled:opacity-50"
                                                 >
+                                                    Edit
+                                                </button>
 
-                                                    <button
-                                                        onClick={() => {
-                                                            handleEdit(coupon);
-                                                            setOpenMenu(null);
-                                                        }}
-                                                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                                                    >
-                                                        Edit
-                                                    </button>
+                                                <button
+                                                    disabled={isExpired(coupon.expiryDate)}
+                                                    onClick={() => {
+                                                        toggleCouponStatus(coupon._id);
+                                                        setOpenMenu(null);
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 hover:bg-gray-100 disabled:opacity-50"
+                                                >
+                                                    {coupon.isActive ? "Block" : "Unblock"}
+                                                </button>
 
-                                                    <button
-                                                        onClick={() => {
-                                                            toggleCouponStatus(coupon._id);
-                                                            setOpenMenu(null);
-                                                        }}
-                                                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                                                    >
-                                                        {coupon.isActive ? "Block" : "Unblock"}
-                                                    </button>
+                                                <button
+                                                    onClick={() => {
+                                                        openDeleteModal(coupon._id);
+                                                        setOpenMenu(null);
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                                                >
+                                                    Delete
+                                                </button>
 
-                                                    <button
-                                                        onClick={() => {
-                                                            openDeleteModal(coupon._id);
-                                                            setOpenMenu(null);
-                                                        }}
-                                                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
-                                                    >
-                                                        Delete
-                                                    </button>
+                                            </div>
 
-                                                </div>
+                                        )}
 
-                                            )}
+                                    </div>
 
-                                        </td>
+                                </div>
+
+                            ))}
+
+                        </div>
+                    )}
+
+                    {/* DESKTOP TABLE */}
+                    {viewMode === "table" && (
+                        <div className="overflow-x-auto overflow-y-visible">
+
+                            <table className="min-w-full text-sm">
+
+                                <thead className="bg-gray-50 text-gray-600 text-xs uppercase">
+
+                                    <tr>
+
+                                        <th
+                                            onClick={() => handleSort("code")}
+                                            className="px-6 py-3 cursor-pointer"
+                                        >
+                                            Coupon Code 🔽
+                                        </th>
+
+                                        <th className="px-6 py-3">Discount</th>
+
+                                        <th className="px-6 py-3">Min Order</th>
+
+                                        <th className="px-6 py-3">Usage</th>
+
+                                        <th
+                                            onClick={() => handleSort("expiryDate")}
+                                            className="px-6 py-3 cursor-pointer"
+                                        >
+                                            Expiry 🔽
+                                        </th>
+
+                                        <th className="px-6 py-3">Status</th>
+
+                                        <th className="px-6 py-3 text-right">Actions</th>
 
                                     </tr>
 
-                                ))
+                                </thead>
 
-                            ) : (
+                                <tbody>
 
-                                <tr>
-                                    <td colSpan="7" className="text-center p-6">
-                                        No Coupons Found
-                                    </td>
-                                </tr>
+                                    {paginatedCoupons.map((coupon) => (
 
-                            )}
+                                        <tr
+                                            key={coupon._id}
+                                            className={`border-t hover:bg-gray-50 ${isExpired(coupon.expiryDate)
+                                                ? "bg-red-50"
+                                                : ""
+                                                }`}
+                                        >
 
-                        </tbody>
+                                            <td className="px-6 py-4 font-medium text-blue-700">
+                                                {coupon.code}
+                                            </td>
 
-                    </table>
+                                            <td className="px-6 py-4">
+                                                {coupon.discountType === "percentage"
+                                                    ? `${coupon.discountValue}%`
+                                                    : `₹${coupon.discountValue}`}
+                                            </td>
+
+                                            <td className="px-6 py-4">
+                                                ₹{coupon.minOrderValue}
+                                            </td>
+
+                                            {/* USAGE PROGRESS */}
+                                            <td className="px-6 py-4 w-48">
+
+                                                <div className="flex justify-between text-xs mb-1">
+                                                    <span>
+                                                        {coupon.usedCount}/{coupon.usageLimit}
+                                                    </span>
+                                                </div>
+
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+
+                                                    <div
+                                                        className="bg-blue-600 h-2 rounded-full"
+                                                        style={{
+                                                            width: `${(coupon.usedCount /
+                                                                coupon.usageLimit) *
+                                                                100
+                                                                }%`,
+                                                        }}
+                                                    />
+
+                                                </div>
+
+                                            </td>
+
+                                            <td className="px-6 py-4">
+
+                                                {new Date(
+                                                    coupon.expiryDate
+                                                ).toLocaleDateString()}
+
+                                                {isExpiringSoon(coupon.expiryDate) && (
+                                                    <span className="block text-xs text-orange-500">
+                                                        ⚠ Expiring soon
+                                                    </span>
+                                                )}
+
+                                            </td>
+
+                                            <td className="px-6 py-4">
+
+                                                <span
+                                                    className={`px-3 py-1 rounded-full text-xs
+                                                 ${isExpired(coupon.expiryDate)
+                                                            ? "bg-red-100 text-red-600"
+                                                            : coupon.isActive
+                                                                ? "bg-green-100 text-green-600"
+                                                                : "bg-gray-200 text-gray-600"
+                                                        }`}
+                                                >
+                                                    {isExpired(coupon.expiryDate)
+                                                        ? "Expired"
+                                                        : coupon.isActive
+                                                            ? "Active"
+                                                            : "Blocked"}
+                                                </span>
+
+                                            </td>
+
+                                            <td className="px-6 py-4 text-right relative">
+
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenMenu(openMenu === coupon._id ? null : coupon._id);
+                                                    }}
+                                                    className="p-2 hover:bg-gray-100 rounded"
+                                                >
+                                                    <MoreVertical size={18} />
+                                                </button>
+
+                                                {openMenu === coupon._id && (
+
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="absolute right-0 top-full mt-2 w-28 bg-white border border-gray-200 rounded-lg shadow-lg z-[999]"
+                                                    >
+
+                                                        <button
+                                                            onClick={() => {
+                                                                handleEdit(coupon);
+                                                                setOpenMenu(null);
+                                                            }}
+                                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                                        >
+                                                            Edit
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                toggleCouponStatus(coupon._id);
+                                                                setOpenMenu(null);
+                                                            }}
+                                                            className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                                                        >
+                                                            {coupon.isActive ? "Block" : "Unblock"}
+                                                        </button>
+
+                                                        <button
+                                                            onClick={() => {
+                                                                openDeleteModal(coupon._id);
+                                                                setOpenMenu(null);
+                                                            }}
+                                                            className="block w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100"
+                                                        >
+                                                            Delete
+                                                        </button>
+
+                                                    </div>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+
+                                    ))}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+                    )}
+                    {/* PAGINATION */}
+
+                    <div className="flex justify-between items-center p-4 border-t">
+
+                        <p className="text-sm text-gray-500">
+                            Page {currentPage} of {totalPages}
+                        </p>
+
+                        <div className="flex gap-2">
+
+                            <button
+                                disabled={currentPage === 1}
+                                onClick={() =>
+                                    setCurrentPage((p) => p - 1)
+                                }
+                                className="px-3 py-1 border rounded"
+                            >
+                                Prev
+                            </button>
+
+                            <button
+                                disabled={currentPage === totalPages}
+                                onClick={() =>
+                                    setCurrentPage((p) => p + 1)
+                                }
+                                className="px-3 py-1 border rounded"
+                            >
+                                Next
+                            </button>
+
+                        </div>
+
+                    </div>
 
                 </div>
 

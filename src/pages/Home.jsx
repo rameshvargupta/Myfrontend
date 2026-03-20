@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import HeroSlider from "@/components/HeroSlider";
 import ProductCard from "@/components/ProductCard";
-import { X, Eye, EyeOff, ChevronDown } from "lucide-react";
+import { X, Eye, EyeOff, ChevronDown, MessageCircle } from "lucide-react";
 import { setUser } from "@/redux/userSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -263,7 +263,7 @@ const Home = () => {
               {/* Left Side Image */}
               <div className=" bg-indigo-600 text-white p-10 flex flex-col justify-center">
                 <h2 className="text-3xl font-bold mb-4">
-                  Welcome to Ecart
+                  Welcome to Gt Shop
                 </h2>
                 <p className="text-sm opacity-90">
                   Login now to access exclusive deals, offers
@@ -529,7 +529,7 @@ const Home = () => {
 
 
       </div>
-      
+
       <div className="hidden md:block">
         <Footer />
       </div>
@@ -538,6 +538,31 @@ const Home = () => {
       <div className="block md:hidden">
         <FooterNavbar />
       </div>
+
+
+      {/* ================= WHATSAPP FLOAT BUTTON ================= */}
+      <a
+        href="https://wa.me/917523062030?text=Hi%20I%20am%20interested%20in%20your%20products"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-20 md:bottom-6 right-4 z-50 group"
+      >
+        <div className="flex items-center gap-3">
+
+          {/* TEXT (desktop only) */}
+          <span className="hidden md:block bg-white text-gray-700 text-sm px-4 py-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition">
+            Chat with us
+          </span>
+
+          {/* BUTTON */}
+          <div className="w-14 h-14 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 animate-bounce">
+
+            <MessageCircle className="text-white" size={26} />
+
+          </div>
+
+        </div>
+      </a>
     </>
   );
 };
