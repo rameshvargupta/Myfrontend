@@ -35,7 +35,33 @@ const Checkout = () => {
   /* ================= REDUX ================= */
 
   const cartItems = useSelector((state) => state.cart.cartItems || []);
+
+  // 🔹 REDUX SELECTORS
   const selectedAddress = useSelector((state) => state.address.selectedAddress);
+
+  // 🔹 FUNCTION: calculate delivery range
+  const getDeliveryRange = (pincode) => {
+    if (!pincode) return null;
+    const today = new Date();
+    let minDays = 4, maxDays = 6;
+
+    if (pincode.startsWith("22")) { minDays = 2; maxDays = 4; }
+
+    const min = new Date(today);
+    min.setDate(today.getDate() + minDays);
+
+    const max = new Date(today);
+    max.setDate(today.getDate() + maxDays);
+
+    return {
+      min: min.toLocaleDateString(),
+      max: max.toLocaleDateString()
+    };
+  };
+
+  // 🔹 COMPUTE EXPECTED DELIVERY
+  const expectedDelivery = selectedAddress ? getDeliveryRange(selectedAddress.pincode) : null;
+
 
   /* ================= CHECKOUT ITEMS ================= */
   useEffect(() => {
@@ -91,6 +117,7 @@ const Checkout = () => {
 
   }, [dispatch]);
 
+
   const handleIncrease = (productId) => {
 
     const item = cartItems.find((i) => i.productId === productId);
@@ -125,94 +152,134 @@ const Checkout = () => {
   /* ================= PLACE ORDER ================= */
 
   const handlePlaceOrder = async () => {
-
     if (!selectedAddress) {
-      toast.error("Please add a delivery address");
+      toast.error("Please add address");
       return;
     }
 
     if (!paymentMethod) {
-      toast.error("Please select a payment method");
-      return;
-    }
-
-    if (checkoutItems.length === 0) {
-      toast.error("No product to checkout");
+      toast.error("Select payment method");
       return;
     }
 
     try {
-
       setLoading(true);
 
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/v1/orders", {
+      // ================= ONLINE PAYMENT =================
+      if (paymentMethod === "ONLINE") {
 
-        method: "POST",
+        // 1. Create Razorpay order
+        const res = await fetch("http://localhost:5000/api/v1/payment/create-order", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount: finalTotal }),
+        });
 
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        const data = await res.json();
 
-        body: JSON.stringify({
+        if (!data.success) {
+          toast.error("Payment init failed");
+          return;
+        }
 
-          orderItems: checkoutItems.map((item) => ({
-            productId: item.productId,
-            slug: item.slug,
-            categoryId: item.categoryId,
-            categoryName: item.categoryName,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            image: item.image,
-          })),
+        const options = {
+          key: data.key,
+          amount: data.amount,
+          currency: "INR",
+          name: "Ecart",
+          description: "Order Payment",
+          order_id: data.orderId,
 
-          selectedAddressId: selectedAddress._id,
+          handler: async function (response) {
 
-          totalAmount: finalTotal,
+            // 2. VERIFY PAYMENT
+            const verifyRes = await fetch(
+              "http://localhost:5000/api/v1/payment/verify",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  ...response,
+                  orderItems: checkoutItems,
+                  addressId: selectedAddress._id,
+                  totalAmount: finalTotal,
+                  couponCode: appliedCoupon?.code || null,
+                }),
+              }
+            );
 
-          // ⭐ FIX
-          couponCode: appliedCoupon?.code || null,
+            const verifyData = await verifyRes.json();
 
-          paymentMethod:
-            paymentMethod === "ONLINE"
-              ? "Online Payment"
-              : "Cash on Delivery",
+            if (verifyData.success) {
+              toast.success("Payment Successful 🎉");
 
-          paymentStatus: "Pending",
+              if (!buyNowProduct) dispatch(clearCart());
 
-        }),
+              navigate(`/ordersuccess/${verifyData.order._id}`);
+            } else {
+              toast.error("Payment verification failed");
+            }
+          },
 
-      });
+          theme: {
+            color: "#ec4899",
+          },
+        };
 
-      const data = await res.json();
-      if (!data.success) {
+        if (!window.Razorpay) {
+          toast.error("Razorpay not loaded");
+          return;
+        }
 
-        toast.error(data.message || "Order failed");
-        setLoading(false);
-        return;
-
+        const rzp = new window.Razorpay(options); rzp.open();
       }
 
-      if (!buyNowProduct) {
-        dispatch(clearCart());
+      // ================= COD =================
+      else {
+
+        const res = await fetch("http://localhost:5000/api/v1/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            orderItems: checkoutItems,
+            selectedAddressId: selectedAddress._id,
+            totalAmount: finalTotal,
+            couponCode: appliedCoupon?.code || null,
+            paymentMethod: "COD",
+            paymentStatus: "Pending",
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!data.success) {
+          toast.error("Order failed");
+          return;
+        }
+
+        if (!buyNowProduct) dispatch(clearCart());
+
+        toast.success("Order placed (COD)");
+
+        navigate(`/ordersuccess/${data.order._id}`);
       }
 
-      toast.success("Order placed successfully 🎉");
-
-      navigate(`/ordersuccess/${data.order._id}`);
-    } catch (error) {
-
+    } catch (err) {
       toast.error("Something went wrong");
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   /* ================= EMPTY ================= */
@@ -254,6 +321,7 @@ const Checkout = () => {
             <div className="lg:col-span-2 space-y-6">
 
               <AddressSection />
+
               <PaymentMethod
                 paymentMethod={paymentMethod}
                 setPaymentMethod={setPaymentMethod}
@@ -282,6 +350,7 @@ const Checkout = () => {
                 onDecrease={handleDecrease}
                 onRemove={handleRemove}
                 isOrderDetails={true}
+                expectedDelivery={selectedAddress?.pincode ? selectedAddress.pincode : null}
               />
 
             </div>

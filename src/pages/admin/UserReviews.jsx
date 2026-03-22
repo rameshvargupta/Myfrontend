@@ -123,7 +123,7 @@ export const UserReviews = () => {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
+      <div className="min-h-screen bg-gray-50 p-4 lg:p-8 mb-15">
         <Toaster position="top-center" />
 
         {/* ================= HEADER ================= */}

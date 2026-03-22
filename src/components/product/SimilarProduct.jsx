@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+
 const SimilarProducts = ({ productId, categoryId }) => {
   const [products, setProducts] = useState([]);
-const cartItems = useSelector(
+  const cartItems = useSelector(
     (state) => state.cart?.cartItems || []
   );
-const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (!productId || !categoryId) return;

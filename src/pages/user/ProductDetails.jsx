@@ -1,6 +1,3 @@
-// Premium Product Details Page - Full Ecommerce UI (450+ lines)
-// Fully Responsive + Icons + Modern Layout
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -10,7 +7,6 @@ import { addToCart } from "@/redux/cartSlice";
 import ProductReviews from "@/components/product/ProductReviews";
 import SimilarProducts from "@/components/product/SimilarProduct";
 import ProductSkeleton from "@/components/skeletons/ProductDetailsSkeleton";
-
 import {
   ShoppingCart,
   Zap,
@@ -26,14 +22,15 @@ import {
 
 import { toast } from "sonner";
 import FooterNavbar from "@/components/user/FooterNavbar";
+import ExpectedDelivery from "./ExpectedDelivery";
 
 const ProductDetails = () => {
-
   const { slug } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const cartItems = useSelector((state) => state.cart?.cartItems || []);
+  const selectedAddress = useSelector((state) => state.address?.selectedAddress);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,46 +39,58 @@ const ProductDetails = () => {
   const [activeTab, setActiveTab] = useState("description");
 
   /* ================= FETCH PRODUCT ================= */
-
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const res = await axios.get(`http://localhost:5000/api/v1/products/${slug}`);
-
         if (!res.data.success) {
           setProduct(null);
           return;
         }
-
         setProduct(res.data.product);
         setActiveImage(res.data.product.images?.[0]?.url);
-
       } catch {
         setProduct(null);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProduct();
   }, [slug]);
 
+  const getDeliveryRange = (pincode) => {
+    const today = new Date();
+    let minDays = 4;
+    let maxDays = 6;
+
+    // ❌ check pincode exists before calling startsWith
+    if (pincode && pincode.startsWith("22")) {
+      minDays = 2;
+      maxDays = 4;
+    }
+
+    const min = new Date(today);
+    min.setDate(today.getDate() + minDays);
+
+    const max = new Date(today);
+    max.setDate(today.getDate() + maxDays);
+
+    return { min, max };
+  };
+
+  const delivery = selectedAddress ? getDeliveryRange(selectedAddress.pincode) : null;
+
   /* ================= ADD TO CART ================= */
-
   const handleAddToCart = () => {
-
     if (!product || product.stock === 0) {
       toast.error("Out of stock");
       return;
     }
-
     const exists = cartItems.find(i => i.productId === product._id);
-
     if (exists) {
       toast.info("Already in cart");
       return;
     }
-
     dispatch(addToCart({
       productId: product._id,
       slug: product.slug,
@@ -90,19 +99,15 @@ const ProductDetails = () => {
       image: product.images?.[0]?.url,
       quantity
     }));
-
     toast.success("Added to cart");
   };
 
   /* ================= BUY NOW ================= */
-
   const handleBuyNow = () => {
-
     if (!product || product.stock === 0) {
       toast.error("Out of stock");
       return;
     }
-
     navigate("/checkout", {
       state: {
         buyNowProduct: {
@@ -116,24 +121,20 @@ const ProductDetails = () => {
       }
     });
   };
+  console.log(selectedAddress);
 
   /* ================= LOADING ================= */
-
   if (loading) return <ProductSkeleton />;
-
-  if (!product) {
-    return (
-      <>
-        <Navbar />
-        <div className="h-screen flex items-center justify-center">
-          Product not found
-        </div>
-      </>
-    );
-  }
+  if (!product) return (
+    <>
+      <Navbar />
+      <div className="h-screen flex items-center justify-center">
+        Product not found
+      </div>
+    </>
+  );
 
   /* ================= UI ================= */
-
   return (
     <>
       <Navbar />
@@ -199,6 +200,34 @@ const ProductDetails = () => {
                 )}
               </div>
 
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-3">
+                <div className="flex items-center gap-2 text-green-700 font-semibold">
+                  <Truck size={18} />
+                  <span>Delivery Info</span>
+                </div>
+
+
+                {selectedAddress ? (
+                  <>
+                    <p className="text-sm mt-2 text-gray-700">
+                      <span className="font-semibold">{selectedAddress.fullName}</span> 📞 {selectedAddress.phone}
+                    </p>
+
+                    <p className="text-sm text-gray-700 mt-1">
+                      {selectedAddress.address}, {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
+                    </p>
+
+                    {/* 🔹 Reusable ExpectedDelivery */}
+                    <ExpectedDelivery pincode={selectedAddress.pincode} />
+                  </>
+                ) : (
+                  <p className="text-sm mt-2 text-red-500">
+                    Please add address to see delivery date
+                  </p>
+                )}
+
+              </div>
+
               {/* STOCK */}
               <p className={`text-sm font-semibold ${product.stock > 0 ? "text-green-600" : "text-red-500"}`}>
                 {product.stock > 0 ? "✔ In Stock" : "✖ Out of Stock"}
@@ -217,7 +246,6 @@ const ProductDetails = () => {
 
               {/* BUTTONS */}
               <div className="grid grid-cols-2 gap-3">
-
                 <button
                   onClick={handleAddToCart}
                   className="flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl"
@@ -231,12 +259,10 @@ const ProductDetails = () => {
                 >
                   <Zap size={18} /> Buy Now
                 </button>
-
               </div>
 
               {/* FEATURES */}
               <div className="grid grid-cols-3 gap-4 text-center text-sm mt-4">
-
                 <div className="flex flex-col items-center gap-1">
                   <Truck size={18} />
                   <span>Fast Delivery</span>
@@ -251,7 +277,6 @@ const ProductDetails = () => {
                   <RefreshCw size={18} />
                   <span>Easy Return</span>
                 </div>
-
               </div>
 
             </div>
@@ -262,7 +287,6 @@ const ProductDetails = () => {
 
         {/* ================= TABS ================= */}
         <div className="max-w-7xl mx-auto px-4 mt-10">
-
           <div className="flex gap-6 border-b pb-2">
             <button
               onClick={() => setActiveTab("description")}
@@ -280,7 +304,6 @@ const ProductDetails = () => {
           </div>
 
           <div className="mt-6">
-
             {activeTab === "description" && (
               <div className="bg-white p-6 rounded-xl shadow">
                 {product.description}
@@ -292,9 +315,7 @@ const ProductDetails = () => {
                 <ProductReviews productId={product._id} />
               </div>
             )}
-
           </div>
-
         </div>
 
         {/* SIMILAR PRODUCTS */}
@@ -306,7 +327,8 @@ const ProductDetails = () => {
         </div>
 
       </div>
-      <FooterNavbar/>
+
+      <FooterNavbar />
     </>
   );
 };

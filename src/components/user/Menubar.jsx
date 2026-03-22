@@ -11,6 +11,9 @@ import {
     ChevronDown,
     ChevronRight,
     X,
+    HelpCircle,
+    CommandIcon,
+    ShoppingBag,
 } from "lucide-react";
 import { logoutUser } from "@/redux/userSlice";
 import FooterNavbar from "./FooterNavbar";
@@ -21,7 +24,6 @@ const Menubar = () => {
     const dispatch = useDispatch();
 
     const [openSection, setOpenSection] = useState(null);
-    const [openSub, setOpenSub] = useState(null);
 
     const handleLogout = () => {
         dispatch(logoutUser());
@@ -32,8 +34,25 @@ const Menubar = () => {
         setOpenSection(openSection === section ? null : section);
     };
 
-    const toggleSub = (sub) => {
-        setOpenSub(openSub === sub ? null : sub);
+    const SubItem = ({ text, onClick, href }) => {
+
+        const handleClick = () => {
+            if (href) {
+                window.open(href, "_blank");
+            } else if (onClick) {
+                onClick();
+            }
+        };
+
+        return (
+            <div
+                onClick={handleClick}
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 cursor-pointer"
+            >
+                <ChevronRight size={14} />
+                {text}
+            </div>
+        );
     };
 
     return (
@@ -46,86 +65,68 @@ const Menubar = () => {
                     <X size={22} onClick={() => navigate(-1)} className="cursor-pointer" />
                 </div>
 
-                {/* 🔥 Ultra Premium Profile Card */}
+                {/* PROFILE */}
                 {user ? (
                     <div className="mx-4 mt-6 relative group">
+                        <div className="absolute -inset-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-md opacity-70"></div>
 
-                        {/* Gradient Glow */}
-                        <div className="absolute -inset-[2px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-md opacity-70 group-hover:opacity-100 transition duration-500"></div>
-
-                        {/* Card */}
-                        <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl p-6 shadow-[0_20px_50px_rgba(0,0,0,0.12)] border border-white/40 transition-all duration-300 group-hover:-translate-y-1">
-
-
-
+                        <div className="relative bg-white/80 backdrop-blur-2xl rounded-3xl p-6 shadow border">
                             <div className="flex items-center gap-5">
 
-                                {/* Avatar */}
                                 <div className="relative">
-
-                                    <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 blur-sm opacity-70 animate-pulse"></div>
-
                                     {user?.profilePic ? (
                                         <img
                                             src={user.profilePic}
                                             alt="profilePic"
-                                            className="relative w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
+                                            className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
                                         />
                                     ) : (
-                                        <div className="relative w-20 h-20 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                                        <div className="w-20 h-20 rounded-full bg-indigo-600 flex items-center justify-center text-white text-2xl font-bold">
                                             {user?.firstName?.charAt(0)}
                                         </div>
                                     )}
                                 </div>
 
-                                {/* User Info */}
-                                <div className="flex-1 space-y-2">
-
-                                    {/* Name */}
-                                    <h3 className="text-xl font-bold text-gray-900 tracking-wide">
+                                <div className="flex-1 space-y-1">
+                                    <h3 className="text-lg font-bold">
                                         {user.firstName} {user.lastName}
                                     </h3>
 
-                                    {/* Email */}
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                         <Mail size={14} />
-                                        <span className="truncate">{user.email}</span>
+                                        {user.email}
                                     </div>
 
-                                    {/* Phone */}
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                         <Phone size={14} />
-                                        <span>{user.phoneNo || "Not Added"}</span>
+                                        {user.phoneNo || "Not Added"}
                                     </div>
-
                                 </div>
 
-                                {/* 🔥 Left Floating Edit Button */}
                                 <button
                                     onClick={() => navigate("/profile")}
-                                    className="absolute top-5 left-5 bg-gradient-to-r from-indigo-500 to-purple-500 text-white p-2 rounded-full shadow-lg hover:scale-110 transition"
+                                    className="absolute top-4 left-4 bg-indigo-600 text-white p-2 rounded-full"
                                 >
-                                    <Pencil size={16} />
+                                    <Pencil size={14} />
                                 </button>
-
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="mx-4 mt-6 bg-white p-5 rounded-2xl shadow text-center">
-                        <p className="text-gray-600 mb-4">You are not logged in</p>
+                    <div className="mx-4 mt-6 bg-white p-5 rounded-xl text-center">
+                        <p className="mb-3">You are not logged in</p>
                         <button
                             onClick={() => navigate("/login")}
-                            className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-indigo-700 transition"
+                            className="bg-indigo-600 text-white px-5 py-2 rounded-lg"
                         >
-                            Login Now
+                            Login
                         </button>
                     </div>
                 )}
 
                 <div className="mt-6 px-4 space-y-3">
 
-                    {/* MAIN SECTION */}
+                    {/* MAIN */}
                     <Accordion
                         title="Main"
                         icon={Home}
@@ -137,7 +138,19 @@ const Menubar = () => {
                         <SubItem text="Wishlist" onClick={() => navigate("/wishlist")} />
                     </Accordion>
 
-                    {/* ACCOUNT SECTION */}
+                    {/* SHOP */}
+                    <Accordion
+                        title="Shop"
+                        icon={ShoppingBag}
+                        open={openSection === "shop"}
+                        onClick={() => toggleSection("shop")}
+                    >
+                        <SubItem text="All Products" onClick={() => navigate("/products")} />
+                        <SubItem text="Categories" onClick={() => navigate("/categories")} />
+                        <SubItem text="Offers" onClick={() => navigate("/offers")} />
+                    </Accordion>
+
+                    {/* ACCOUNT */}
                     {user && (
                         <Accordion
                             title="Account"
@@ -147,12 +160,12 @@ const Menubar = () => {
                         >
                             <SubItem text="My Profile" onClick={() => navigate("/profile")} />
                             <SubItem text="My Orders" onClick={() => navigate("/myorders")} />
+                            <SubItem text="Track Order" onClick={() => navigate("/track-order")} />
                             <SubItem text="Address" onClick={() => navigate("/profile")} />
-                            <SubItem text="Security" onClick={() => navigate("/profile")} />
                         </Accordion>
                     )}
 
-                    {/* ADMIN PANEL */}
+                    {/* ADMIN */}
                     {user?.role === "admin" && (
                         <Accordion
                             title="Admin Panel"
@@ -161,20 +174,49 @@ const Menubar = () => {
                             onClick={() => toggleSection("admin")}
                         >
                             <SubItem text="Dashboard" onClick={() => navigate("/adminDashboard")} />
-                            <SubItem text="Manage Orders" onClick={() => navigate("/admin/OrderPannel")} />
-                            <SubItem text="Coupon Sections" onClick={() => navigate("/admin/couponPage")} />
-                            <SubItem text="Manage Products" onClick={() => navigate("/admin/products")} />
-                            <SubItem text="Manage Users" onClick={() => navigate("/admin/UserPannel")} />
-                            <SubItem text="Manage Banners" onClick={() => navigate("/admin/add-banner")} />
-                            <SubItem text="Manage Reviews" onClick={() => navigate("/admin/UserReviews")} />
+                            <SubItem text="Orders" onClick={() => navigate("/admin/OrderPannel")} />
+                            <SubItem text="Products" onClick={() => navigate("/admin/products")} />
+                            <SubItem text="Users" onClick={() => navigate("/admin/UserPannel")} />
+                            <SubItem text="Coupons" onClick={() => navigate("/admin/couponPage")} />
+                            <SubItem text="Banners" onClick={() => navigate("/admin/add-banner")} />
+                            <SubItem text="Reviews" onClick={() => navigate("/admin/UserReviews")} />
                         </Accordion>
                     )}
 
-                    {/* 🔁 LOGIN / LOGOUT BUTTON */}
+                    {/* HELP */}
+                    <Accordion
+                        title="Help & Support"
+                        icon={HelpCircle}
+                        open={openSection === "help"}
+                        onClick={() => toggleSection("help")}
+                    >
+                        <SubItem text="Contact Us" onClick={() => navigate("/contactUs")} />
+
+                        <SubItem
+                            text="Chat on WhatsApp"
+                            href="https://wa.me/7523062030?text=Hi%20I%20am%20interested%20in%20your%20products"
+                        />
+
+                        <SubItem text="Return Policy" onClick={() => navigate("/returnPolicy")} />
+                    </Accordion>
+
+                    {/* LEGAL */}
+                    <Accordion
+                        title="Legal"
+                        icon={CommandIcon}
+                        open={openSection === "legal"}
+                        onClick={() => toggleSection("legal")}
+                    >
+                        <SubItem text="Terms & Conditions" onClick={() => navigate("/termsAndConditions")} />
+                        <SubItem text="Privacy Policy" onClick={() => navigate("/privacyPolicy")} />
+                        <SubItem text="Refund Policy" onClick={() => navigate("/refundPolicy")} />
+                    </Accordion>
+
+                    {/* LOGIN / LOGOUT */}
                     {user ? (
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-50 text-red-600 font-medium hover:bg-red-100 transition"
+                            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-50 text-red-600"
                         >
                             <LogOut size={18} />
                             Logout
@@ -182,7 +224,7 @@ const Menubar = () => {
                     ) : (
                         <button
                             onClick={() => navigate("/login")}
-                            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition"
+                            className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-indigo-600 text-white"
                         >
                             <LogIn size={18} />
                             Login
@@ -196,7 +238,6 @@ const Menubar = () => {
         </>
     );
 };
-
 
 /* Accordion */
 const Accordion = ({ title, icon: Icon, children, open, onClick }) => (
@@ -218,18 +259,15 @@ const Accordion = ({ title, icon: Icon, children, open, onClick }) => (
     </div>
 );
 
-
-/* Sub Item */
+/* SubItem */
 const SubItem = ({ text, onClick }) => (
     <div
         onClick={onClick}
-        className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 cursor-pointer transition"
+        className="flex items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 cursor-pointer"
     >
         <ChevronRight size={14} />
         {text}
     </div>
 );
 
-
-
-export default Menubar;
+export default Menubar;  

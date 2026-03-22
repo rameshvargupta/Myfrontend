@@ -37,6 +37,11 @@ import OrdersPanel from "./pages/admin/dashboard/components/OrdersPanel";
 import CouponPage from "./pages/admin/dashboard/couponePage/CouponPage";
 import { UserReviews } from "./pages/admin/UserReviews";
 import MyOrdersDetails from "./pages/user/MyOrdersDetails";
+import TermsAndConditions from "./pages/HelpAndSupport/TermsAndConditions";
+import ContactUs from "./pages/HelpAndSupport/ContactUs";
+import ReturnPolicy from "./pages/HelpAndSupport/ReturnPolicy";
+import PrivacyPolicy from "./pages/HelpAndSupport/PrivacyPolicy";
+import RefundPolicy from "./pages/HelpAndSupport/RefundPolicy";
 
 /* =========================
    ROUTER
@@ -51,7 +56,7 @@ const router = createBrowserRouter([
           <>
             <Navbar />
             <Home />
-            
+
           </>
         ),
       },
@@ -82,6 +87,13 @@ const router = createBrowserRouter([
       { path: "/category/:id", element: <ProductCategoryDetails /> },
       { path: "/menubar", element: <Menubar /> },
       { path: "/productCategoryDetails", element: <ProductCategoryDetails /> },
+      //user condition section
+      { path: "/termsAndConditions", element: <TermsAndConditions /> },
+      { path: "/contactUs", element: <ContactUs /> },
+      { path: "/returnPolicy", element: <ReturnPolicy /> },
+      { path: "/privacyPolicy", element: <PrivacyPolicy /> },
+      { path: "/refundPolicy", element: <RefundPolicy /> },
+      // condition section
 
       /* ADMIN */
       { path: "/admin/products", element: <ProductList /> },

@@ -19,10 +19,8 @@ const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [adminDropdown, setAdminDropdown] = useState(false);
-  const [mobileAdminOpen, setMobileAdminOpen] = useState(false);
   const [keyword, setKeyword] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -162,7 +160,7 @@ const Navbar = () => {
               to="/"
               className="text-2xl font-bold text-pink-600 tracking-wide"
             >
-              Ecart
+              GT Shop
             </Link>
 
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-700">

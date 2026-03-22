@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import HeroSlider from "@/components/HeroSlider";
@@ -15,7 +15,7 @@ import { setAddresses, selectAddress } from "@/redux/addressSlice";
 import ProductCategory from "./ProductCategory";
 import RecentlyViewed from "./user/RecentlyViewed";
 import Footer from "@/components/Footer";
-
+import debounce from "lodash.debounce";
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -25,9 +25,8 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [keyword, setKeyword] = useState("");
-  const [searchKeyword, setSearchKeyword] = useState("");
   const [showAddressModal, setShowAddressModal] = useState(false);
-
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const { user } = useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -95,13 +94,37 @@ const Home = () => {
     }
   }, [user]);
 
-
-  const searchHandler = (e) => {
-    e.preventDefault();
-    if (!keyword.trim()) return;
-
-    setSearchKeyword(keyword);
+  const handleKeywordChange = (e) => {
+    setKeyword(e.target.value);
+    debouncedInput(e.target.value);
   };
+  const debouncedInput = useMemo(
+    () =>
+      debounce((value) => {
+        setDebouncedKeyword(value.trim().toLowerCase());
+      }, 300),
+    []
+  );
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedInput.cancel();
+    };
+  }, [debouncedInput]);
+
+
+  const filteredProducts = products.filter((p) => {
+    const name = (p.name || "").toLowerCase();
+    const brand = (p.brand || "").toLowerCase();
+    const category = (p.category?.name || "").toLowerCase(); // ✅ use .name
+
+    return (
+      name.includes(debouncedKeyword) ||
+      brand.includes(debouncedKeyword) ||
+      category.includes(debouncedKeyword)
+    );
+  });
 
   const handleClosePopup = () => {
     setShowLoginPopup(false);
@@ -337,22 +360,28 @@ const Home = () => {
           </div>
         )}
 
+        <Section title={debouncedKeyword ? `Search results for "${debouncedKeyword}"` : "Trending Products"}>
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((p) => <ProductCard key={p._id} product={p} />)
+          ) : (
+            <p className="col-span-full text-center text-gray-500 mt-10">
+              No products found.
+            </p>
+          )}
+        </Section>
         {/* for middle devices   */}
         <div className="md:hidden fixed top-0 mt-12 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-100">
 
           <div className="px-4 pt-4 pb-3 space-y-3">
 
             {/* Search Bar */}
-            <form
-              onSubmit={searchHandler}
-              className="flex items-center bg-gray-100 rounded-full px-4 h-11 focus-within:ring-2 focus-within:ring-pink-500 transition-all"
-            >
+            <form onSubmit={(e) => e.preventDefault()} className="flex items-center bg-gray-100 rounded-full px-4 h-11 focus-within:ring-2 focus-within:ring-pink-500 transition-all">
               <Search size={18} className="text-gray-400 mr-3" />
               <input
                 type="text"
                 placeholder="Search for products, brands..."
                 value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+                onChange={handleKeywordChange}
                 className="bg-transparent outline-none flex-1 text-sm"
               />
             </form>
@@ -542,7 +571,7 @@ const Home = () => {
 
       {/* ================= WHATSAPP FLOAT BUTTON ================= */}
       <a
-        href="https://wa.me/917523062030?text=Hi%20I%20am%20interested%20in%20your%20products"
+        href="https://wa.me/7523062030?text=Hi%20I%20am%20interested%20in%20your%20products"
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-20 md:bottom-6 right-4 z-50 group"

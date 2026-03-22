@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { Minus, Plus, Trash2, Truck, Tag } from "lucide-react";
+import ExpectedDelivery from "./ExpectedDelivery";
 
 const PLATFORM_FEE = 5;
 
@@ -10,6 +11,7 @@ const OrderSummary = ({
   onDecrease,
   onRemove,
   isOrderDetails = false,
+  expectedDelivery,
 }) => {
 
   /* ================= CALCULATE ================= */
@@ -195,6 +197,8 @@ const OrderSummary = ({
           </span>
 
         </div>
+        {/* 🔹 Expected Delivery inside OrderSummary */}
+       {expectedDelivery && <ExpectedDelivery pincode={expectedDelivery} />}
 
         {savings > 0 && (
           <p className="text-green-600 text-sm font-medium">
