@@ -1,8 +1,10 @@
+import { deleteProductApi, fetchAdminProducts, fetchCategories, toggleProductApi } from "@/api/productApi";
 import Navbar from "@/components/Navbar";
-import {useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 const API_URL = import.meta.env.VITE_API_URL;
+
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -24,31 +26,28 @@ const ProductList = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/v1/admin/products`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      const data = await fetchAdminProducts();
 
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || "Fetch failed");
+      if (!data.success) throw new Error(data.message);
 
       setProducts(data.products);
       setFilteredProducts(data.products);
+
     } catch (err) {
-      console.error(err);
       toast.error("Failed to fetch products");
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------- FETCH CATEGORIES ---------- */
-  const fetchCategories = async () => {
+  const getCategories = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/categories`);
-      const data = await res.json();
-      if (data.success) setCategories(data.categories);
+      const data = await fetchCategories();
+
+      if (!data.success) throw new Error(data.message);
+
+      setCategories(data.categories);
+
     } catch (err) {
       console.error(err);
     }
@@ -56,7 +55,7 @@ const ProductList = () => {
 
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
+    getCategories();
   }, []);
 
   /* ---------- SEARCH & FILTER LOGIC ---------- */
@@ -94,37 +93,28 @@ const ProductList = () => {
     setCurrentPage(1); // reset page on filter change
   }, [searchTerm, categoryFilter, statusFilter, priceSort, dateSort, products]);
 
-  /* ---------- TOGGLE ACTIVE ---------- */
   const toggleStatus = async (id) => {
-    const res = await fetch(`${API_URL}/api/v1/admin/product/status/${id}`, {
-      method: "PUT",
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
+    const data = await toggleProductApi(id);
 
-    const data = await res.json();
     if (!data.success) return toast.error("Status update failed");
 
     setProducts((prev) =>
       prev.map((p) => (p._id === id ? { ...p, isActive: data.isActive } : p))
     );
 
-    toast.success(data.isActive ? "Product Activated" : "Product Blocked");
+    toast.success(data.isActive ? "Activated" : "Blocked");
   };
 
   /* ---------- DELETE ---------- */
   const deleteHandler = async (id) => {
-    if (!confirm("Permanent delete? This cannot be undone")) return;
+    if (!confirm("Delete permanently?")) return;
 
-    const res = await fetch(`${API_URL}/api/v1/admin/product/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
+    const data = await deleteProductApi(id);
 
-    const data = await res.json();
     if (!data.success) return toast.error(data.message);
 
-    toast.success("Product deleted");
     setProducts((prev) => prev.filter((p) => p._id !== id));
+    toast.success("Deleted successfully");
   };
 
   /* ---------- PAGINATION LOGIC ---------- */

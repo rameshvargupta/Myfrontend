@@ -4,6 +4,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/pagination";
+const API_URL = import.meta.env.VITE_API_URL;
 
 /* ================= HEIGHT CONFIG ================= */
 const HEIGHTS = {
@@ -22,7 +23,7 @@ const HeroSlider = ({ position = "TOP", className = "" }) => {
       try {
         setLoading(true);
         const res = await axios.get(
-          `${API_URL}/v1/banners/active?position=${position}`
+          `${API_URL}/api/v1/banners/active?position=${position}`
         );
         const bannerImages = Array.isArray(res.data?.images)
           ? res.data.images

@@ -43,9 +43,8 @@ import ReturnPolicy from "./pages/HelpAndSupport/ReturnPolicy";
 import PrivacyPolicy from "./pages/HelpAndSupport/PrivacyPolicy";
 import RefundPolicy from "./pages/HelpAndSupport/RefundPolicy";
 const API_URL = import.meta.env.VITE_API_URL;
-/* =========================
-   ROUTER
-========================= */
+
+
 const router = createBrowserRouter([
   {
     element: <MainLayout />, // 👈 ROOT LAYOUT (SCROLL HERE)
@@ -166,6 +165,7 @@ const App = () => {
       });
 
   }, [dispatch]);
+console.log("API URL:", import.meta.env.VITE_API_URL);
 
 
   if (loadingUser) {

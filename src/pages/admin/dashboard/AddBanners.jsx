@@ -17,7 +17,7 @@ const AddBanners = () => {
   const token = localStorage.getItem("token");
 
   const fetchBanners = async (pos) => {
-    const res = await axios.get(`/api/v1/banners/active?position=${pos}`);
+    const res = await axios.get(`${API_URL}/api/v1/banners/active?position=${pos}`);
     setBanners((p) => ({ ...p, [pos]: res.data }));
   };
 
@@ -39,7 +39,7 @@ const AddBanners = () => {
         formData.append("images", f)
       );
 
-      await axios.post("/api/v1/banners", formData, {
+      await axios.post(`${API_URL}/api/v1/banners`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -59,7 +59,7 @@ const AddBanners = () => {
   /* ================= DELETE ================= */
   const deleteImage = async (pos, bannerId, imageId) => {
     await axios.delete(
-      `/api/v1/banners/${bannerId}/image/${imageId}`,
+      `${API_URL}/api/v1/banners/${bannerId}/image/${imageId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 

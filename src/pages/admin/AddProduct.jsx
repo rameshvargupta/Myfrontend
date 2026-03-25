@@ -11,7 +11,9 @@ import AddCategory from "./AddCategory";
 import { Upload, ImagePlus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterNavbar from "@/components/user/FooterNavbar";
+import { fetchCategories } from "@/api/productApi";
 const API_URL = import.meta.env.VITE_API_URL;
+
 const AddProduct = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -28,18 +30,21 @@ const AddProduct = () => {
   });
 
   /* ================= FETCH CATEGORIES ================= */
-  const fetchCategories = async () => {
+  const getCategories = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/categories`);
-      const data = await res.json();
-      if (data.success) setCategories(data.categories);
+      const data = await fetchCategories();
+
+      if (!data.success) throw new Error(data.message);
+
+      setCategories(data.categories);
+
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchCategories();
+    getCategories();
   }, []);
 
   /* ================= HANDLERS ================= */
@@ -94,7 +99,7 @@ const AddProduct = () => {
       });
 
       const res = await fetch(
-        `${API_URL}/api/v1/admin/product`,
+        `${API_URL}/api/v1/products/admin/product`,
         {
           method: "POST",
           headers: {

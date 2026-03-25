@@ -372,6 +372,7 @@ const Home = () => {
             </p>
           )}
         </Section>
+
         {/* for middle devices   */}
         <div className="md:hidden fixed top-0 mt-12 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-100">
 
@@ -513,7 +514,6 @@ const Home = () => {
           </div>
         )}
 
-
         <ProductCategory />
 
         <div className="px-4 md:px-8">
@@ -522,7 +522,6 @@ const Home = () => {
             className="h-[130px] sm:h-[180px] md:h-[220px] lg:h-[260px]"
           />
         </div>
-
 
 
         <Section title="Trending Products">

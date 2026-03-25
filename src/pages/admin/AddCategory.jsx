@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, Pencil, Trash2, Search, Plus } from "lucide-react";
+import { fetchCategories } from "@/api/productApi";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const CategoryList = ({ onSuccess }) => {
@@ -24,18 +25,21 @@ const CategoryList = ({ onSuccess }) => {
   const dropdownRef = useRef();
 
   /* ================= FETCH ================= */
-  const fetchCategories = async () => {
+  const getCategories = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/categorie`);
-      const data = await res.json();
-      if (data.success) setCategories(data.categories);
+      const data = await fetchCategories();
+
+      if (!data.success) throw new Error(data.message);
+
+      setCategories(data.categories);
+
     } catch (err) {
-      toast.error("Failed to fetch categories");
+      console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchCategories();
+    getCategories();
   }, []);
 
   /* ================= OUTSIDE CLICK ================= */
@@ -59,7 +63,7 @@ const CategoryList = ({ onSuccess }) => {
       setLoading(true);
 
       const res = await fetch(
-        `${API_URL}/api/v1/admin/category`,
+        `${API_URL}/api/v1/categories/admin/category`,
         {
           method: "POST",
           headers: {
@@ -92,7 +96,7 @@ const CategoryList = ({ onSuccess }) => {
 
     try {
       const res = await fetch(
-        `${API_URL}/api/v1/admin/category/${selectedCategory._id}`,
+        `${API_URL}/api/v1/categories/admin/category/${selectedCategory._id}`,
         {
           method: "PUT",
           headers: {
@@ -118,7 +122,7 @@ const CategoryList = ({ onSuccess }) => {
   const deleteHandler = async () => {
     try {
       const res = await fetch(
-        `${API_URL}/api/v1/admin/category/${selectedCategory._id}`,
+        `${API_URL}/api/v1/categories/admin/category/${selectedCategory._id}`,
         {
           method: "DELETE",
           headers: {

@@ -10,6 +10,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Upload } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { fetchCategories } from "@/api/productApi";
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 const EditProduct = () => {
   const { id } = useParams();
@@ -31,21 +34,29 @@ const EditProduct = () => {
   });
 
   /* ================= FETCH CATEGORIES ================= */
-  const fetchCategories = async () => {
+  const getCategories = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/v1/categories`);
-      const data = await res.json();
-      if (data.success) setCategories(data.categories);
+      const data = await fetchCategories();
+
+      if (!data.success) throw new Error(data.message);
+
+      setCategories(data.categories);
+
     } catch (err) {
       console.error(err);
     }
   };
 
+  useEffect(() => {
+    getCategories();
+  }, []);
+
+
   /* ================= FETCH PRODUCT ================= */
   const fetchProduct = async () => {
     try {
       const res = await fetch(
-        `${API_URL}/api/v1/admin/product/${id}`,
+        `${API_URL}/api/v1/products/admin/product/${id}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
