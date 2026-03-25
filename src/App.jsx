@@ -42,7 +42,7 @@ import ContactUs from "./pages/HelpAndSupport/ContactUs";
 import ReturnPolicy from "./pages/HelpAndSupport/ReturnPolicy";
 import PrivacyPolicy from "./pages/HelpAndSupport/PrivacyPolicy";
 import RefundPolicy from "./pages/HelpAndSupport/RefundPolicy";
-
+const API_URL = import.meta.env.VITE_API_URL;
 /* =========================
    ROUTER
 ========================= */
@@ -145,7 +145,7 @@ const App = () => {
     }
 
     // ✅ Server se fresh user fetch karo
-    fetch("http://localhost:5000/api/v1/user/me", {
+    fetch(`${API_URL}/api/v1/user/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(res => res.json())

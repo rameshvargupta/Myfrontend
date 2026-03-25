@@ -16,6 +16,9 @@ import ProductCategory from "./ProductCategory";
 import RecentlyViewed from "./user/RecentlyViewed";
 import Footer from "@/components/Footer";
 import debounce from "lodash.debounce";
+const API_URL = import.meta.env.VITE_API_URL;
+
+
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [showLoginPopup, setShowLoginPopup] = useState(false);
@@ -67,13 +70,13 @@ const Home = () => {
     (state) => state.address
   );
   const defaultAddress = selectedAddress;
-  console.log(defaultAddress);
+  // console.log(defaultAddress);
 
   /* ================= FETCH PRODUCTS ================= */
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/v1/products")
+      .get(`${API_URL}/api/v1/products`)
       .then((res) => {
         if (res.data.success) {
           setProducts(res.data.products);
@@ -143,7 +146,7 @@ const Home = () => {
 
       // 1️⃣ LOGIN
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/login",
+        `${API_URL}/api/v1/user/login`,
         {
           method: "POST",
           headers: {
@@ -160,7 +163,7 @@ const Home = () => {
 
       // 2️⃣ FETCH FULL PROFILE
       const profileRes = await fetch(
-        "http://localhost:5000/api/v1/user/my-profile",
+        `${API_URL}/api/v1/user/my-profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

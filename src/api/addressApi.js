@@ -1,14 +1,17 @@
-const BASE_URL = "http://localhost:5000/api/v1/user/address";
-
+const API_URL = import.meta.env.VITE_API_URL;
 /* ================= GET ADDRESSES ================= */
 export const fetchAddresses = async () => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(BASE_URL, {
+  const res = await fetch(`${API_URL}/api/v1/user/address`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch addresses");
+  }
 
   return res.json();
 };
@@ -18,8 +21,8 @@ export const saveAddress = async (addressForm, editId = null) => {
   const token = localStorage.getItem("token");
 
   const url = editId
-    ? `${BASE_URL}/${editId}`
-    : BASE_URL;
+    ? `${API_URL}/api/v1/user/address/${editId}`
+    : `${API_URL}/api/v1/user/address`;
 
   const res = await fetch(url, {
     method: editId ? "PUT" : "POST",
@@ -39,13 +42,11 @@ export const saveAddress = async (addressForm, editId = null) => {
   return data;
 };
 
-
-
 /* ================= DELETE ADDRESS ================= */
 export const deleteAddress = async (id) => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${BASE_URL}/${id}`, {
+  const res = await fetch(`${API_URL}/api/v1/user/address/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -58,7 +59,7 @@ export const deleteAddress = async (id) => {
 export const makeDefaultAddress = async (id) => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${BASE_URL}/default/${id}`, {
+  const res = await fetch(`${API_URL}/default/${id}`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,

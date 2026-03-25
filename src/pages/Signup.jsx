@@ -14,7 +14,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const getPasswordStrength = (password) => {
   let score = 0;
 
@@ -30,7 +30,6 @@ const getPasswordStrength = (password) => {
 
   return { label: "Strong", color: "bg-green-500", percent: 100 };
 };
-
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +59,7 @@ const Signup = () => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/resend-signup-otp",
+        `${API_URL}/api/v1/user/resend-signup-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -112,7 +111,7 @@ const Signup = () => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/signup/send-otp",
+        `${API_URL}/api/v1/user/signup/send-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -159,7 +158,7 @@ const Signup = () => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/signup/verify-otp",
+        `${API_URL}/api/v1/user/signup/verify-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

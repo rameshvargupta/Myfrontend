@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { toast } from "sonner";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const AdminProductView = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ const AdminProductView = () => {
     const fetchReviews = async () => {
       try {
         const res = await fetch(
-          `http://localhost:5000/api/v1/products/${product._id}/reviews`
+          `${API_URL}/api/v1/products/${product._id}/reviews`
         );
 
         const data = await res.json();
@@ -44,8 +44,8 @@ const AdminProductView = () => {
         setLoading(true);
 
         const [productRes, ordersRes] = await Promise.all([
-          fetch(`http://localhost:5000/api/v1/products/${slug}`),
-          fetch(`http://localhost:5000/api/v1/orders/admin/orders`, {
+          fetch(`${API_URL}/api/v1/products/${slug}`),
+          fetch(`${API_URL}/api/v1/orders/admin/orders`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

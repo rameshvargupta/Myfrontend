@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-
+const API_URL = import.meta.env.VITE_API_URL;
 import Navbar from "@/components/Navbar";
 import AddressSection from "@/components/address/AddressSection";
 import OrderSummary from "./OrderSummary";
@@ -171,7 +171,7 @@ const Checkout = () => {
       if (paymentMethod === "ONLINE") {
 
         // 1. Create Razorpay order
-        const res = await fetch("http://localhost:5000/api/v1/payment/create-order", {
+        const res = await fetch(`${API_URL}/api/v1/payment/create-order`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -199,7 +199,7 @@ const Checkout = () => {
 
             // 2. VERIFY PAYMENT
             const verifyRes = await fetch(
-              "http://localhost:5000/api/v1/payment/verify",
+              `${API_URL}/api/v1/payment/verify`,
               {
                 method: "POST",
                 headers: {
@@ -245,7 +245,7 @@ const Checkout = () => {
       // ================= COD =================
       else {
 
-        const res = await fetch("http://localhost:5000/api/v1/orders", {
+        const res = await fetch(`${API_URL}/api/v1/orders`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

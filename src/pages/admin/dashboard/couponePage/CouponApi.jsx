@@ -1,4 +1,5 @@
-const BASE_URL = "/api/v1/coupons/admin";
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 // Helper API
 const apiRequest = async (url, method = "GET", body = null) => {
@@ -43,22 +44,22 @@ export const CouponApi = {
 
   // CREATE
   createCoupon: (data) =>
-    apiRequest(`${BASE_URL}/create`, "POST", data),
+    apiRequest(`${API_URL}/api/v1/coupons/admin/create`, "POST", data),
 
   // GET ALL
   getAllCoupons: () =>
-    apiRequest(`${BASE_URL}/all`),
+    apiRequest(`${API_URL}/api/v1/coupons/admin/all`),
 
   // UPDATE
   updateCoupon: (id, data) =>
-    apiRequest(`${BASE_URL}/update/${id}`, "PUT", data),
+    apiRequest(`${API_URL}/api/v1/coupons/admin/update/${id}`, "PUT", data),
 
   // DELETE
   deleteCoupon: (id) =>
-    apiRequest(`${BASE_URL}/delete/${id}`, "DELETE"),
+    apiRequest(`${API_URL}/api/v1/coupons/admin/delete/${id}`, "DELETE"),
 
   // TOGGLE ACTIVE
   toggleCoupon: (id) =>
-    apiRequest(`${BASE_URL}/toggle/${id}`, "PATCH")
+    apiRequest(`${API_URL}/api/v1/coupons/admin/toggle/${id}`, "PATCH")
 
 };

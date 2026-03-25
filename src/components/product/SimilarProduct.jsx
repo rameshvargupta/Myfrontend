@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const SimilarProducts = ({ productId, categoryId }) => {
   const [products, setProducts] = useState([]);
   const cartItems = useSelector(
@@ -15,7 +15,7 @@ const SimilarProducts = ({ productId, categoryId }) => {
     if (!productId || !categoryId) return;
 
     fetch(
-      `http://localhost:5000/api/v1/products/similar/${productId}/${categoryId}`
+      `${API_URL}/api/v1/products/similar/${productId}/${categoryId}`
     )
       .then((res) => res.json())
       .then((data) => {

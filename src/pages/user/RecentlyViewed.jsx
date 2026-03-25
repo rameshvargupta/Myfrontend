@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import { Heart, ChevronLeft, ChevronRight } from "lucide-react";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const RecentlyViewed = () => {
   const [products, setProducts] = useState([]);
   const token = useSelector((state) => state.user?.token);
@@ -14,7 +14,7 @@ const RecentlyViewed = () => {
         if (!token) return;
 
         const { data } = await axios.get(
-          "http://localhost:5000/api/v1/user/recently-viewed",
+          `${API_URL}/api/v1/user/recently-viewed`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

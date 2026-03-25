@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { loadUserCart } from "@/redux/cartSlice";
 import Avatar from "@/pages/profile/Avatar";
 import { clearAddressState } from "@/redux/addressSlice";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const Navbar = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -58,7 +58,7 @@ const Navbar = () => {
     try {
       const token = localStorage.getItem("token");
       if (token) {
-        await fetch("http://localhost:5000/api/v1/user/logout", {
+        await fetch(`${API_URL}/api/v1/user/logout`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -101,7 +101,7 @@ const Navbar = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:5000/api/v1/products?keyword=${keyword}`,
+          `${API_URL}/api/v1/products?keyword=${keyword}`,
           {
             headers: {
               "Content-Type": "application/json",

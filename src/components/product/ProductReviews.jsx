@@ -8,7 +8,7 @@ import {
   ChevronUp,
   MessageSquare
 } from "lucide-react";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const ProductReviews = ({ productId }) => {
 
   const [reviews, setReviews] = useState([]);
@@ -24,7 +24,7 @@ const ProductReviews = ({ productId }) => {
       setLoading(true);
 
       const res = await fetch(
-        `http://localhost:5000/api/v1/products/${productId}/reviews`,
+        `${API_URL}/api/v1/products/${productId}/reviews`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         }

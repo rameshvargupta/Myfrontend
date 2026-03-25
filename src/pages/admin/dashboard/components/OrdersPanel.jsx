@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import FooterNavbar from "@/components/user/FooterNavbar";
+const API_URL = import.meta.env.VITE_API_URL;
 
 /* ================= TIME BUTTONS ================= */
 const timeButtons = [
@@ -37,7 +38,7 @@ const OrdersPanel = () => {
       const token = localStorage.getItem("token"); // 👈 IMPORTANT
 
       const { data } = await axios.get(
-        "http://localhost:5000/api/v1/orders/admin/orders",
+        `${API_URL}/api/v1/orders/admin/orders`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -78,7 +79,7 @@ const OrdersPanel = () => {
     const token = localStorage.getItem("token");
 
     const { data } = await axios.put(
-      `http://localhost:5000/api/v1/orders/admin/order/${orderId}`,
+      `${API_URL}/api/v1/orders/admin/order/${orderId}`,
       payload,
       {
         headers: { Authorization: `Bearer ${token}` },

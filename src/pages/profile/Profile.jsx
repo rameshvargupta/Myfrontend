@@ -22,7 +22,7 @@ import { logoutUser } from "../../redux/userSlice";
 import { useNavigate } from "react-router-dom";
 import Avatar from "./Avatar";
 import { makeDefaultAddress, saveAddress } from "@/api/addressApi";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const Profile = () => {
   const { user } = useSelector((state) => state.user);
   const orders = useSelector((state) => state.order?.orders) || [];
@@ -142,7 +142,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
 
       const { data } = await axios.delete(
-        `http://localhost:5000/api/v1/user/address/${id}`,
+        `${API_URL}/api/v1/user/address/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -181,7 +181,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        "http://localhost:5000/api/v1/user/change-password",
+        `${API_URL}/api/v1/user/change-password`,
         {
           currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
@@ -214,7 +214,7 @@ const Profile = () => {
 
       if (token) {
         await axios.post(
-          "http://localhost:5000/api/v1/user/logout",
+          `${API_URL}/api/v1/user/logout`,
           {},
           {
             headers: {
@@ -252,7 +252,7 @@ const Profile = () => {
         const token = localStorage.getItem("token");
 
         const { data } = await axios.get(
-          "http://localhost:5000/api/v1/orders/my-orders",
+          `${API_URL}/api/v1/orders/my-orders`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -277,7 +277,7 @@ const Profile = () => {
         const token = localStorage.getItem("token");
 
         const { data } = await axios.get(
-          "http://localhost:5000/api/v1/user/my-profile",
+         `${api}/api/v1/user/my-profile`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

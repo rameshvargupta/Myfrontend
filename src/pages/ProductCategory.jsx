@@ -10,6 +10,8 @@ import {
   Home,
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ProductCategory = () => {
   const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ const ProductCategory = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/v1/categories");
+        const res = await fetch(`${API_URL}/api/v1/categories/categories`);
         const data = await res.json();
         if (data.success) setCategories(data.categories);
       } catch (err) {
@@ -44,7 +46,7 @@ const ProductCategory = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 ">
-    
+
 
       <div
         className="
@@ -59,7 +61,7 @@ const ProductCategory = () => {
         {categories.map((cat) => (
           <div
             key={cat._id}
-           onClick={() => navigate(`/category/${cat._id}`)}
+            onClick={() => navigate(`/category/${cat._id}`)}
             className="
               cursor-pointer
               flex flex-col items-center

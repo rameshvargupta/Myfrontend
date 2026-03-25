@@ -6,7 +6,7 @@ import FooterNavbar from "@/components/user/FooterNavbar";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const OrderSuccess = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
@@ -26,7 +26,7 @@ const OrderSuccess = () => {
     const fetchOrder = async () => {
       const token = localStorage.getItem("token");
       const res = await fetch(
-        `http://localhost:5000/api/v1/orders/${orderId}`,
+        `${API_URL}/api/v1/orders/${orderId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();

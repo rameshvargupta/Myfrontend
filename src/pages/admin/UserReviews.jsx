@@ -9,12 +9,10 @@ import {
 import FooterNavbar from "@/components/user/FooterNavbar";
 import Navbar from "@/components/Navbar";
 
-const API = "http://localhost:5000/api/v1/reviews";
+const API_URL = import.meta.env.VITE_API_URL;
 
 export const UserReviews = () => {
-
   const navigate = useNavigate();
-
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all");
@@ -33,8 +31,8 @@ export const UserReviews = () => {
     try {
       const url =
         tab === "pending"
-          ? `${API}/admin/reviews/pending`
-          : `${API}/admin/reviews`;
+          ? `${API_URL}/api/v1/reviews/admin/reviews/pending`
+          : `${API_URL}/api/v1/reviews/admin/reviews`;
 
       const res = await axios.get(url, { headers });
       setReviews(res.data?.reviews || []);
@@ -76,7 +74,7 @@ export const UserReviews = () => {
     try {
       const endpoint = type === "approve" ? "approve" : "reject";
 
-      await axios.patch(`${API}/admin/reviews/${id}/${endpoint}`, {}, { headers });
+      await axios.patch(`${API_URL}/api/v1/reviews/admin/reviews/${id}/${endpoint}`, {}, { headers });
 
       setReviews(prev =>
         prev.map(r =>
@@ -108,7 +106,7 @@ export const UserReviews = () => {
     setActionLoading({ id, type: "delete" });
 
     try {
-      await axios.delete(`${API}/admin/reviews/${id}`, { headers });
+      await axios.delete(`${API_URL}/api/v1/reviews/admin/reviews/${id}`, { headers });
 
       setReviews(prev => prev.filter(r => r._id !== id));
 

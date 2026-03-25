@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
-
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -23,11 +22,12 @@ const HeroSlider = ({ position = "TOP", className = "" }) => {
       try {
         setLoading(true);
         const res = await axios.get(
-          `/api/v1/banners/active?position=${position}`
+          `${API_URL}/v1/banners/active?position=${position}`
         );
+        const bannerImages = Array.isArray(res.data?.images)
+          ? res.data.images
+          : [];
 
-        // IMPORTANT: backend returns object OR array
-        const bannerImages = res.data?.images || res.data || [];
         setImages(bannerImages);
       } catch (err) {
         console.error("Hero banner error", err);

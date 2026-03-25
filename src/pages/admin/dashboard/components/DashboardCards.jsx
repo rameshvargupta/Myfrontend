@@ -5,6 +5,8 @@ import {
   CreditCard,
   IndianRupee,
 } from "lucide-react";
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 const DashboardCards = ({ setActiveView }) => {
   const [stats, setStats] = useState({
@@ -20,7 +22,7 @@ const DashboardCards = ({ setActiveView }) => {
   const fetchStats = async () => {
     try {
       const res = await fetch(
-        "http://localhost:5000/api/v1/admin/dashboard-stats",
+        `${API_URL}/api/v1/admin/dashboard-stats`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,

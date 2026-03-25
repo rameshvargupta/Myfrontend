@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import Navbar from "@/components/Navbar";
+const API_URL = import.meta.env.VITE_API_URL;
+
 
 const UsersPanel = () => {
   const [users, setUsers] = useState([]);
@@ -30,7 +32,7 @@ const UsersPanel = () => {
     try {
       setLoading(true);
 
-      const res = await fetch("http://localhost:5000/api/v1/user/admin/users", {
+      const res = await fetch(`${API_URL}/api/v1/user/admin/users`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -115,7 +117,7 @@ const UsersPanel = () => {
   const handleBlock = async (id) => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/v1/admin/users/block/${id}`,
+        `${API_URL}/api/v1/admin/users/block/${id}`,
         {
           method: "PUT",
           headers: {
@@ -147,7 +149,7 @@ const UsersPanel = () => {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/v1/admin/users/${id}`,
+        `${API_URL}/api/v1/admin/users/${id}`,
         {
           method: "DELETE",
           headers: {

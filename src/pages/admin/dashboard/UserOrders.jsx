@@ -9,7 +9,7 @@ const UserOrders = ({ user, token }) => {
     try {
       setLoading(true);
       const res = await fetch(
-        `http://localhost:5000/api/v1/orders/admin/user/${user._id}/orders`,
+        `${API_URL}/api/v1/orders/admin/user/${user._id}/orders`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }

@@ -74,7 +74,7 @@ const EditProfileModal = ({ user, onClose }) => {
             const token = localStorage.getItem("token");
 
             const res = await fetch(
-                "http://localhost:5000/api/v1/user/profile/update",
+                `${API_URL}/api/v1/user/profile/update`,
                 {
                     method: "PUT",
                     headers: {

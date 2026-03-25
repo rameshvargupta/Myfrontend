@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-
+const API_URL = import.meta.env.VITE_API_URL;
 /* ================= PASSWORD STRENGTH ================= */
 const getPasswordStrength = (password) => {
   let score = 0;
@@ -70,7 +70,7 @@ const ForgotPassword = () => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/forgot-password-otp",
+        `${API_URL}/api/v1/user/forgot-password-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -99,7 +99,7 @@ const ForgotPassword = () => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/forgot-password-otp",
+        `${API_URL}/api/v1/user/forgot-password-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -144,7 +144,7 @@ const ForgotPassword = () => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/user/reset-password-otp",
+        `${API_URL}/api/v1/user/reset-password-otp`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

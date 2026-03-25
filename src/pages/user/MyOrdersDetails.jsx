@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import RecentlyViewed from "./RecentlyViewed";
-
+const API_URL = import.meta.env.VITE_API_URL;
 /* ================= STAR COMPONENT ================= */
 const StarRating = ({ rating, setRating, editable = false }) => {
   return (
@@ -63,7 +63,7 @@ const MyOrdersDetails = () => {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `http://localhost:5000/api/v1/reviews/${orderId}/my`,
+        `${API_URL}/api/v1/reviews/${orderId}/my`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -103,10 +103,10 @@ const MyOrdersDetails = () => {
       let method = "POST";
 
       if (item?.userReview?._id) {
-        url = `http://localhost:5000/api/v1/reviews/${item.userReview._id}`;
+        url = `${API_URL}/api/v1/reviews/${item.userReview._id}`;
         method = "PUT";
       } else {
-        url = `http://localhost:5000/api/v1/products/${productId}/reviews`;
+        url = `${API_URL}/api/v1/products/${productId}/reviews`;
       }
 
       const res = await fetch(url, {
@@ -146,7 +146,7 @@ const MyOrdersDetails = () => {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `http://localhost:5000/api/v1/reviews/${reviewId}`,
+        `${API_URL}/api/v1/reviews/${reviewId}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },

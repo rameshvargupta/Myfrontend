@@ -17,6 +17,8 @@ import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/userSlice";
 import { loadUserCart } from "@/redux/cartSlice";
 import { loadWishlist } from "@/redux/wishlistSlice";
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -47,7 +49,7 @@ const Login = () => {
       setLoading(true);
 
       // 1️⃣ LOGIN
-      const res = await fetch("http://localhost:5000/api/v1/user/login", {
+      const res = await fetch(`${API_URL}/api/v1/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -60,7 +62,7 @@ const Login = () => {
 
       // 2️⃣ FETCH FULL PROFILE (IMPORTANT)
       const profileRes = await fetch(
-        "http://localhost:5000/api/v1/user/my-profile",
+        `${API_URL}/api/v1/user/my-profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

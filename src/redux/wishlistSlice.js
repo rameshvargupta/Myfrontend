@@ -7,7 +7,7 @@ export const loadWishlist = createAsyncThunk(
     const token = getState().user.token;
 
     const res = await fetch(
-      "http://localhost:5000/api/v1/user/wishlist",
+      `${API_URL}/api/v1/user/wishlist`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -27,7 +27,7 @@ export const addWishlistItem = createAsyncThunk(
     const token = getState().user.token;
 
     const res = await fetch(
-      `http://localhost:5000/api/v1/user/wishlist/${productId}`,
+      `${API_URL}/api/v1/user/wishlist/${productId}`,
       {
         method: "POST",
         headers: {
@@ -48,7 +48,7 @@ export const removeWishlistItem = createAsyncThunk(
     const token = getState().user.token;
 
     const res = await fetch(
-      `http://localhost:5000/api/v1/user/wishlist/${productId}`,
+      `${API_URL}/api/v1/user/wishlist/${productId}`,
       {
         method: "DELETE",
         headers: {

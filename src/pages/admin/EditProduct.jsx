@@ -33,7 +33,7 @@ const EditProduct = () => {
   /* ================= FETCH CATEGORIES ================= */
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/v1/categories");
+      const res = await fetch(`${API_URL}/api/v1/categories`);
       const data = await res.json();
       if (data.success) setCategories(data.categories);
     } catch (err) {
@@ -45,7 +45,7 @@ const EditProduct = () => {
   const fetchProduct = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/v1/admin/product/${id}`,
+        `${API_URL}/api/v1/admin/product/${id}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -103,7 +103,7 @@ const EditProduct = () => {
       }
 
       const res = await fetch(
-        `http://localhost:5000/api/v1/admin/product/${id}`,
+        `${API_URL}/api/v1/admin/product/${id}`,
         {
           method: "PUT",
           headers: {

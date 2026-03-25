@@ -5,6 +5,8 @@ import DeleteModal from "@/pages/DeleteModal";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import Navbar from "@/components/Navbar";
 import { MoreVertical, TicketPercent, CheckCircle2, Clock, Ban } from "lucide-react";
+const API_URL = import.meta.env.VITE_API_URL;
+
 const CouponPage = () => {
 
     const [coupons, setCoupons] = useState([]);

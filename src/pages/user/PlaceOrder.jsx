@@ -5,7 +5,7 @@ import Navbar from "@/components/Navbar";
 import { clearCart } from "@/redux/cartSlice";
 import { selectAddress } from "@/redux/addressSlice";
 import { toast } from "sonner";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const PlaceOrderPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const placeOrderHandler = async () => {
   try {
     // 1. Send order to backend
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/api/v1/orders", {
+    const res = await fetch(`${API_URL}/api/v1/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

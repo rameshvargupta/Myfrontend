@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, Pencil, Trash2, Search, Plus } from "lucide-react";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const CategoryList = ({ onSuccess }) => {
   const [categories, setCategories] = useState([]);
@@ -25,7 +26,7 @@ const CategoryList = ({ onSuccess }) => {
   /* ================= FETCH ================= */
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/v1/categories");
+      const res = await fetch(`${API_URL}/api/v1/categorie`);
       const data = await res.json();
       if (data.success) setCategories(data.categories);
     } catch (err) {
@@ -58,7 +59,7 @@ const CategoryList = ({ onSuccess }) => {
       setLoading(true);
 
       const res = await fetch(
-        "http://localhost:5000/api/v1/admin/category",
+        `${API_URL}/api/v1/admin/category`,
         {
           method: "POST",
           headers: {
@@ -91,7 +92,7 @@ const CategoryList = ({ onSuccess }) => {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/api/v1/admin/category/${selectedCategory._id}`,
+        `${API_URL}/api/v1/admin/category/${selectedCategory._id}`,
         {
           method: "PUT",
           headers: {
@@ -117,7 +118,7 @@ const CategoryList = ({ onSuccess }) => {
   const deleteHandler = async () => {
     try {
       const res = await fetch(
-        `http://localhost:5000/api/v1/admin/category/${selectedCategory._id}`,
+        `${API_URL}/api/v1/admin/category/${selectedCategory._id}`,
         {
           method: "DELETE",
           headers: {

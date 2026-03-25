@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { X, Pencil, Upload } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterNavbar from "@/components/user/FooterNavbar";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const POSITIONS = ["TOP", "MIDDLE", "BOTTOM"];
 

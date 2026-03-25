@@ -1,8 +1,8 @@
 import Navbar from "@/components/Navbar";
-import { useEffect, useState } from "react";
+import {useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-
+const API_URL = import.meta.env.VITE_API_URL;
 const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -24,7 +24,7 @@ const ProductList = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/v1/admin/products", {
+      const res = await fetch(`${API_URL}/api/v1/admin/products`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -46,7 +46,7 @@ const ProductList = () => {
   /* ---------- FETCH CATEGORIES ---------- */
   const fetchCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/v1/categories");
+      const res = await fetch(`${API_URL}/api/v1/categories`);
       const data = await res.json();
       if (data.success) setCategories(data.categories);
     } catch (err) {
@@ -96,7 +96,7 @@ const ProductList = () => {
 
   /* ---------- TOGGLE ACTIVE ---------- */
   const toggleStatus = async (id) => {
-    const res = await fetch(`http://localhost:5000/api/v1/admin/product/status/${id}`, {
+    const res = await fetch(`${API_URL}/api/v1/admin/product/status/${id}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });
@@ -115,7 +115,7 @@ const ProductList = () => {
   const deleteHandler = async (id) => {
     if (!confirm("Permanent delete? This cannot be undone")) return;
 
-    const res = await fetch(`http://localhost:5000/api/v1/admin/product/${id}`, {
+    const res = await fetch(`${API_URL}/api/v1/admin/product/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
     });

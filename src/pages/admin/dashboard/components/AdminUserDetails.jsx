@@ -56,10 +56,10 @@ const AdminUserDetails = () => {
             setLoading(true);
 
             const [userRes, ordersRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/v1/orders/admin/users/${id}`, {
+                fetch(`${API_URL}/api/v1/orders/admin/users/${id}`, {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
-                fetch(`http://localhost:5000/api/v1/orders/admin/user/${id}/orders`, {
+                fetch(`${API_URL}/api/v1/orders/admin/user/${id}/orders`, {
                     headers: { Authorization: `Bearer ${token}` },
                 }),
             ]);
@@ -279,8 +279,8 @@ const AdminUserDetails = () => {
 
                                                                 <span
                                                                     className={`text-[10px] px-2 py-1 rounded-full font-medium ${session.logoutAt
-                                                                            ? "bg-gray-200 text-gray-600"
-                                                                            : "bg-green-100 text-green-600"
+                                                                        ? "bg-gray-200 text-gray-600"
+                                                                        : "bg-green-100 text-green-600"
                                                                         }`}
                                                                 >
                                                                     {session.logoutAt ? "Ended" : "Active"}

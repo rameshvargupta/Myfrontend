@@ -19,7 +19,7 @@ import {
   Minus,
   Plus
 } from "lucide-react";
-
+const API_URL = import.meta.env.VITE_API_URL;
 import { toast } from "sonner";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import ExpectedDelivery from "./ExpectedDelivery";
@@ -42,7 +42,7 @@ const ProductDetails = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/v1/products/${slug}`);
+        const res = await axios.get(`${API_URL}/api/v1/products/${slug}`);
         if (!res.data.success) {
           setProduct(null);
           return;
