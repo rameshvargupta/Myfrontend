@@ -10,13 +10,19 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
+      devOptions: {
+        enabled: true
+      },
       manifest: {
-        name: "GT Shop",
+        name: "GT Shop - Online Store",
         short_name: "GTShop",
+        description: "Best ecommerce store for shopping",
         start_url: "/",
         display: "standalone",
-        theme_color: "#0f172a",
         background_color: "#ffffff",
+        theme_color: "#0f172a",
+        orientation: "portrait",
         icons: [
           {
             src: "/icon-192.png",
