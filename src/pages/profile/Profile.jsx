@@ -23,6 +23,7 @@ import { useNavigate } from "react-router-dom";
 import Avatar from "./Avatar";
 import { makeDefaultAddress, saveAddress } from "@/api/addressApi";
 const API_URL = import.meta.env.VITE_API_URL;
+
 const Profile = () => {
   const { user } = useSelector((state) => state.user);
   const orders = useSelector((state) => state.order?.orders) || [];
@@ -65,7 +66,6 @@ const Profile = () => {
       o.orderStatus === "Cancelled" ||
       o.orderStatus === "Failed"
   ).length;
-
 
   const filteredOrders =
     filterType === "confirmed"
@@ -142,7 +142,7 @@ const Profile = () => {
       const token = localStorage.getItem("token");
 
       const { data } = await axios.delete(
-        `${API_URL}/api/v1/user/address/${id}`,
+        `${API_URL}/api/v1/userAdr/address/${id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -277,7 +277,7 @@ const Profile = () => {
         const token = localStorage.getItem("token");
 
         const { data } = await axios.get(
-         `${api}/api/v1/user/my-profile`,
+          `${API_URL}/api/v1/user/my-profile`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

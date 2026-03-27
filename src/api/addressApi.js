@@ -22,7 +22,7 @@ export const saveAddress = async (addressForm, editId = null) => {
 
   const url = editId
     ? `${API_URL}/api/v1/userAdr/address/${editId}`
-    : `${API_URL}/api/v1/user/address`;
+    : `${API_URL}/api/v1/userAdr/address`;
 
   const res = await fetch(url, {
     method: editId ? "PUT" : "POST",

@@ -4,19 +4,19 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2, User } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/userSlice";
 import { loadUserCart } from "@/redux/cartSlice";
 import { loadWishlist } from "@/redux/wishlistSlice";
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Login = () => {
@@ -31,12 +31,19 @@ const Login = () => {
     password: "",
   });
 
-  // 🔹 handle input
+  // ✅ FIXED handleChange (supports renamed inputs)
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const key =
+      e.target.name === "login_email"
+        ? "email"
+        : e.target.name === "login_password"
+          ? "password"
+          : e.target.name;
+
+    setFormData({ ...formData, [key]: e.target.value });
   };
 
-  // 🔹 login submit
+  // ✅ LOGIN HANDLER (same logic)
   const submitHandler = async (e) => {
     e.preventDefault();
 
@@ -48,7 +55,6 @@ const Login = () => {
     try {
       setLoading(true);
 
-      // 1️⃣ LOGIN
       const res = await fetch(`${API_URL}/api/v1/user/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,7 +66,6 @@ const Login = () => {
 
       const token = data.token;
 
-      // 2️⃣ FETCH FULL PROFILE (IMPORTANT)
       const profileRes = await fetch(
         `${API_URL}/api/v1/user/my-profile`,
         {
@@ -75,15 +80,16 @@ const Login = () => {
       if (!profileData.success)
         throw new Error("Failed to fetch profile");
 
-      // 3️⃣ SET COMPLETE USER (including addresses)
       dispatch(
         setUser({
           user: profileData.user,
           token: token,
         })
       );
+
       dispatch(loadUserCart(profileData.user._id));
       dispatch(loadWishlist());
+
       const name =
         `${profileData.user?.firstName || ""} ${profileData.user?.lastName || ""
           }`.trim();
@@ -91,7 +97,6 @@ const Login = () => {
       toast.success(`Welcome back ${name || "User"} 👋`);
 
       navigate("/");
-
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -100,55 +105,79 @@ const Login = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-pink-100">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 via-white to-pink-200 px-4">
+      <Card className="w-full max-w-md shadow-2xl border-0 rounded-2xl">
+
+        {/* 🔥 Hidden autofill blockers */}
+        <input type="text" name="fakeuser" autoComplete="username" className="hidden" />
+        <input type="password" name="fakepass" autoComplete="current-password" className="hidden" />
+
+        <CardHeader className="text-center space-y-2">
+          <CardTitle className="text-2xl font-bold">
+            Welcome Back 👋
+          </CardTitle>
           <CardDescription>
-            Enter your email and password below
+            Login to continue shopping
           </CardDescription>
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={submitHandler} className="flex flex-col gap-4">
-            {/* Email */}
-            <div className="grid gap-2">
+          <form
+            onSubmit={submitHandler}
+            autoComplete="off"
+            className="space-y-5"
+          >
+            {/* EMAIL */}
+            <div className="space-y-2">
               <Label>Email</Label>
-              <Input
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                <Input
+                  name="login_email"
+                  type="email"
+                  autoComplete="off"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Enter your email"
+                  className="pl-10"
+                />
+              </div>
             </div>
 
-            {/* Password */}
-            <div className="grid gap-2">
+            {/* PASSWORD */}
+            <div className="space-y-2">
               <Label>Password</Label>
               <div className="relative">
+                <Lock className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
                 <Input
-                  name="password"
+                  name="login_password"
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
-                  required
+                  placeholder="Enter your password"
+                  className="pl-10 pr-10"
                 />
+
                 {showPassword ? (
                   <EyeOff
                     onClick={() => setShowPassword(false)}
-                    className="w-5 h-5 absolute right-3 top-3 cursor-pointer"
+                    className="w-5 h-5 absolute right-3 top-3 cursor-pointer text-gray-500"
                   />
                 ) : (
                   <Eye
                     onClick={() => setShowPassword(true)}
-                    className="w-5 h-5 absolute right-3 top-3 cursor-pointer"
+                    className="w-5 h-5 absolute right-3 top-3 cursor-pointer text-gray-500"
                   />
                 )}
               </div>
             </div>
 
-            <Button disabled={loading} className="bg-pink-600 hover:bg-pink-500">
+            {/* BUTTON */}
+            <Button
+              disabled={loading}
+              className="w-full bg-pink-600 hover:bg-pink-500 transition-all duration-300"
+            >
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -159,19 +188,23 @@ const Login = () => {
               )}
             </Button>
           </form>
-        </CardContent>
 
-        <CardFooter className="flex-col gap-2">
-          <p className="text-sm">
-            Don’t have an account?{" "}
-            <Link to="/signup" className="text-pink-700 hover:underline">
-              Register
+          {/* LINKS */}
+          <div className="flex justify-between mt-4 text-sm">
+            <Link
+              to="/forgot-password"
+              className="text-pink-600 hover:underline"
+            >
+              Forgot password?
             </Link>
-          </p>
-          <Link to="/forgot-password" className="text-sm text-pink-700 hover:underline">
-            Forgot password?
-          </Link>
-        </CardFooter>
+            <Link
+              to="/signup"
+              className="text-pink-600 hover:underline"
+            >
+              Create account
+            </Link>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
