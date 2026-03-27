@@ -3,7 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 export const fetchAddresses = async () => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}/api/v1/user/address`, {
+  const res = await fetch(`${API_URL}/api/v1/userAdr/address`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -21,7 +21,7 @@ export const saveAddress = async (addressForm, editId = null) => {
   const token = localStorage.getItem("token");
 
   const url = editId
-    ? `${API_URL}/api/v1/user/address/${editId}`
+    ? `${API_URL}/api/v1/userAdr/address/${editId}`
     : `${API_URL}/api/v1/user/address`;
 
   const res = await fetch(url, {
@@ -46,7 +46,7 @@ export const saveAddress = async (addressForm, editId = null) => {
 export const deleteAddress = async (id) => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}/api/v1/user/address/${id}`, {
+  const res = await fetch(`${API_URL}/api/v1/userAdr/address/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,
@@ -59,7 +59,7 @@ export const deleteAddress = async (id) => {
 export const makeDefaultAddress = async (id) => {
   const token = localStorage.getItem("token");
 
-  const res = await fetch(`${API_URL}/default/${id}`, {
+  const res = await fetch(`${API_URL}/api/v1/userAdr/address/default/${id}`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
