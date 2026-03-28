@@ -114,7 +114,7 @@ const EditProduct = () => {
       }
 
       const res = await fetch(
-        `${API_URL}/api/v1/admin/product/${id}`,
+        `${API_URL}/api/v1/products/admin/product/${id}`,
         {
           method: "PUT",
           headers: {
@@ -147,13 +147,42 @@ const EditProduct = () => {
       <Navbar />
       <div className="max-w-4xl mx-auto space-y-6 p-6">
         <Card className="rounded-3xl shadow-xl ">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">
-              Edit Product
-            </CardTitle>
-            <p className="text-sm text-gray-500">
-              Update product information & images carefully
-            </p>
+          <CardHeader className="border-b pb-5">
+
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+              {/* LEFT SIDE */}
+              <div className="flex flex-col gap-1">
+                <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
+                  Edit Product
+                </CardTitle>
+
+                <p className="text-xs sm:text-sm text-gray-500">
+                  Update product information & images carefully
+                </p>
+              </div>
+
+              {/* RIGHT SIDE BUTTONS */}
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+
+                {/* Add Product */}
+                <Link to="/admin/add-product" className="w-full sm:w-auto">
+                  <Button className="w-full sm:w-auto bg-pink-600 hover:bg-pink-500">
+                    + Add Product
+                  </Button>
+                </Link>
+
+                {/* All Products */}
+                <Link to="/admin/products" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full sm:w-auto">
+                    All Products
+                  </Button>
+                </Link>
+
+              </div>
+
+            </div>
+
           </CardHeader>
 
 

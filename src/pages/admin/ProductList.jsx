@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import DeleteModal from "../DeleteModal";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ProductList = () => {
@@ -17,7 +18,8 @@ const ProductList = () => {
   const [priceSort, setPriceSort] = useState(""); // 'asc' or 'desc'
   const [dateSort, setDateSort] = useState(""); // 'new' or 'old'
   const [categories, setCategories] = useState([]);
-
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState(null);
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 5;
@@ -105,16 +107,29 @@ const ProductList = () => {
     toast.success(data.isActive ? "Activated" : "Blocked");
   };
 
-  /* ---------- DELETE ---------- */
-  const deleteHandler = async (id) => {
-    if (!confirm("Delete permanently?")) return;
+  const deleteHandler = async () => {
+    if (!selectedProductId) return;
 
-    const data = await deleteProductApi(id);
+    try {
+      const data = await deleteProductApi(selectedProductId);
 
-    if (!data.success) return toast.error(data.message);
+      if (!data.success) {
+        toast.error(data.message);
+        return;
+      }
 
-    setProducts((prev) => prev.filter((p) => p._id !== id));
-    toast.success("Deleted successfully");
+      setProducts((prev) =>
+        prev.filter((p) => p._id !== selectedProductId)
+      );
+
+      toast.success("Product deleted successfully 🗑️");
+
+    } catch (error) {
+      toast.error("Delete failed");
+    } finally {
+      setIsDeleteOpen(false);
+      setSelectedProductId(null);
+    }
   };
 
   /* ---------- PAGINATION LOGIC ---------- */
@@ -324,7 +339,10 @@ const ProductList = () => {
                   </Link>
 
                   <button
-                    onClick={() => deleteHandler(p._id)}
+                    onClick={() => {
+                      setSelectedProductId(p._id);
+                      setIsDeleteOpen(true);
+                    }}
                     className="px-3 py-2 rounded-lg text-xs bg-red-600 hover:bg-red-700 text-white"
                   >
                     ✕
@@ -357,7 +375,20 @@ const ProductList = () => {
         )}
 
       </div>
+      
+      <DeleteModal
+        isOpen={isDeleteOpen}
+        onClose={() => {
+          setIsDeleteOpen(false);
+          setSelectedProductId(null);
+        }}
+        onConfirm={deleteHandler}
+        title="Delete Product"
+        message="Are you sure you want to delete this product? This action cannot be undone."
+      />
     </>
+
+
   );
 };
 

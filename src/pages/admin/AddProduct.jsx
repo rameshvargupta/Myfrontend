@@ -12,6 +12,7 @@ import { Upload, ImagePlus } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import { fetchCategories } from "@/api/productApi";
+import { Link } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const AddProduct = () => {
@@ -153,14 +154,28 @@ const AddProduct = () => {
   ">
 
                 {/* LEFT SIDE */}
-                <div className="flex-1 min-w-0">
-                  <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
-                    Add New Product
-                  </CardTitle>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 
-                  <p className="text-xs sm:text-sm text-gray-500 mt-2 max-w-lg">
-                    Create a new product with detailed information and images.
-                  </p>
+                  {/* LEFT SIDE */}
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">
+                      Add New Product
+                    </CardTitle>
+
+                    <p className="text-xs sm:text-sm text-gray-500 mt-2 max-w-lg">
+                      Create a new product with detailed information and images.
+                    </p>
+                  </div>
+
+                  {/* RIGHT SIDE BUTTON */}
+                  <div className="w-full sm:w-auto flex justify-start lg:justify-end">
+                    <Link to="/admin/products" className="w-full sm:w-auto">
+                      <Button className="w-full sm:w-auto">
+                        All Products
+                      </Button>
+                    </Link>
+                  </div>
+
                 </div>
 
                 {/* RIGHT SIDE */}
