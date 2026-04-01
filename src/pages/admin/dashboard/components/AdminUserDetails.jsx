@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import FooterNavbar from "@/components/user/FooterNavbar";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const AdminUserDetails = () => {
     const { id } = useParams();

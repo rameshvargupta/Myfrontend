@@ -10,7 +10,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Loader2, Mail, Lock } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/redux/userSlice";
@@ -22,10 +22,9 @@ const API_URL = import.meta.env.VITE_API_URL;
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
+  const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -95,8 +94,9 @@ const Login = () => {
           }`.trim();
 
       toast.success(`Welcome back ${name || "User"} 👋`);
+      const from = location.state?.from || "/";
+      navigate(from);
 
-      navigate("/");
     } catch (error) {
       toast.error(error.message);
     } finally {

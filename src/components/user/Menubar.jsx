@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
     Home,
     User,
@@ -61,7 +61,7 @@ const Menubar = () => {
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 bg-white shadow-sm">
-                    <h2 className="text-xl font-bold">Menu</h2>
+                   <Link to={"/"}> <h2 className="text-xl font-bold">Menu</h2></Link>
                     <X size={22} onClick={() => navigate(-1)} className="cursor-pointer" />
                 </div>
 

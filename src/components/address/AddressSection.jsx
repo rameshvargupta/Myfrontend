@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { setAddresses, selectAddress } from "@/redux/addressSlice";
 import { fetchAddresses, saveAddress, deleteAddress } from "@/api/addressApi";
+import { useNavigate } from "react-router-dom";
 
 const AddressSection = () => {
 
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
   const { addresses, selectedAddress } = useSelector(
     (state) => state.address
   );
@@ -16,7 +17,7 @@ const AddressSection = () => {
   const [editId, setEditId] = useState(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [showAllAddresses, setShowAllAddresses] = useState(false);
-
+  const token = localStorage.getItem("token");
   const [addressForm, setAddressForm] = useState({
     fullName: "",
     phone: "",
@@ -33,8 +34,16 @@ const AddressSection = () => {
       : [];
 
   useEffect(() => {
-
     const loadAddresses = async () => {
+
+      const token = localStorage.getItem("token");
+
+      // ❌ NOT LOGGED IN
+      if (!token) {
+        dispatch(setAddresses([]));
+        dispatch(selectAddress(null));
+        return;
+      }
 
       const data = await fetchAddresses();
 
@@ -55,8 +64,7 @@ const AddressSection = () => {
     };
 
     loadAddresses();
-
-  }, []);
+  }, [dispatch]);
 
   const handleAddressChange = (e) => {
 
@@ -82,8 +90,29 @@ const AddressSection = () => {
     });
 
   };
+  const handleAddAddressClick = () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("Please login to add address");
+
+      // 👉 OPTION 1: redirect
+      navigate("/login", { state: { from: "/checkout" } });
+
+      return;
+    }
+
+    setShowAddressForm(true);
+  };
 
   const handleSaveAddress = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("Login required");
+      return;
+    }
+
 
     const { fullName, phone, address, city, pincode, state } = addressForm;
 
@@ -195,9 +224,11 @@ const AddressSection = () => {
 
         <div className="flex gap-2">
 
-          <Button onClick={() => setShowAddressForm(true)}>
-            + Add Address
-          </Button>
+          {token && (
+            <Button onClick={handleAddAddressClick}>
+              + Add Address
+            </Button>
+          )}
 
           {addresses.length > 1 && (
 
@@ -288,76 +319,78 @@ const AddressSection = () => {
 
       )}
 
-      {/* ADDRESS LIST */}
+      {!token && (
+        <div className="text-center py-6 border rounded-lg bg-gray-50">
+          <p className="text-gray-600 mb-3">
+            Please login to add and manage addresses
+          </p>
 
-      <div className="space-y-3 mt-4">
+          <Button onClick={() => navigate("/login", { state: { from: "/checkout" } })}>
+            Login / Signup
+          </Button>
+        </div>
+      )}
 
-        {addressToShow.map((addr) => (
+      {/* address List */}
+      {token && (
+        <div className="space-y-3 mt-4">
+          {addressToShow.map((addr) => (
 
-          <div
-            key={addr._id}
-            className={`border rounded-lg p-4 flex justify-between ${
-              selectedAddress?._id === addr._id
+            <div
+              key={addr._id}
+              className={`border rounded-lg p-4 flex justify-between ${selectedAddress?._id === addr._id
                 ? "border-green-600 bg-green-50"
                 : ""
-            }`}
-          >
+                }`}
+            >
 
-            <label className="flex gap-3 cursor-pointer">
+              <label className="flex gap-3 cursor-pointer">
 
-              <input
-                type="radio"
-                checked={selectedAddress?._id === addr._id}
-                onChange={() => dispatch(selectAddress(addr))}
-              />
+                <input
+                  type="radio"
+                  checked={selectedAddress?._id === addr._id}
+                  onChange={() => dispatch(selectAddress(addr))}
+                />
 
-              <div>
+                <div>
+                  <p className="font-semibold">{addr.fullName}</p>
 
-                <p className="font-semibold">
-                  {addr.fullName}
-                </p>
+                  <p className="text-sm text-gray-600">
+                    {addr.address}, {addr.city}
+                  </p>
 
-                <p className="text-sm text-gray-600">
-                  {addr.address}, {addr.city}
-                </p>
+                  <p className="text-sm">📞 {addr.phone}</p>
+                </div>
 
-                <p className="text-sm">
-                  📞 {addr.phone}
-                </p>
+              </label>
 
-              </div>
+              {showAllAddresses && (
+                <div className="flex gap-2">
 
-            </label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleEditAddress(addr)}
+                  >
+                    Edit
+                  </Button>
 
-            {showAllAddresses && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => handleDeleteAddress(addr._id)}
+                  >
+                    Delete
+                  </Button>
 
-              <div className="flex gap-2">
+                </div>
+              )}
 
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleEditAddress(addr)}
-                >
-                  Edit
-                </Button>
+            </div>
 
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleDeleteAddress(addr._id)}
-                >
-                  Delete
-                </Button>
-
-              </div>
-
-            )}
-
-          </div>
-
-        ))}
-
-      </div>
+          ))}
+        </div>
+      )}
 
     </div>
 

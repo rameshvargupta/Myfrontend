@@ -10,7 +10,6 @@ import CouponSection from "./CouponSection";
 import { updateQuantity, removeFromCart } from "@/redux/cartSlice";
 import { setAddresses, selectAddress } from "@/redux/addressSlice";
 import { clearCart } from "@/redux/cartSlice";
-
 import { toast } from "sonner";
 import { fetchAddresses } from "@/api/addressApi";
 import FooterNavbar from "@/components/user/FooterNavbar";
@@ -39,42 +38,47 @@ const Checkout = () => {
   // 🔹 REDUX SELECTORS
   const selectedAddress = useSelector((state) => state.address.selectedAddress);
 
-  // 🔹 FUNCTION: calculate delivery range
-  const getDeliveryRange = (pincode) => {
-    if (!pincode) return null;
-    const today = new Date();
-    let minDays = 4, maxDays = 6;
-
-    if (pincode.startsWith("22")) { minDays = 2; maxDays = 4; }
-
-    const min = new Date(today);
-    min.setDate(today.getDate() + minDays);
-
-    const max = new Date(today);
-    max.setDate(today.getDate() + maxDays);
-
-    return {
-      min: min.toLocaleDateString(),
-      max: max.toLocaleDateString()
-    };
-  };
-
-  // 🔹 COMPUTE EXPECTED DELIVERY
-  const expectedDelivery = selectedAddress ? getDeliveryRange(selectedAddress.pincode) : null;
-
+  useEffect(() => {
+    if (buyNowProduct) {
+      localStorage.setItem("buyNowProduct", JSON.stringify(buyNowProduct));
+    }
+  }, [buyNowProduct]);
 
   /* ================= CHECKOUT ITEMS ================= */
   useEffect(() => {
+    const loadCoupons = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/v1/coupons/available`);
 
-    fetch("/api/v1/coupons/available")
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setCoupons(data.coupons);
-      });
+        // 👇 check karo JSON hai ya nahi
+        const text = await res.text();
 
+        try {
+          const data = JSON.parse(text);
+
+          if (data.success) {
+            setCoupons(data.coupons);
+          }
+
+        } catch {
+          console.error("Not JSON response:", text);
+        }
+
+      } catch (err) {
+        console.error("Coupon fetch error:", err);
+      }
+    };
+
+    loadCoupons();
   }, []);
 
-  const checkoutItems = buyNowProduct ? [buyNowProduct] : cartItems;
+  const storedBuyNow = JSON.parse(localStorage.getItem("buyNowProduct"));
+
+  const checkoutItems = buyNowProduct
+    ? [buyNowProduct]
+    : storedBuyNow
+      ? [storedBuyNow]
+      : cartItems;
   /* ================= TOTAL ================= */
 
   const cartTotal = useMemo(() => {
@@ -91,8 +95,15 @@ const Checkout = () => {
   /* ================= LOAD ADDRESSES ================= */
 
   useEffect(() => {
-
     const loadAddresses = async () => {
+      const token = localStorage.getItem("token");
+
+      // ❌ agar login nahi hai → address fetch mat karo
+      if (!token) {
+        dispatch(setAddresses([]));
+        dispatch(selectAddress(null));
+        return;
+      }
 
       const data = await fetchAddresses();
 
@@ -110,13 +121,10 @@ const Checkout = () => {
         data.addresses[0];
 
       dispatch(selectAddress(backendDefault));
-
     };
 
     loadAddresses();
-
   }, [dispatch]);
-
 
   const handleIncrease = (productId) => {
 
@@ -152,6 +160,19 @@ const Checkout = () => {
   /* ================= PLACE ORDER ================= */
 
   const handlePlaceOrder = async () => {
+    const token = localStorage.getItem("token");
+
+    // ❌ LOGIN CHECK
+    if (!token) {
+      toast.error("Please login to continue");
+
+      // 👉 login popup open karo
+      // ya redirect
+      navigate("/login", { state: { from: "/checkout" } });
+
+      return;
+    }
+
     if (!selectedAddress) {
       toast.error("Please add address");
       return;
@@ -222,7 +243,7 @@ const Checkout = () => {
               toast.success("Payment Successful 🎉");
 
               if (!buyNowProduct) dispatch(clearCart());
-
+              localStorage.removeItem("buyNowProduct");
               navigate(`/ordersuccess/${verifyData.order._id}`);
             } else {
               toast.error("Payment verification failed");

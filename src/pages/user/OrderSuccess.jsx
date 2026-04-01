@@ -6,13 +6,16 @@ import FooterNavbar from "@/components/user/FooterNavbar";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import Confetti from "react-confetti";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 const API_URL = import.meta.env.VITE_API_URL;
 const OrderSuccess = () => {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
-
+  const navigate = useNavigate();
   // Set window size for confetti
   useEffect(() => {
     setWindowSize({ width: window.innerWidth, height: window.innerHeight });
@@ -25,17 +28,51 @@ const OrderSuccess = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch(
-        `${API_URL}/api/v1/orders/${orderId}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const data = await res.json();
-      if (data.success) {
+
+      // ❌ NO TOKEN
+      if (!token) {
+        toast.error("Please login to view order");
+
+        navigate("/login", {
+          state: { from: `/ordersuccess/${orderId}` },
+        });
+
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${API_URL}/api/v1/orders/${orderId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error("Order fetch failed");
+        }
+
+        if (!res.ok) {
+          if (res.status === 401) {
+            navigate("/login", { state: { from: `/ordersuccess/${orderId}` } });
+          } else {
+            toast.error("Something went wrong");
+          }
+          return;
+        }
+
         setOrder(data.order);
         setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 8000); // stop after 8s
+
+        setTimeout(() => setShowConfetti(false), 8000);
+
+      } catch (err) {
+        toast.error("Failed to load order");
       }
     };
+
     fetchOrder();
   }, [orderId]);
 
