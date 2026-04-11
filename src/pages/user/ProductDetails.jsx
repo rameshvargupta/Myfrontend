@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import Navbar from "@/components/Navbar";
@@ -17,36 +17,53 @@ import {
   Truck,
   RefreshCw,
   Minus,
-  Plus
+  Plus,
+  CheckCircle,
+  AlertCircle,
+  Facebook,
+  Twitter,
+  Mail,
+  Link as LinkIcon,
+  X
 } from "lucide-react";
-const API_URL = import.meta.env.VITE_API_URL;
 import { toast } from "sonner";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import ExpectedDelivery from "./ExpectedDelivery";
+import RecentlyViewed from "./RecentlyViewed";
+import {
+  loadWishlist,
+  addWishlistItem,
+  removeWishlistItem,
+} from "@/redux/wishlistSlice";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const ProductDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const cartItems = useSelector((state) => state.cart?.cartItems || []);
   const selectedAddress = useSelector((state) => state.address?.selectedAddress);
-
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeImage, setActiveImage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
 
-  /* ================= FETCH PRODUCT ================= */
+  const [showShareModal, setShowShareModal] = useState(false);
+  const { token } = useSelector((state) => state.user);
+
+  const { items: wishlistItems } = useSelector(
+    (state) => state.wishlist
+  );
+  const isWishlisted = wishlistItems.some(
+    (item) => item._id === product?._id
+  );
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const res = await axios.get(`${API_URL}/api/v1/products/${slug}`);
-        if (!res.data.success) {
-          setProduct(null);
-          return;
-        }
+        if (!res.data.success) return setProduct(null);
         setProduct(res.data.product);
         setActiveImage(res.data.product.images?.[0]?.url);
       } catch {
@@ -58,56 +75,30 @@ const ProductDetails = () => {
     fetchProduct();
   }, [slug]);
 
-  const getDeliveryRange = (pincode) => {
-    const today = new Date();
-    let minDays = 4;
-    let maxDays = 6;
-
-    // ❌ check pincode exists before calling startsWith
-    if (pincode && pincode.startsWith("22")) {
-      minDays = 2;
-      maxDays = 4;
+  useEffect(() => {
+    if (token) {
+      dispatch(loadWishlist());
     }
+  }, [token, dispatch]);
 
-    const min = new Date(today);
-    min.setDate(today.getDate() + minDays);
-
-    const max = new Date(today);
-    max.setDate(today.getDate() + maxDays);
-
-    return { min, max };
-  };
-
-  const delivery = selectedAddress ? getDeliveryRange(selectedAddress.pincode) : null;
-
-  /* ================= ADD TO CART ================= */
   const handleAddToCart = () => {
-    if (!product || product.stock === 0) {
-      toast.error("Out of stock");
-      return;
-    }
+    if (!product || product.stock === 0) return toast.error("Out of stock");
     const exists = cartItems.find(i => i.productId === product._id);
-    if (exists) {
-      toast.info("Already in cart");
-      return;
-    }
+    if (exists) return toast.info("Already in cart");
     dispatch(addToCart({
       productId: product._id,
       slug: product.slug,
       name: product.name,
       price: product.finalPrice,
+      originalPrice: product.price,
       image: product.images?.[0]?.url,
       quantity
     }));
     toast.success("Added to cart");
   };
 
-  /* ================= BUY NOW ================= */
   const handleBuyNow = () => {
-    if (!product || product.stock === 0) {
-      toast.error("Out of stock");
-      return;
-    }
+    if (!product || product.stock === 0) return toast.error("Out of stock");
     navigate("/checkout", {
       state: {
         buyNowProduct: {
@@ -115,217 +106,372 @@ const ProductDetails = () => {
           slug: product.slug,
           name: product.name,
           price: product.finalPrice,
+          originalPrice: product.price,
           image: product.images?.[0]?.url,
           quantity
         }
       }
     });
   };
-  console.log(selectedAddress);
 
-  /* ================= LOADING ================= */
+  const handleShare = async (platform) => {
+    const productUrl = `${window.location.origin}/product/${product.slug}`;
+    const shareText = `Check out this amazing product: ${product.name}\n\nPrice: ₹${product.finalPrice}\n\n${productUrl}`;
+
+    switch (platform) {
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(productUrl)}`, '_blank');
+        break;
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`, '_blank');
+        break;
+      case 'email':
+        window.location.href = `mailto:?subject=Check out this product&body=${encodeURIComponent(shareText)}`;
+        break;
+      case 'copy':
+        try {
+          await navigator.clipboard.writeText(productUrl);
+          toast.success("Link copied to clipboard!");
+        } catch (err) {
+          toast.error("Failed to copy link");
+        }
+        break;
+      default:
+        if (navigator.share) {
+          try {
+            await navigator.share({
+              title: product.name,
+              text: `Check out ${product.name}`,
+              url: productUrl,
+            });
+          } catch (err) {
+            if (err.name !== 'AbortError') {
+              toast.error("Failed to share");
+            }
+          }
+        } else {
+          setShowShareModal(true);
+        }
+    }
+
+    setShowShareModal(false);
+  };
+
+  const discountPercent = product ? Math.round(((product.price - product.finalPrice) / product.price) * 100) : 0;
+
   if (loading) return <ProductSkeleton />;
   if (!product) return (
     <>
       <Navbar />
-      <div className="h-screen flex items-center justify-center">
-        Product not found
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700">Product not found</h2>
+        </div>
       </div>
     </>
   );
 
-  /* ================= UI ================= */
   return (
     <>
       <Navbar />
+      <div className="bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-10">
 
-      <div className="bg-gray-50 min-h-screen pb-20">
-
-        {/* ================= MAIN ================= */}
-        <div className="max-w-7xl mx-auto px-4 py-8 grid lg:grid-cols-2 gap-10">
-
-          {/* ================= LEFT IMAGE ================= */}
-          <div className="space-y-4">
-
-            <div className="bg-white rounded-2xl shadow p-4 relative group">
-              <img
-                src={activeImage}
-                className="w-full h-[400px] object-contain transition"
-              />
-
-              <div className="absolute top-4 right-4 flex gap-2">
-                <button className="bg-white p-2 rounded-full shadow">
-                  <Heart size={18} />
-                </button>
-                <button className="bg-white p-2 rounded-full shadow">
-                  <Share2 size={18} />
-                </button>
-              </div>
-            </div>
-
-            {/* THUMBNAILS */}
-            <div className="flex gap-2 overflow-x-auto">
-              {product.images.map(img => (
-                <img
-                  key={img._id}
-                  src={img.url}
-                  onClick={() => setActiveImage(img.url)}
-                  className={`w-20 h-20 object-cover rounded-xl border cursor-pointer ${activeImage === img.url ? "border-indigo-500" : "border-gray-200"}`}
-                />
-              ))}
-            </div>
-
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+            <span className="hover:text-gray-700 cursor-pointer"><Link to={'/'}>Home</Link> </span>
+            <span>/</span>
+            <span className="hover:text-gray-700 cursor-pointer"><Link to={'/products'}>Products</Link> </span>
+            <span>/</span>
+            <span className="text-gray-900 font-medium truncate">{product.name}</span>
           </div>
 
-          {/* ================= RIGHT ================= */}
-          <div className="space-y-6">
+          {/* Main Product Section */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
 
-            <div className="bg-white rounded-2xl shadow p-6 space-y-4">
+            {/* Left - Image Gallery */}
+            <div className="space-y-4">
+              <div className="relative bg-gray-50 rounded-2xl overflow-hidden group">
+                <img
+                  src={activeImage}
+                  alt={product.name}
+                  className="w-full aspect-square object-contain p-6 hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => {
+                      if (!token) {
+                        toast.error("Please login first");
+                        return;
+                      }
 
-              <h1 className="text-2xl font-bold">{product.name}</h1>
-
-              {/* RATING */}
-              <div className="flex items-center gap-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} size={16} className={i < product.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
-                ))}
-                <span className="text-sm text-gray-500">({product.numReviews} reviews)</span>
-              </div>
-
-              {/* PRICE */}
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-indigo-600">₹{product.finalPrice}</span>
-                {product.discountPrice > 0 && (
-                  <span className="line-through text-gray-400">₹{product.price}</span>
-                )}
-              </div>
-
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mt-3">
-                <div className="flex items-center gap-2 text-green-700 font-semibold">
-                  <Truck size={18} />
-                  <span>Delivery Info</span>
+                      if (isWishlisted) {
+                        dispatch(removeWishlistItem(product._id));
+                        toast.success("Removed from wishlist");
+                      } else {
+                        dispatch(addWishlistItem(product._id));
+                        toast.success("Added to wishlist ❤️");
+                      }
+                    }}
+                    className="bg-white p-2 rounded-full shadow-md hover:shadow-lg transition"
+                  >
+                    <Heart
+                      size={18}
+                      className={
+                        isWishlisted
+                          ? "fill-red-500 text-red-500"
+                          : "text-gray-600"
+                      }
+                    />
+                  </button>
+                  <button
+                    onClick={() => handleShare()}
+                    className="bg-white p-2 rounded-full shadow-md hover:shadow-lg transition"
+                  >
+                    <Share2 size={18} className="text-gray-600" />
+                  </button>
                 </div>
-
-
-                {selectedAddress ? (
-                  <>
-                    <p className="text-sm mt-2 text-gray-700">
-                      <span className="font-semibold">{selectedAddress.fullName}</span> 📞 {selectedAddress.phone}
-                    </p>
-
-                    <p className="text-sm text-gray-700 mt-1">
-                      {selectedAddress.address}, {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
-                    </p>
-
-                    {/* 🔹 Reusable ExpectedDelivery */}
-                    <ExpectedDelivery pincode={selectedAddress.pincode} />
-                  </>
-                ) : (
-                  <p className="text-sm mt-2 text-red-500">
-                    Please add address to see delivery date
-                  </p>
+                {product.stock < 10 && product.stock > 0 && (
+                  <div className="absolute top-4 left-4">
+                    <span className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full font-medium">Only {product.stock} left</span>
+                  </div>
                 )}
-
               </div>
 
-              {/* STOCK */}
-              <p className={`text-sm font-semibold ${product.stock > 0 ? "text-green-600" : "text-red-500"}`}>
-                {product.stock > 0 ? "✔ In Stock" : "✖ Out of Stock"}
-              </p>
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={img._id || idx}
+                    onClick={() => setActiveImage(img.url)}
+                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img.url ? "border-indigo-600 shadow-md" : "border-gray-200 hover:border-gray-300"
+                      }`}
+                  >
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
 
-              {/* QUANTITY */}
-              <div className="flex items-center gap-3">
-                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-2 border rounded">
-                  <Minus size={14} />
-                </button>
-                <span>{quantity}</span>
-                <button onClick={() => setQuantity(q => q + 1)} className="p-2 border rounded">
-                  <Plus size={14} />
-                </button>
+            {/* Right - Product Info */}
+            <div className="space-y-6">
+              {/* Title & Rating */}
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">{product.name}</h1>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={16} className={i < product.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} />
+                    ))}
+                    <span className="text-sm font-medium ml-1">{product.rating?.toFixed(1)}</span>
+                  </div>
+                  <span className="text-sm text-gray-500">({product.numReviews} reviews)</span>
+                  {product.soldCount > 0 && <span className="text-sm text-green-600 font-medium">{product.soldCount}+ sold</span>}
+                </div>
               </div>
 
-              {/* BUTTONS */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Price */}
+              <div className="flex items-baseline gap-3">
+                <span className="text-3xl md:text-4xl font-bold text-indigo-600">₹{product.finalPrice?.toLocaleString()}</span>
+                {product.price > product.finalPrice && (
+                  <>
+                    <span className="text-gray-400 line-through">₹{product.price?.toLocaleString()}</span>
+                    <span className="bg-green-50 text-green-600 text-sm font-semibold px-2 py-1 rounded">{discountPercent}% OFF</span>
+                  </>
+                )}
+              </div>
+
+              {/* Delivery Info */}
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+                <div className="flex items-center gap-2 text-gray-700">
+                  <Truck size={18} className="text-indigo-600" />
+                  <span className="text-sm font-medium">Delivery Information</span>
+                </div>
+                {selectedAddress ? (
+                  <ExpectedDelivery pincode={selectedAddress.pincode} />
+                ) : (
+                  <button onClick={() => navigate("/address")} className="text-sm text-indigo-600 font-medium hover:underline">
+                    + Add delivery address
+                  </button>
+                )}
+              </div>
+
+              {/* Quantity Selector */}
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-700">Quantity:</span>
+                <div className="flex items-center gap-3 border rounded-lg p-1">
+                  <button
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    className="p-1.5 hover:bg-gray-100 rounded transition disabled:opacity-50"
+                    disabled={quantity === 1}
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <span className="w-10 text-center font-medium">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(q => Math.min(product.stock, q + 1))}
+                    className="p-1.5 hover:bg-gray-100 rounded transition disabled:opacity-50"
+                    disabled={quantity === product.stock}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <span className="text-xs text-gray-500">{product.stock} items available</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 <button
                   onClick={handleAddToCart}
-                  className="flex items-center justify-center gap-2 bg-indigo-600 text-white py-3 rounded-xl"
+                  disabled={product.stock === 0}
+                  className="flex-1 bg-gray-900 text-white py-3.5 rounded-xl font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <ShoppingCart size={18} /> Add to Cart
+                  <ShoppingCart size={18} />
+                  Add to Cart
                 </button>
-
                 <button
                   onClick={handleBuyNow}
-                  className="flex items-center justify-center gap-2 border border-indigo-600 text-indigo-600 py-3 rounded-xl"
+                  disabled={product.stock === 0}
+                  className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-medium hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <Zap size={18} /> Buy Now
+                  <Zap size={18} />
+                  Buy Now
                 </button>
               </div>
 
-              {/* FEATURES */}
-              <div className="grid grid-cols-3 gap-4 text-center text-sm mt-4">
-                <div className="flex flex-col items-center gap-1">
-                  <Truck size={18} />
-                  <span>Fast Delivery</span>
-                </div>
-
-                <div className="flex flex-col items-center gap-1">
-                  <ShieldCheck size={18} />
-                  <span>Secure</span>
-                </div>
-
-                <div className="flex flex-col items-center gap-1">
-                  <RefreshCw size={18} />
-                  <span>Easy Return</span>
-                </div>
+              {/* Trust Badges */}
+              <div className="grid grid-cols-3 gap-3 pt-4 border-t">
+                {[
+                  { icon: ShieldCheck, text: "Secure Payment" },
+                  { icon: RefreshCw, text: "Easy Returns" },
+                  { icon: Truck, text: "Free Shipping" }
+                ].map((item, idx) => (
+                  <div key={idx} className="text-center">
+                    <item.icon size={20} className="mx-auto text-indigo-600 mb-1" />
+                    <p className="text-xs text-gray-600">{item.text}</p>
+                  </div>
+                ))}
               </div>
+            </div>
+          </div>
 
+          {/* Tabs Section */}
+          <div className="mt-12">
+            <div className="border-b border-gray-200">
+              <div className="flex gap-8">
+                <button
+                  onClick={() => setActiveTab("description")}
+                  className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === "description" ? "text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                  Description
+                  {activeTab === "description" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  className={`pb-3 text-sm font-medium transition-colors relative ${activeTab === "reviews" ? "text-indigo-600" : "text-gray-500 hover:text-gray-700"
+                    }`}
+                >
+                  Reviews ({product.numReviews || 0})
+                  {activeTab === "reviews" && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600"></span>
+                  )}
+                </button>
+              </div>
             </div>
 
-          </div>
-
-        </div>
-
-        {/* ================= TABS ================= */}
-        <div className="max-w-7xl mx-auto px-4 mt-10">
-          <div className="flex gap-6 border-b pb-2">
-            <button
-              onClick={() => setActiveTab("description")}
-              className={`${activeTab === "description" && "border-b-2 border-indigo-600"}`}
-            >
-              Description
-            </button>
-
-            <button
-              onClick={() => setActiveTab("reviews")}
-              className={`${activeTab === "reviews" && "border-b-2 border-indigo-600"}`}
-            >
-              Reviews
-            </button>
-          </div>
-
-          <div className="mt-6">
-            {activeTab === "description" && (
-              <div className="bg-white p-6 rounded-xl shadow">
-                {product.description}
-              </div>
-            )}
-
-            {activeTab === "reviews" && (
-              <div className="bg-white p-6 rounded-xl shadow">
+            <div className="mt-6">
+              {activeTab === "description" ? (
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <p className="text-gray-700 leading-relaxed">{product.description}</p>
+                </div>
+              ) : (
                 <ProductReviews productId={product._id} />
-              </div>
-            )}
+              )}
+            </div>
+          </div>
+
+          {/* Recently Viewed & Similar Products */}
+          <div className="mt-12 space-y-12">
+            <RecentlyViewed />
+            <SimilarProducts productId={product._id} categoryId={product.category?._id} />
           </div>
         </div>
+      </div>
 
-        {/* SIMILAR PRODUCTS */}
-        <div className="mt-10">
-          <SimilarProducts
-            productId={product._id}
-            categoryId={product.category?._id}
-          />
+      {/* Share Modal */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setShowShareModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Share this product</h3>
+              <button onClick={() => setShowShareModal(false)} className="p-1 hover:bg-gray-100 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleShare('whatsapp')}
+                className="flex items-center gap-2 p-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
+              >
+                <Share2 size={18} />
+                WhatsApp
+              </button>
+              <button
+                onClick={() => handleShare('facebook')}
+                className="flex items-center gap-2 p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                <Facebook size={18} />
+                Facebook
+              </button>
+              <button
+                onClick={() => handleShare('twitter')}
+                className="flex items-center gap-2 p-3 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition"
+              >
+                <Twitter size={18} />
+                Twitter
+              </button>
+              <button
+                onClick={() => handleShare('email')}
+                className="flex items-center gap-2 p-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+              >
+                <Mail size={18} />
+                Email
+              </button>
+              <button
+                onClick={() => handleShare('copy')}
+                className="flex items-center gap-2 p-3 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition col-span-2"
+              >
+                <LinkIcon size={18} />
+                Copy Link
+              </button>
+            </div>
+          </div>
         </div>
+      )}
 
+      {/* Mobile Sticky Bar */}
+      <div className="fixed bottom-0 left-0 w-full bg-white border-t shadow-lg p-4 flex gap-3 lg:hidden z-50">
+        <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3">
+          <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-2" disabled={quantity === 1}>
+            <Minus size={16} />
+          </button>
+          <span className="font-medium min-w-[30px] text-center">{quantity}</span>
+          <button onClick={() => setQuantity(q => Math.min(product.stock, q + 1))} className="p-2" disabled={quantity === product.stock}>
+            <Plus size={16} />
+          </button>
+        </div>
+        <button onClick={handleAddToCart} className="flex-1 bg-gray-900 text-white py-3 rounded-lg text-sm font-medium">
+          Add to Cart
+        </button>
+        <button onClick={handleBuyNow} className="flex-1 bg-indigo-600 text-white py-3 rounded-lg text-sm font-medium">
+          Buy Now
+        </button>
       </div>
 
       <FooterNavbar />

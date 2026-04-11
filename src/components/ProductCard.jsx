@@ -1,14 +1,39 @@
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "@/redux/cartSlice";
-import { toast } from "sonner";
-import { Star } from "lucide-react";
+import {
+  addWishlistItem,
+  removeWishlistItem,
+  loadWishlist,
+} from "@/redux/wishlistSlice";
 
-const ProductCard = ({ product }) => {
+import { toast } from "sonner";
+import { Star, Loader2, Trash2, Heart } from "lucide-react";
+import { useMemo } from "react";
+
+const ProductCard = ({
+  product,
+  showRemove = false,
+  onRemove,
+  removing = false,
+}) => {
   const dispatch = useDispatch();
+
   const cartItems = useSelector(
     (state) => state.cart?.cartItems || []
   );
+
+  const { items: wishlistItems = [] } = useSelector(
+    (state) => state.wishlist
+  );
+
+  // ================= WISHLIST CHECK =================
+  const isInWishlist = useMemo(() => {
+    return wishlistItems.some(
+      (item) =>
+        (item.product?._id || item._id)?.toString() === product._id
+    );
+  }, [wishlistItems, product._id]);
 
   const discountPercent =
     product.discountPrice > 0
@@ -17,11 +42,32 @@ const ProductCard = ({ product }) => {
       )
       : 0;
 
-  return (
-    <div className="group bg-white rounded-2xl border shadow-sm hover:shadow-xl transition overflow-hidden flex flex-col">
+  // ================= TOGGLE WISHLIST =================
+  const handleWishlistToggle = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-      {/* IMAGE SECTION */}
+    try {
+      if (isInWishlist) {
+        await dispatch(removeWishlistItem(product._id));
+        toast.success("Removed from wishlist ❤️");
+      } else {
+        await dispatch(addWishlistItem(product._id));
+        toast.success("Added to wishlist ❤️");
+      }
+
+      dispatch(loadWishlist()); // sync
+    } catch {
+      toast.error("Wishlist action failed");
+    }
+  };
+
+  return (
+    <div className="group bg-white rounded-2xl border shadow-sm hover:shadow-xl transition overflow-hidden flex flex-col relative">
+
+      {/* ================= IMAGE ================= */}
       <div className="relative overflow-hidden">
+
         <Link to={`/product/${product.slug}`}>
           <img
             src={product.images?.[0]?.url}
@@ -30,7 +76,7 @@ const ProductCard = ({ product }) => {
           />
         </Link>
 
-        {/* DISCOUNT BADGE */}
+        {/* DISCOUNT */}
         {discountPercent > 0 && (
           <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md">
             {discountPercent}% OFF
@@ -43,22 +89,53 @@ const ProductCard = ({ product }) => {
             Out of Stock
           </span>
         )}
+
+        {/* ================= WISHLIST ICON (NEW) ================= */}
+        <button
+          onClick={handleWishlistToggle}
+          className="absolute top-2 right-2 z-20 bg-white/90 hover:bg-pink-50 p-2 rounded-full shadow transition"
+        >
+          <Heart
+            size={18}
+            className={`transition
+              ${isInWishlist
+                ? "fill-pink-600 text-pink-600"
+                : "text-gray-600"
+              }`}
+          />
+        </button>
+
+        {/* ================= REMOVE WISHLIST BUTTON ================= */}
+        {showRemove && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onRemove?.();
+            }}
+            className="absolute top-2 left-2 z-20 bg-white/90 hover:bg-red-50 p-2 rounded-full shadow transition"
+          >
+            {removing ? (
+              <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+            ) : (
+              <Trash2 className="w-4 h-4 text-red-500" />
+            )}
+          </button>
+        )}
       </div>
 
-      {/* CONTENT */}
+      {/* ================= CONTENT ================= */}
       <div className="p-3 flex flex-col gap-1 flex-1">
 
-        {/* NAME */}
         <h3 className="font-semibold text-sm sm:text-base line-clamp-1">
           {product.name}
         </h3>
 
-        {/* DESCRIPTION */}
         <p className="text-xs text-gray-500 line-clamp-2">
           {product.description}
         </p>
 
-        {/* RATING AND VIEWs */}
+        {/* RATING */}
         {product.rating > 0 && (
           <div className="flex items-center gap-1 text-xs mt-1">
             <div className="flex items-center text-yellow-500">
@@ -74,7 +151,6 @@ const ProductCard = ({ product }) => {
           </div>
         )}
 
-
         {/* PRICE */}
         <div className="mt-1 flex items-center gap-2">
           <span className="text-lg font-bold text-gray-900">
@@ -88,7 +164,7 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* ACTION */}
+        {/* ADD TO CART */}
         <button
           disabled={product.stock === 0}
           onClick={() => {
@@ -115,8 +191,6 @@ const ProductCard = ({ product }) => {
 
             toast.success("Product added to cart");
           }}
-
-
           className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition
             ${product.stock > 0
               ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
@@ -125,7 +199,6 @@ const ProductCard = ({ product }) => {
         >
           {product.stock > 0 ? "Add to Cart" : "Unavailable"}
         </button>
-
       </div>
     </div>
   );

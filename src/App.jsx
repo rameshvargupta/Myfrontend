@@ -42,6 +42,7 @@ import ContactUs from "./pages/HelpAndSupport/ContactUs";
 import ReturnPolicy from "./pages/HelpAndSupport/ReturnPolicy";
 import PrivacyPolicy from "./pages/HelpAndSupport/PrivacyPolicy";
 import RefundPolicy from "./pages/HelpAndSupport/RefundPolicy";
+import SearchBox from "./pages/user/SearchBox";
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
 
       /* USER */
       { path: "/products", element: <Products /> },
+      { path: "/searchBox", element: <SearchBox /> },
       { path: "/product/:slug", element: <ProductDetails /> },
       { path: "/checkout", element: <Checkout /> },
       { path: "/cartpage", element: <CartPage /> },
@@ -165,7 +167,7 @@ const App = () => {
       });
 
   }, [dispatch]);
-console.log("API URL:", import.meta.env.VITE_API_URL);
+  console.log("API URL:", import.meta.env.VITE_API_URL);
 
 
   if (loadingUser) {

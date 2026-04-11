@@ -6,7 +6,7 @@ const FooterNavbar = () => {
   return (
     <>
       {/* Mobile Bottom Navbar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] rounded-t-xl">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] rounded-t-xl mb-2">
         <div className="flex justify-between items-center h-16 px-3">
           <NavItem to="/" icon={Home} label="Home" />
           <NavItem to="/productCategoryDetails" icon={LayoutGrid} label="Categories" />

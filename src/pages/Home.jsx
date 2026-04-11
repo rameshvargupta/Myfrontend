@@ -363,32 +363,10 @@ const Home = () => {
           </div>
         )}
 
-        <Section title={debouncedKeyword ? `Search results for "${debouncedKeyword}"` : "Trending Products"}>
-          {filteredProducts.length > 0 ? (
-            filteredProducts.map((p) => <ProductCard key={p._id} product={p} />)
-          ) : (
-            <p className="col-span-full text-center text-gray-500 mt-10">
-              No products found.
-            </p>
-          )}
-        </Section>
-
         {/* for middle devices   */}
         <div className="md:hidden fixed top-0 mt-12 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-100">
 
           <div className="px-4 pt-4 pb-3 space-y-3">
-
-            {/* Search Bar */}
-            <form onSubmit={(e) => e.preventDefault()} className="flex items-center bg-gray-100 rounded-full px-4 h-11 focus-within:ring-2 focus-within:ring-pink-500 transition-all">
-              <Search size={18} className="text-gray-400 mr-3" />
-              <input
-                type="text"
-                placeholder="Search for products, brands..."
-                value={keyword}
-                onChange={handleKeywordChange}
-                className="bg-transparent outline-none flex-1 text-sm"
-              />
-            </form>
 
             {/* Address Row */}
             <div
@@ -514,24 +492,23 @@ const Home = () => {
           </div>
         )}
 
-        <ProductCategory />
-
-        <div className="px-4 md:px-8">
+        {/* first carausel */}
+        <div className="px-2 md:px-4 mb-5">
           <HeroSlider
             position="TOP"
-            className="h-[130px] sm:h-[180px] md:h-[220px] lg:h-[260px]"
+            className="h-[150px] sm:h-[180px] md:h-[220px] lg:h-[260px]"
           />
         </div>
-
-
+        <ProductCategory />
         <Section title="Trending Products">
           {trendingProducts.map((p) => (
             <ProductCard key={p._id} product={p} />
           ))}
         </Section>
+        {/* first carausel */}
 
-        <RecentlyViewed />
 
+        {/* second cart and carosel */}
         <div className="px-4 md:px-8">
           <HeroSlider
             position="MIDDLE"
@@ -544,7 +521,9 @@ const Home = () => {
             <ProductCard key={p._id} product={p} />
           ))}
         </Section>
+        {/* second cart and carosel */}
 
+        {/* Third cart and carosel */}
         <div className="px-4 md:px-8">
           <HeroSlider
             position="BOTTOM"
@@ -558,6 +537,7 @@ const Home = () => {
           ))}
         </Section>
 
+        {/* Third cart and carosel */}
 
       </div>
 

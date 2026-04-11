@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchUserProducts } from "@/api/productApi";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -11,6 +11,7 @@ import {
   addWishlistItem,
   removeWishlistItem,
 } from "@/redux/wishlistSlice";
+import FooterNavbar from "@/components/user/FooterNavbar";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -25,18 +26,25 @@ const Products = () => {
   const [priceRange, setPriceRange] = useState([0, 100000]);
   const [rating, setRating] = useState("");
   const [inStock, setInStock] = useState(false);
-  const cartItems = useSelector(
-    (state) => state.cart?.cartItems || []
-  );
-  const { token } = useSelector((state) => state.user);
-  const isAuth = !!token;
 
-  const wishlistItems = useSelector(
-    (state) => state.wishlist.items || []
+  const cartItems = useSelector((state) => state.cart?.cartItems || []);
+  const { token } = useSelector((state) => state.user);
+
+  const { items: wishlistItems, loading: wishlistLoading } = useSelector(
+    (state) => state.wishlist
   );
 
   const dispatch = useDispatch();
   const LIMIT = 12;
+
+  /* ✅ FIX: handle both structures */
+  const wishlistIds = useMemo(() => {
+    return new Set(
+      wishlistItems.map((item) =>
+        (item.product?._id || item._id)?.toString()
+      )
+    );
+  }, [wishlistItems]);
 
   /* ================= FETCH CATEGORIES ================= */
   useEffect(() => {
@@ -51,7 +59,6 @@ const Products = () => {
     };
     fetchCategories();
   }, []);
-
 
   /* ================= FETCH PRODUCTS ================= */
   useEffect(() => {
@@ -83,15 +90,14 @@ const Products = () => {
     }
   };
 
+  /* ================= LOAD WISHLIST ================= */
   useEffect(() => {
-    if (isAuth) {
+    if (token) {
       dispatch(loadWishlist());
     }
-  }, [isAuth, dispatch]);
+  }, [token, dispatch]);
 
-
-
-  if (loading) {
+  if (loading || wishlistLoading) {
     return (
       <>
         <Navbar />
@@ -102,82 +108,11 @@ const Products = () => {
     );
   }
 
-
   return (
     <>
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 ">
-        {/* ================= HEADER ================= */}
-        <h1 className="text-3xl md:text-4xl font-extrabold text-center mb-8 bg-gradient-to-r from-indigo-600 to-pink-500 bg-clip-text text-transparent">
-          Explore Products
-        </h1>
-
-        {/* ================= FILTER BAR ================= */}
-        {/* DESKTOP FILTERS */}
-        <div className="hidden md:block w-64 space-y-6 border-r pr-4">
-          {/* CATEGORY */}
-          <div>
-            <h3 className="font-bold mb-2">Category</h3>
-            <select
-              className="w-full border rounded px-3 py-2"
-              value={selectedCategory}
-              onChange={(e) => {
-                setPage(1);
-                setSelectedCategory(e.target.value);
-              }}
-            >
-              <option value="">All</option>
-              {categories.map(cat => (
-                <option key={cat._id} value={cat._id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* PRICE */}
-          <div>
-            <h3 className="font-bold mb-2">Price</h3>
-            <input
-              type="range"
-              min="0"
-              max="100000"
-              step="1000"
-              value={priceRange[1]}
-              onChange={(e) => setPriceRange([0, Number(e.target.value)])}
-              className="w-full"
-            />
-            <p className="text-sm mt-1">Up to ₹{priceRange[1]}</p>
-          </div>
-
-          {/* RATING */}
-          <div>
-            <h3 className="font-bold mb-2">Rating</h3>
-            {[4, 3, 2].map(r => (
-              <button
-                key={r}
-                onClick={() => setRating(r)}
-                className={`block w-full text-left px-3 py-1 rounded mb-1
-          ${rating === r ? "bg-indigo-100 text-indigo-700" : "hover:bg-gray-100"}
-        `}
-              >
-                ⭐ {r} & above
-              </button>
-            ))}
-          </div>
-
-          {/* STOCK */}
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={inStock}
-              onChange={(e) => setInStock(e.target.checked)}
-            />
-            In Stock Only
-          </label>
-        </div>
-
-
-        {/* ================= PRODUCT GRID ================= */}
+      <div className="max-w-7xl mx-auto px-4 mt-3 ">
         <div
           className="
             grid
@@ -189,9 +124,8 @@ const Products = () => {
           "
         >
           {products.map((p) => {
-            const isInWishlist = wishlistItems.some(
-              (item) => item._id?.toString() === p._id?.toString()
-            );
+            const isInWishlist = wishlistIds.has(p._id?.toString());
+
             return (
               <div
                 key={p._id}
@@ -205,7 +139,6 @@ const Products = () => {
                 group
               "
               >
-                {/* IMAGE */}
                 <Link to={`/product/${p.slug}`}>
                   <div className="relative">
                     <img
@@ -223,27 +156,31 @@ const Products = () => {
                       </span>
                     )}
 
+                    {/* ✅ FIXED CLICK HANDLER */}
                     <div
                       className="absolute top-3 right-3 z-10"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
 
-                        if (!isAuth) {
+                        if (!token) {
                           toast.error("Please login first");
                           return;
                         }
 
-                        if (isInWishlist) {
-                          dispatch(removeWishlistItem(p._id))
-                            .unwrap()
-                            .then(() => toast.success("Removed from wishlist"))
-                            .catch(() => toast.error("Failed to remove"));
-                        } else {
-                          dispatch(addWishlistItem(p._id))
-                            .unwrap()
-                            .then(() => toast.success("Added to wishlist ❤️"))
-                            .catch(() => toast.error("Failed to add"));
+                        try {
+                          if (isInWishlist) {
+                            await dispatch(removeWishlistItem(p._id));
+                            toast.success("Removed from wishlist");
+                          } else {
+                            await dispatch(addWishlistItem(p._id));
+                            toast.success("Added to wishlist ❤️");
+                          }
+
+                          /* ✅ force sync */
+                          dispatch(loadWishlist());
+                        } catch {
+                          toast.error("Something went wrong");
                         }
                       }}
                     >
@@ -271,9 +208,7 @@ const Products = () => {
                         />
                       </div>
                     </div>
-
                   </div>
-
                 </Link>
 
                 {/* CONTENT */}
@@ -282,17 +217,17 @@ const Products = () => {
                     {p.name}
                   </h2>
 
-                  <p className={`transition ${isInWishlist
-                    ? "fill-pink-600 text-pink-600"
-                    : "text-gray-600"
-                    }`}>
+                  <p
+                    className={`transition ${isInWishlist
+                      ? "fill-pink-600 text-pink-600"
+                      : "text-gray-600"
+                      }`}
+                  >
                     {p.description?.length > 50
                       ? p.description.slice(0, 40) + "..."
                       : p.description}
                   </p>
 
-
-                  {/* PRICE */}
                   <div className="flex items-center justify-between mt-1">
                     <div>
                       <span className="text-base sm:text-lg font-bold text-gray-900">
@@ -316,7 +251,6 @@ const Products = () => {
                     </span>
                   </div>
 
-                  {/* RATING + CATEGORY */}
                   <div className="flex justify-between items-center text-xs text-gray-600 mt-1">
                     <span>{p.category?.name}</span>
                     <span className="text-yellow-500 font-semibold">
@@ -324,7 +258,6 @@ const Products = () => {
                     </span>
                   </div>
 
-                  {/* ADD TO CART */}
                   <button
                     disabled={p.stock === 0}
                     onClick={() => {
@@ -352,7 +285,6 @@ const Products = () => {
 
                       toast.success("Product added to cart");
                     }}
-
                     className={`
                     mt-3
                     w-full
@@ -371,37 +303,11 @@ const Products = () => {
                   </button>
                 </div>
               </div>
-            )
-
+            );
           })}
         </div>
-
-        {/* ================= PAGINATION ================= */}
-        <div className="flex justify-center items-center gap-4 mt-10">
-          <button
-            onClick={() => setPage((p) => Math.max(p - 1, 1))}
-            disabled={page === 1}
-            className="px-4 py-2 rounded-full bg-gray-200 disabled:opacity-50"
-          >
-            Prev
-          </button>
-
-          <span className="font-medium">
-            Page {page} / {totalPages}
-          </span>
-
-          <button
-            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-            disabled={page === totalPages}
-            className="px-4 py-2 rounded-full bg-gray-200 disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
       </div>
-
-
-
+      <FooterNavbar/>
     </>
   );
 };

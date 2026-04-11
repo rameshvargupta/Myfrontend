@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_URL;
 import Navbar from "@/components/Navbar";
@@ -13,7 +13,7 @@ import { clearCart } from "@/redux/cartSlice";
 import { toast } from "sonner";
 import { fetchAddresses } from "@/api/addressApi";
 import FooterNavbar from "@/components/user/FooterNavbar";
-
+import { removeCouponRedux } from "@/redux/couponSlice";
 const Checkout = () => {
 
   const dispatch = useDispatch();
@@ -28,8 +28,7 @@ const Checkout = () => {
 
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const { appliedCoupon, discount } = useSelector((state) => state.coupon);
   const [coupons, setCoupons] = useState([]);
   /* ================= REDUX ================= */
 
@@ -90,7 +89,11 @@ const Checkout = () => {
 
   }, [checkoutItems]);
 
-  const finalTotal = cartTotal - discount;
+  const PLATFORM_FEE = 5;
+  const shipping = cartTotal > 499 ? 0 : 40;
+
+  const finalTotal =
+    cartTotal + shipping + PLATFORM_FEE - discount;
 
   /* ================= LOAD ADDRESSES ================= */
 
@@ -125,6 +128,13 @@ const Checkout = () => {
 
     loadAddresses();
   }, [dispatch]);
+
+  useEffect(() => {
+    console.log("REDUX COUPON STATE:", {
+      appliedCoupon,
+      discount,
+    });
+  }, [appliedCoupon, discount]);
 
   const handleIncrease = (productId) => {
 
@@ -162,14 +172,10 @@ const Checkout = () => {
   const handlePlaceOrder = async () => {
     const token = localStorage.getItem("token");
 
-    // ❌ LOGIN CHECK
+    // ================= VALIDATION =================
     if (!token) {
       toast.error("Please login to continue");
-
-      // 👉 login popup open karo
-      // ya redirect
       navigate("/login", { state: { from: "/checkout" } });
-
       return;
     }
 
@@ -186,39 +192,64 @@ const Checkout = () => {
     try {
       setLoading(true);
 
-      const token = localStorage.getItem("token");
-
+      // 🔥 IMPORTANT: ONLY SEND REQUIRED DATA
+      const orderPayload = {
+        orderItems: checkoutItems,
+        selectedAddressId: selectedAddress._id,
+        paymentMethod,
+        couponCode: appliedCoupon || null, // ✅ ONLY THIS
+      };
+      console.log("COUPON SEND:", appliedCoupon);
       // ================= ONLINE PAYMENT =================
       if (paymentMethod === "ONLINE") {
 
-        // 1. Create Razorpay order
-        const res = await fetch(`${API_URL}/api/v1/payment/create-order`, {
+        // 👉 Step 1: Ask backend for final amount
+        const previewRes = await fetch(`${API_URL}/api/v1/orders/preview`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ amount: finalTotal }),
+          body: JSON.stringify(orderPayload),
         });
 
-        const data = await res.json();
+        const previewData = await previewRes.json();
 
-        if (!data.success) {
+        if (!previewData.success) {
+          toast.error(previewData.message || "Pricing error");
+          return;
+        }
+
+        const finalAmount = previewData.totalAmount;
+
+        // 👉 Step 2: Create Razorpay order with correct amount
+        const paymentRes = await fetch(`${API_URL}/api/v1/payment/create-order`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount: finalAmount }),
+        });
+
+        const paymentData = await paymentRes.json();
+
+        if (!paymentData.success) {
           toast.error("Payment init failed");
           return;
         }
 
         const options = {
-          key: data.key,
-          amount: data.amount,
+          key: paymentData.key,
+          amount: paymentData.amount,
           currency: "INR",
           name: "Ecart",
           description: "Order Payment",
-          order_id: data.orderId,
+          order_id: paymentData.orderId,
 
           handler: async function (response) {
 
-            // 2. VERIFY PAYMENT
+            // 👉 Step 3: Verify payment + create order
             const verifyRes = await fetch(
               `${API_URL}/api/v1/payment/verify`,
               {
@@ -229,10 +260,7 @@ const Checkout = () => {
                 },
                 body: JSON.stringify({
                   ...response,
-                  orderItems: checkoutItems,
-                  addressId: selectedAddress._id,
-                  totalAmount: finalTotal,
-                  couponCode: appliedCoupon?.code || null,
+                  ...orderPayload, // 🔥 IMPORTANT
                 }),
               }
             );
@@ -243,7 +271,10 @@ const Checkout = () => {
               toast.success("Payment Successful 🎉");
 
               if (!buyNowProduct) dispatch(clearCart());
+              dispatch(removeCouponRedux());
+
               localStorage.removeItem("buyNowProduct");
+
               navigate(`/ordersuccess/${verifyData.order._id}`);
             } else {
               toast.error("Payment verification failed");
@@ -260,7 +291,8 @@ const Checkout = () => {
           return;
         }
 
-        const rzp = new window.Razorpay(options); rzp.open();
+        const rzp = new window.Razorpay(options);
+        rzp.open();
       }
 
       // ================= COD =================
@@ -272,36 +304,36 @@ const Checkout = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            orderItems: checkoutItems,
-            selectedAddressId: selectedAddress._id,
-            totalAmount: finalTotal,
-            couponCode: appliedCoupon?.code || null,
-            paymentMethod: "COD",
-            paymentStatus: "Pending",
-          }),
+          body: JSON.stringify(orderPayload), // 🔥 CLEAN PAYLOAD
         });
 
         const data = await res.json();
 
         if (!data.success) {
-          toast.error("Order failed");
+          toast.error(data.message || "Order failed");
           return;
         }
 
         if (!buyNowProduct) dispatch(clearCart());
 
-        toast.success("Order placed (COD)");
+        dispatch(removeCouponRedux());
+        localStorage.removeItem("buyNowProduct");
+
+        toast.success("Order placed successfully 🎉");
 
         navigate(`/ordersuccess/${data.order._id}`);
       }
 
+
     } catch (err) {
+      console.error("ORDER ERROR:", err);
       toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
+
+
 
   /* ================= EMPTY ================= */
 
@@ -351,13 +383,7 @@ const Checkout = () => {
               <CouponSection
                 cartTotal={cartTotal}
                 coupons={coupons}
-                appliedCoupon={appliedCoupon}
-                setAppliedCoupon={setAppliedCoupon}
-                setDiscount={setDiscount}
               />
-
-
-
             </div>
 
             {/* RIGHT SECTION */}
@@ -367,6 +393,7 @@ const Checkout = () => {
               <OrderSummary
                 cartItems={checkoutItems}
                 discount={discount}
+                couponCode={appliedCoupon}
                 onIncrease={handleIncrease}
                 onDecrease={handleDecrease}
                 onRemove={handleRemove}

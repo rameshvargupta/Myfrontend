@@ -10,22 +10,31 @@ const OrderSummary = ({
   onIncrease,
   onDecrease,
   onRemove,
-  isOrderDetails = false,
   expectedDelivery,
 }) => {
 
   /* ================= CALCULATE ================= */
 
-  const subtotal = useMemo(() => {
-    return cartItems.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+  const totals = useMemo(() => {
+    let mrp = 0;
+    let selling = 0;
+
+    cartItems.forEach(item => {
+      mrp += (item.originalPrice || item.price) * item.quantity;
+      selling += item.price * item.quantity;
+    });
+
+    return {
+      mrp,
+      selling,
+      productDiscount: mrp - selling
+    };
   }, [cartItems]);
 
-  const shipping = subtotal > 499 ? 0 : 40;
+  const shipping = totals.selling > 499 ? 0 : 40;
 
-  const finalTotal = subtotal + shipping + PLATFORM_FEE - discount;
+  const finalTotal =
+    totals.selling + shipping + PLATFORM_FEE - discount;
 
   const savings = discount + (shipping === 0 ? 40 : 0);
 
@@ -54,7 +63,7 @@ const OrderSummary = ({
 
       {/* FREE SHIPPING MESSAGE */}
 
-      {subtotal > 499 && (
+      {totals.selling > 499 && (
         <div className="flex items-center gap-2 px-6 py-3 text-green-600 bg-green-50 text-sm font-medium">
           <Truck size={16} />
           You unlocked FREE Shipping 🎉
@@ -90,9 +99,27 @@ const OrderSummary = ({
                 {item.name}
               </p>
 
-              <p className="text-sm text-gray-500 mt-1">
-                ₹{item.price}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+
+                <span className="text-sm font-semibold text-gray-900">
+                  ₹{item.price}
+                </span>
+
+                {item.originalPrice && (
+                  <>
+                    <span className="text-xs line-through text-gray-400">
+                      ₹{item.originalPrice}
+                    </span>
+
+                    <span className="text-xs text-green-600 font-medium">
+                      {Math.round(
+                        ((item.originalPrice - item.price) / item.originalPrice) * 100
+                      )}% OFF
+                    </span>
+                  </>
+                )}
+
+              </div>
 
               {/* QUANTITY */}
 
@@ -128,10 +155,6 @@ const OrderSummary = ({
 
             <div className="flex flex-col items-end gap-2">
 
-              <p className="font-semibold text-gray-900">
-                ₹{(item.price * item.quantity).toFixed(2)}
-              </p>
-
               <button
                 onClick={() => onRemove(item.productId)}
                 className="text-red-500 hover:text-red-600"
@@ -156,9 +179,29 @@ const OrderSummary = ({
         </h3>
 
         <div className="flex justify-between text-sm text-gray-600">
-          <span>Price ({cartItems.length} items)</span>
-          <span>₹{subtotal.toFixed(2)}</span>
+          <span>Max Price</span>
+          <span className="line-through">₹{totals.mrp}.00</span>
         </div>
+
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Price ({cartItems.length} items)</span>
+          <span>₹{totals.selling.toFixed(2)}</span>
+        </div>
+
+        <div className="flex justify-between text-sm text-gray-600">
+          <span>Discount</span>
+          <span>₹{totals.productDiscount}</span>
+        </div>
+
+        {discount > 0 && (
+          <div className="flex justify-between text-sm text-green-600">
+            <span className="flex items-center gap-1">
+              <Tag size={14} />
+              Coupon Discount
+            </span>
+            <span>- ₹{discount}</span>
+          </div>
+        )}
 
         <div className="flex justify-between text-sm text-gray-600">
           <span>Platform Fee</span>
@@ -176,16 +219,6 @@ const OrderSummary = ({
           )}
         </div>
 
-        {discount > 0 && (
-          <div className="flex justify-between text-sm text-green-600">
-            <span className="flex items-center gap-1">
-              <Tag size={14} />
-              Coupon Discount
-            </span>
-            <span>- ₹{discount}</span>
-          </div>
-        )}
-
         <hr />
 
         <div className="flex justify-between text-lg font-bold text-gray-900">
@@ -198,13 +231,11 @@ const OrderSummary = ({
 
         </div>
         {/* 🔹 Expected Delivery inside OrderSummary */}
-       {expectedDelivery && <ExpectedDelivery pincode={expectedDelivery} />}
+        {expectedDelivery && <ExpectedDelivery pincode={expectedDelivery} />}
 
-        {savings > 0 && (
-          <p className="text-green-600 text-sm font-medium">
-            You saved ₹{savings.toFixed(2)} on this order 🎉
-          </p>
-        )}
+        <p className="text-green-600 text-sm font-medium">
+          You saved ₹{totals.productDiscount + discount} on this order 🎉
+        </p>
 
       </div>
 

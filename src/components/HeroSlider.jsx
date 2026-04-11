@@ -87,7 +87,7 @@ const HeroSlider = ({ position = "TOP", className = "" }) => {
 
   /* MULTIPLE IMAGES → SWIPER */
   return (
-    <section className="px-2 sm:px-4 mb-6">
+    <section className="px-2 sm:px-4 mb-2">
       <Swiper
         modules={[Autoplay, Pagination, Navigation]}
         autoplay={{

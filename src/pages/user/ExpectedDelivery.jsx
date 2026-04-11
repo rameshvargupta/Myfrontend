@@ -10,7 +10,10 @@ const ExpectedDelivery = ({ pincode, className }) => {
     const today = new Date();
     let minDays = 4, maxDays = 6;
 
-    if (pincode.startsWith("22")) { minDays = 2; maxDays = 4; }
+    if (pincode.startsWith("22")) {
+      minDays = 2;
+      maxDays = 4;
+    }
 
     const min = new Date(today);
     min.setDate(today.getDate() + minDays);
@@ -21,17 +24,22 @@ const ExpectedDelivery = ({ pincode, className }) => {
     return { min, max };
   };
 
+  const formatDate = (date) =>
+    date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
   const range = getDeliveryRange(pincode);
 
-  if (!range) return null;
-
   return (
-    <div className={`bg-green-50 border border-green-200 rounded-xl p-4 mt-4 ${className || ""}`}>
-      <div className="flex items-center gap-2 text-green-700 font-medium">
-        <Truck size={18} /> 
-        <span>Expected Delivery: {range.min.toLocaleDateString()} - {range.max.toLocaleDateString()}</span>
-      </div>
-    </div>
+    <span className="flex items-center gap-1">
+      <Truck size={16} className="mt-[1px]" />
+      <span>
+        Delivery: {formatDate(range.min)} - {formatDate(range.max)}
+      </span>
+    </span>
   );
 };
 

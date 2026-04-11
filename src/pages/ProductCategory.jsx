@@ -45,8 +45,7 @@ const ProductCategory = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 ">
-
+    <div className="max-w-7xl mx-auto px-4 mb-3">
 
       <div
         className="
@@ -67,7 +66,7 @@ const ProductCategory = () => {
               flex flex-col items-center
               justify-center
               gap-1
-              p-3
+              p-2
               rounded-xl
               bg-white
               border
@@ -87,7 +86,7 @@ const ProductCategory = () => {
           </div>
         ))}
       </div>
-      
+
     </div>
   );
 };

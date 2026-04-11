@@ -4,6 +4,7 @@ import { fetchCategories, fetchUserProducts } from "@/api/productApi";
 import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import { toast } from "sonner";
+import FooterNavbar from "@/components/user/FooterNavbar";
 
 const ProductCategoryDetails = () => {
     const { id } = useParams();
@@ -199,6 +200,7 @@ const ProductCategoryDetails = () => {
                     </div>
                 </div>
             </div>
+            <FooterNavbar/>
         </>
     );
 };

@@ -21,10 +21,6 @@ const Navbar = () => {
 
   const [profileDropdown, setProfileDropdown] = useState(false);
   const [adminDropdown, setAdminDropdown] = useState(false);
-  const [keyword, setKeyword] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [showDropdown, setShowDropdown] = useState(false);
-
   const searchRef = useRef(null);
   const profileRef = useRef(null);
   const adminRef = useRef(null);
@@ -78,56 +74,6 @@ const Navbar = () => {
     }
   };
 
-  // ===== Search Submit =====
-  const searchHandler = (e) => {
-    e.preventDefault();
-    if (keyword.trim()) {
-      navigate(`/products?keyword=${keyword}`);
-    } else {
-      navigate("/products");
-    }
-    setShowDropdown(false);
-  };
-
-  // ===== Live Search =====
-  useEffect(() => {
-    const fetchProducts = async () => {
-      if (keyword.trim().length < 2) {
-        setSearchResults([]);
-        setShowDropdown(false);
-        return;
-      }
-
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(
-          `${API_URL}/api/v1/products?keyword=${keyword}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              ...(token && { Authorization: `Bearer ${token}` }),
-            },
-          }
-        );
-        const data = await res.json();
-
-        if (!res.ok) {
-          console.log("Backend error:", data.message);
-          setSearchResults([]);
-          setShowDropdown(false);
-          return;
-        }
-
-        setSearchResults(data.products || []);
-        setShowDropdown(true);
-      } catch (error) {
-        console.log("Search error:", error);
-      }
-    };
-
-    const delay = setTimeout(fetchProducts, 400); // debounce
-    return () => clearTimeout(delay);
-  }, [keyword]);
 
   // ===== Outside Click Close =====
   useEffect(() => {
@@ -214,55 +160,20 @@ const Navbar = () => {
           {/* ================= CENTER SEARCH ================= */}
           <div className="hidden md:flex flex-1 justify-center px-10 search-box">
             <div className="relative w-full max-w-xl">
-              <form
-                onSubmit={searchHandler}
-                className="flex items-center bg-gray-100 rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-pink-500"
-                onClick={(e) => e.stopPropagation()}
-              >
+              <Link to={"/searchBox"}>
                 <Search size={18} className="text-gray-400 mr-2" />
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="bg-transparent outline-none flex-1 text-sm"
-                />
-              </form>
-
-              {showDropdown && (
-                <div className="absolute top-12 w-full bg-white shadow-xl rounded-xl border max-h-80 overflow-y-auto z-[999]">
-                  {searchResults.length > 0 ? (
-                    searchResults.map((product) => (
-                      <div
-                        key={product._id}
-                        onClick={() => {
-                          navigate(`/product/${product._id}`);
-                          setKeyword("");
-                          setShowDropdown(false);
-                        }}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 cursor-pointer transition"
-                      >
-                        <img
-                          src={product.images?.[0]?.url}
-                          alt={product.name}
-                          className="w-12 h-12 rounded-md object-cover"
-                        />
-                        <div>
-                          <p className="text-sm font-medium">{product.name}</p>
-                          <p className="text-xs text-gray-500">₹ {product.finalPrice}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-4 text-sm text-gray-500">No products found</div>
-                  )}
-                </div>
-              )}
+              </Link>
             </div>
           </div>
 
           {/* RIGHT */}
           <div className="flex items-center gap-5">
+
+            <Link to="/searchBox" className="relative">
+              <Search size={22} />
+
+            </Link>
+
             <Link to="/wishlist" className="relative">
               <Heart size={22} />
               {wishlistCount > 0 && (
@@ -271,6 +182,8 @@ const Navbar = () => {
                 </span>
               )}
             </Link>
+
+
 
             <Link to="/cartpage" className="relative">
               <ShoppingCart size={22} />
@@ -319,6 +232,7 @@ const Navbar = () => {
               </Link>
             )}
           </div>
+
         </div>
       </header>
 

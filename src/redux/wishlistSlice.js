@@ -1,67 +1,103 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+// redux/wishlistSlice.js
 
-/* ================= LOAD ================= */
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
+/* ================= LOAD WISHLIST ================= */
 export const loadWishlist = createAsyncThunk(
   "wishlist/load",
-  async (_, { getState }) => {
-    const token = getState().user.token;
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().user;
 
-    const res = await fetch(
-      `${API_URL}/api/v1/user/wishlist`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      // ✅ Token check
+      if (!token) {
+        return rejectWithValue("User not authenticated");
       }
-    );
 
-    const data = await res.json();
-    return data.wishlist;
+      const { data } = await axios.get(
+        `${API_URL}/api/v1/user/wishlist`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return data.wishlist;
+
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to load wishlist"
+      );
+    }
   }
 );
 
-/* ================= ADD ================= */
+/* ================= ADD ITEM ================= */
 export const addWishlistItem = createAsyncThunk(
   "wishlist/add",
-  async (productId, { getState }) => {
-    const token = getState().user.token;
+  async (productId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().user;
 
-    const res = await fetch(
-      `${API_URL}/api/v1/user/wishlist/${productId}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (!token) {
+        return rejectWithValue("User not authenticated");
       }
-    );
 
-    const data = await res.json();
-    return data.wishlist;
+      const { data } = await axios.post(
+        `${API_URL}/api/v1/user/wishlist/${productId}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return data.wishlist;
+
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add to wishlist"
+      );
+    }
   }
 );
 
-/* ================= REMOVE ================= */
+/* ================= REMOVE ITEM ================= */
 export const removeWishlistItem = createAsyncThunk(
   "wishlist/remove",
-  async (productId, { getState }) => {
-    const token = getState().user.token;
+  async (productId, { getState, rejectWithValue }) => {
+    try {
+      const { token } = getState().user;
 
-    const res = await fetch(
-      `${API_URL}/api/v1/user/wishlist/${productId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (!token) {
+        return rejectWithValue("User not authenticated");
       }
-    );
 
-    const data = await res.json();
-    return data.wishlist;
+      const { data } = await axios.delete(
+        `${API_URL}/api/v1/user/wishlist/${productId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return data.wishlist;
+
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to remove item"
+      );
+    }
   }
 );
 
+/* ================= SLICE ================= */
 const wishlistSlice = createSlice({
   name: "wishlist",
   initialState: {
@@ -69,10 +105,15 @@ const wishlistSlice = createSlice({
     loading: false,
     error: null,
   },
+  reducers: {},
+
   extraReducers: (builder) => {
     builder
+
+      /* ===== LOAD ===== */
       .addCase(loadWishlist.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(loadWishlist.fulfilled, (state, action) => {
         state.loading = false;
@@ -80,13 +121,29 @@ const wishlistSlice = createSlice({
       })
       .addCase(loadWishlist.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload;
+      })
+
+      /* ===== ADD ===== */
+      .addCase(addWishlistItem.pending, (state) => {
+        state.error = null;
       })
       .addCase(addWishlistItem.fulfilled, (state, action) => {
         state.items = action.payload;
       })
+      .addCase(addWishlistItem.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      /* ===== REMOVE ===== */
+      .addCase(removeWishlistItem.pending, (state) => {
+        state.error = null;
+      })
       .addCase(removeWishlistItem.fulfilled, (state, action) => {
         state.items = action.payload;
+      })
+      .addCase(removeWishlistItem.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });
