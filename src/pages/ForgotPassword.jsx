@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,8 @@ const getPasswordStrength = (password) => {
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
-
+  const [otpBoxes, setOtpBoxes] = useState(["", "", "", "", "", ""]);
+  const otpRefs = useRef([]);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
@@ -53,12 +54,6 @@ const ForgotPassword = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // OTP only numeric & max 6 digits
-    if (name === "otp") {
-      if (!/^\d*$/.test(value)) return;
-      if (value.length > 6) return;
-    }
-
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -84,6 +79,9 @@ const ForgotPassword = () => {
       toast.success("OTP sent to email");
       setStep(2);
       setTimer(30);
+      setTimeout(() => {
+        otpRefs.current[0]?.focus(); // 👈 pro UX
+      }, 100);
     } catch {
       toast.error("Failed to send OTP");
     } finally {
@@ -94,7 +92,8 @@ const ForgotPassword = () => {
   /* ================= RESEND OTP ================= */
   const resendOtpHandler = async () => {
     if (timer > 0) return;
-
+    setOtpBoxes(["", "", "", "", "", ""]); // 👈 add this
+    setFormData((prev) => ({ ...prev, otp: "" })); // 👈 important
     try {
       setLoading(true);
 
@@ -164,6 +163,30 @@ const ForgotPassword = () => {
     }
   };
 
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
+
+    const updatedOtp = [...otpBoxes];
+    updatedOtp[index] = value;
+    setOtpBoxes(updatedOtp);
+
+    // auto next focus
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+
+    // final OTP set
+    setFormData((prev) => ({
+      ...prev,
+      otp: updatedOtp.join(""),
+    }));
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Backspace" && !otpBoxes[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
   return (
     <div className="flex justify-center items-center min-h-screen bg-pink-100">
       <Card className="w-full max-w-sm">
@@ -196,14 +219,21 @@ const ForgotPassword = () => {
             <>
               {/* OTP */}
               <div className="grid gap-2">
-                <Label>OTP</Label>
-                <Input
-                  name="otp"
-                  value={formData.otp}
-                  onChange={handleChange}
-                  maxLength={6}
-                  placeholder="Enter 6-digit OTP"
-                />
+                <Label>Enter OTP</Label>
+
+                <div className="flex justify-center gap-2 mt-2">
+                  {otpBoxes.map((digit, index) => (
+                    <Input
+                      key={index}
+                      ref={(el) => (otpRefs.current[index] = el)}
+                      value={digit}
+                      maxLength={1}
+                      onChange={(e) => handleOtpChange(e.target.value, index)}
+                      onKeyDown={(e) => handleOtpKeyDown(e, index)}
+                      className="w-12 h-12 text-center text-lg font-bold"
+                    />
+                  ))}
+                </div>
               </div>
 
               <Button
@@ -223,6 +253,7 @@ const ForgotPassword = () => {
                   name="newPassword"
                   value={formData.newPassword}
                   onChange={handleChange}
+                  autoComplete="new-password"
                 />
                 <button
                   type="button"

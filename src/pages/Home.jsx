@@ -16,6 +16,7 @@ import ProductCategory from "./ProductCategory";
 import RecentlyViewed from "./user/RecentlyViewed";
 import Footer from "@/components/Footer";
 import debounce from "lodash.debounce";
+import { fetchWithRetry } from "@/utils/auth";
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -70,19 +71,30 @@ const Home = () => {
     (state) => state.address
   );
   const defaultAddress = selectedAddress;
-  // console.log(defaultAddress);
 
   /* ================= FETCH PRODUCTS ================= */
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/api/v1/products`)
-      .then((res) => {
-        if (res.data.success) {
-          setProducts(res.data.products);
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+
+        const data = await fetchWithRetry(
+          `${API_URL}/api/v1/products`
+        );
+
+        if (data?.success) {
+          setProducts(data.products);
         }
-      })
-      .catch(console.error);
+      } catch (error) {
+        console.error("Product fetch error:", error);
+        toast.error("Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
   }, []);
 
   /* ================= LOGIN POPUP TIMER ================= */
@@ -97,10 +109,6 @@ const Home = () => {
     }
   }, [user]);
 
-  const handleKeywordChange = (e) => {
-    setKeyword(e.target.value);
-    debouncedInput(e.target.value);
-  };
   const debouncedInput = useMemo(
     () =>
       debounce((value) => {
@@ -116,18 +124,6 @@ const Home = () => {
     };
   }, [debouncedInput]);
 
-
-  const filteredProducts = products.filter((p) => {
-    const name = (p.name || "").toLowerCase();
-    const brand = (p.brand || "").toLowerCase();
-    const category = (p.category?.name || "").toLowerCase(); // ✅ use .name
-
-    return (
-      name.includes(debouncedKeyword) ||
-      brand.includes(debouncedKeyword) ||
-      category.includes(debouncedKeyword)
-    );
-  });
 
   const handleClosePopup = () => {
     setShowLoginPopup(false);
@@ -270,7 +266,7 @@ const Home = () => {
 
   return (
     <>
-      <div className="space-y-10 relative pt-28 pb-24 md:pt-0 md:pb-0">
+      <div className="space-y-10 relative pt-18 pb-24 md:pt-0 md:pb-0">
 
         {/* ================= LOGIN MODAL ================= */}
         {showLoginPopup && (
@@ -348,11 +344,19 @@ const Home = () => {
                   )}
                 </button>
 
-                <p className="text-sm text-center mt-5">
+                <p className="text-sm text-center mt-2">
+                  <span
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-red-600 font-semibold cursor-pointer hover:underline"
+                  >
+                    Forgot Password
+                  </span>
+                </p>
+                <p className="text-sm text-center mt-2">
                   Not registered?{" "}
                   <span
                     onClick={() => navigate("/signup")}
-                    className="text-indigo-600 font-semibold cursor-pointer hover:underline"
+                    className="text-green-600 font-semibold cursor-pointer hover:underline"
                   >
                     Create Account
                   </span>
@@ -515,7 +519,7 @@ const Home = () => {
             className="h-[120px] sm:h-[150px] md:h-[230px] lg:h-[250px]"
           />
         </div>
-
+        <RecentlyViewed />
         <Section title="Best Offers">
           {bestOffers.map((p) => (
             <ProductCard key={p._id} product={p} />

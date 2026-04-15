@@ -1,4 +1,3 @@
-// FULL PREMIUM ORDER DETAILS PAGE (BUG-FREE, SAFE, 450+ LINES)
 
 import Navbar from "@/components/Navbar";
 import FooterNavbar from "@/components/user/FooterNavbar";
@@ -7,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import RecentlyViewed from "./RecentlyViewed";
 import PremiumPriceSummary from "@/components/product/PremiumPriceSummary";
+import { ArrowLeft } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -43,10 +43,9 @@ const Skeleton = () => {
 const MyOrdersDetails = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-
+  const [cancelling, setCancelling] = useState(false);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [editingItem, setEditingItem] = useState(null);
@@ -97,31 +96,54 @@ const MyOrdersDetails = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /* ================= CANCEL ================= */
   const handleCancelOrder = async () => {
+
+    setCancelling(true);
+
     try {
       const token = localStorage.getItem("token");
 
+      if (!token) {
+        toast.error("Please login to cancel order");
+        setCancelling(false);
+        return;
+      }
+
+      // ✅ FIXED: Use orderId instead of id
       const res = await fetch(
-        `${API_URL}/api/v1/orders/cancel/${order?._id}`,
+        `${API_URL}/api/v1/orders/cancel/${orderId}`, // ✅ Changed from id to orderId
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ reason: "Changed mind" }),
+          body: JSON.stringify({ reason: "Customer requested cancellation" }),
         }
       );
 
       const data = await res.json();
 
-      if (!data.success) return toast.error(data.message);
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to cancel order");
+      }
 
-      toast.success("Order Cancelled");
-      fetchOrder();
-    } catch {
-      toast.error("Cancel failed");
+      if (data.success) {
+        toast.success("Order Cancelled Successfully");
+        // Refresh order details
+        await fetchOrder();
+        // Optional: Redirect to orders page after 2 seconds
+        setTimeout(() => {
+          navigate("/myorders");
+        }, 2000);
+      } else {
+        toast.error(data.message || "Cannot cancel order");
+      }
+    } catch (error) {
+      console.error("Cancel error:", error);
+      toast.error(error.message || "Failed to cancel order");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -337,27 +359,58 @@ const MyOrdersDetails = () => {
       <div className="max-w-7xl mx-auto p-4 space-y-6 mb-20">
 
         {/* HEADER */}
-        <div className="bg-white p-6 rounded-2xl shadow flex justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Order Details</h1>
-            <p className="text-gray-500 text-sm">{order?._id}</p>
+
+        <div className="bg-white p-6 rounded-2xl shadow flex justify-between items-start">
+
+          {/* 🔥 LEFT SECTION (Arrow + Title) */}
+          <div className="flex items-start gap-4">
+            <button
+              onClick={handleCancelOrder}
+              disabled={cancelling}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition 
+      ${cancelling
+                  ? "bg-red-400 cursor-not-allowed"
+                  : "bg-red-500 hover:bg-red-600"
+                }`}
+            >
+              {cancelling ? (
+                <>
+                  {/* Spinner */}
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Cancelling...
+                </>
+              ) : (
+                "Cancel Order"
+              )}
+            </button>
+
+            {/* Title */}
+            <div>
+              <h1 className="text-xl font-bold">Order Details</h1>
+              <p className="text-gray-500 text-sm">{order?._id}</p>
+            </div>
+
           </div>
 
+          {/* 🔥 RIGHT SECTION */}
           <div className="flex gap-3">
 
             {/* ✅ Cancel Button */}
             {["Pending", "Processing", "Shipped"].includes(order?.orderStatus) && (
               <button
-                onClick={handleCancelOrder}
+                onClick={() => setShowCancelModal(true)} // 👈 modal open
                 className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
               >
                 Cancel Order
               </button>
             )}
 
-            {/* ✅ Download Invoice Button */}
+            {/* ✅ Download Invoice */}
             {order?.orderStatus === "Delivered" && (
-              <button onClick={handleDownloadInvoice} className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-2.5 rounded-xl shadow hover:scale-105 transition">
+              <button
+                onClick={handleDownloadInvoice}
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-2 py-2.5 rounded-xl shadow hover:scale-105 transition"
+              >
                 📄 Download Invoice
               </button>
             )}

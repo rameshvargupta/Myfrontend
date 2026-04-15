@@ -78,7 +78,7 @@ const RecentlyViewed = () => {
   if (!token || products.length === 0) return null;
 
   return (
-    <div className="py-6 px-2 sm:px-3 md:px-4 lg:px-6 relative bg-gradient-to-b from-gray-50 to-white">
+    <div className="py-0 px-2 sm:px-3 md:px-4 lg:px-6 mb-4 relative bg-gradient-to-b from-gray-50 to-white">
       {/* PREMIUM HEADER */}
       <div className="flex items-center justify-between mb-5 px-2">
         <div className="flex items-center gap-2">
@@ -240,16 +240,6 @@ const RecentlyViewed = () => {
         )}
       </div>
 
-      {/* Premium Mobile Scroll Indicator */}
-      <div className="sm:hidden flex justify-center items-center gap-2 mt-4">
-        <div className="flex gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-gray-400"></div>
-          <div className="w-3 h-1.5 rounded-full bg-gray-800"></div>
-          <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
-          <div className="w-1.5 h-1.5 rounded-full bg-gray-300"></div>
-        </div>
-        <span className="text-[10px] text-gray-400 font-medium tracking-wide">SWIPE →</span>
-      </div>
     </div>
   );
 };
