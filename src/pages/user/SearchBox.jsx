@@ -449,10 +449,11 @@ const SearchBox = () => {
                             </div>
                         </div>
                     )}
+                    <RecentlyViewed />
+
                 </div>
 
             </div>
-            <RecentlyViewed/>
             <FooterNavbar />
         </>
     );
