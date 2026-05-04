@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Loader2, TrendingUp, Clock, X, Star, Mic, MicOff, ShoppingBag } from "lucide-react";
+import { Search, Loader2, TrendingUp, Clock, X, Mic, MicOff } from "lucide-react";
 import RecentlyViewed from "./RecentlyViewed";
 import FooterNavbar from "@/components/user/FooterNavbar";
-
+import { Camera } from "lucide-react";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const SearchBox = () => {
@@ -16,26 +16,53 @@ const SearchBox = () => {
     const [isListening, setIsListening] = useState(false);
     const [searchPerformed, setSearchPerformed] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
-
     const navigate = useNavigate();
     const searchTimeout = useRef(null);
     const recognitionRef = useRef(null);
 
-    // Load recent searches from localStorage
     useEffect(() => {
-        const storedSearches = localStorage.getItem("recentSearches");
-        if (storedSearches) {
-            setRecentSearches(JSON.parse(storedSearches));
-        }
+        const fetchRecentSearches = async () => {
+            try {
+                const res = await fetch(`${API_URL}/api/v1/user/recent-search`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setRecentSearches(data.searches.map(s => s.keyword));
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        };
+
+        fetchRecentSearches();
     }, []);
 
-    // Save recent search
-    const saveRecentSearch = useCallback((searchTerm) => {
+    const saveRecentSearch = useCallback(async (searchTerm) => {
         if (!searchTerm?.trim()) return;
-        const updated = [searchTerm, ...recentSearches.filter(s => s !== searchTerm)].slice(0, 5);
-        setRecentSearches(updated);
-        localStorage.setItem("recentSearches", JSON.stringify(updated));
-    }, [recentSearches]);
+
+        try {
+            await fetch(`${API_URL}/api/v1/user/recent-search`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                },
+                body: JSON.stringify({ keyword: searchTerm })
+            });
+
+            // ✅ INSTANT UI UPDATE
+            setRecentSearches(prev => {
+                const updated = [searchTerm, ...prev.filter(s => s !== searchTerm)];
+                return updated.slice(0, 5);
+            });
+
+        } catch (err) {
+            console.error(err);
+        }
+    }, []);
 
     // Fetch popular products
     useEffect(() => {
@@ -65,14 +92,12 @@ const SearchBox = () => {
         }
     }, []);
 
-    // Live search with debounce - FIXED
+    // Live search with debounce
     useEffect(() => {
-        // Clear previous timeout
         if (searchTimeout.current) {
             clearTimeout(searchTimeout.current);
         }
 
-        // Don't search for short keywords
         if (keyword.trim().length < 2) {
             setResults([]);
             setSearchPerformed(false);
@@ -80,25 +105,21 @@ const SearchBox = () => {
             return;
         }
 
-        // Set loading after a small delay to avoid flicker
         searchTimeout.current = setTimeout(async () => {
             setLoading(true);
             setSearchPerformed(true);
 
             try {
-                // Try search endpoint first
                 let response = await fetch(`${API_URL}/api/v1/products/search?keyword=${encodeURIComponent(keyword)}`);
                 let data = await response.json();
 
-                // If search endpoint fails, try main endpoint with keyword
                 if (!data.success || data.products?.length === 0) {
-                    response = await fetch(`${API_URL}/api/v1/products?keyword=${encodeURIComponent(keyword)}&limit=20`);
+                    response = await fetch(`${API_URL}/api/v1/products?keyword=${encodeURIComponent(keyword)}&limit=30`);
                     data = await response.json();
                 }
 
                 if (data.success && data.products) {
                     setResults(data.products);
-                    // Generate suggestions from product names
                     const productNames = data.products.slice(0, 5).map(p => p.name);
                     setSuggestions(productNames);
                 } else {
@@ -120,6 +141,12 @@ const SearchBox = () => {
             }
         };
     }, [keyword]);
+
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter" && keyword.trim()) {
+            saveRecentSearch(keyword);
+        }
+    };
 
     // Voice Search Functionality
     const startVoiceSearch = useCallback(() => {
@@ -181,30 +208,91 @@ const SearchBox = () => {
         }
     }, []);
 
+    const clearAllSearches = async () => {
+        try {
+            const res = await fetch(`${API_URL}/api/v1/user/recent-search`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setRecentSearches([]);
+            }
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+            setLoading(true);
+            setSearchPerformed(true);
+
+            const res = await fetch(`${API_URL}/api/v1/user/visual-search`, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setResults(data.products);
+                setSuggestions([]);
+            } else {
+                setResults([]);
+            }
+
+        } catch (err) {
+            console.error("Image search error:", err);
+            setResults([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleProductClick = useCallback((product) => {
-        // Save to recently viewed
+
+        if (keyword?.trim()) {
+            saveRecentSearch(keyword); // ✅ ADD THIS
+        }
+
         const updatedRecent = [product, ...recent.filter(p => p._id !== product._id)].slice(0, 10);
         setRecent(updatedRecent);
         localStorage.setItem("recentlyViewed", JSON.stringify(updatedRecent));
 
-        // Navigate to product details
-        navigate(`/product/${product.slug || product._id}`, {
+        localStorage.setItem("lastSearchKeyword", keyword);
+
+        navigate("/products", {
             state: {
-                fromSearch: true,
+                selectedProductId: product._id,
+                selectedProduct: product,
                 searchKeyword: keyword,
-                categoryId: product.category?._id || product.category
+                categoryId: product.category?._id || product.category,
+                productName: product.name
             }
         });
     }, [recent, keyword, navigate]);
 
-    const showSuggestions = keyword.trim().length < 2 && !searchPerformed && !loading;
-
+    const showSuggestions = keyword.trim().length === 0;
+    const token = localStorage.getItem("token");
+    console.log("TOKEN 👉", token);
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100  mb-15">
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 mb-15">
                 {/* Premium Search Header */}
                 <div className="bg-white shadow-lg sticky top-0 z-50 border-b">
-                    <div className="max-w-7xl mx-auto px-4 py-4">
+                    <div className="max-w-4xl mx-auto px-4 py-4">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={() => navigate(-1)}
@@ -219,12 +307,24 @@ const SearchBox = () => {
                                     <input
                                         type="text"
                                         value={keyword}
+                                        onKeyDown={handleKeyDown}
                                         onChange={(e) => setKeyword(e.target.value)}
                                         placeholder="Search for products, brands and more..."
                                         className="flex-1 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                                         autoFocus
                                     />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        onChange={handleImageUpload}
+                                        hidden
+                                        id="cameraInput"
+                                    />
 
+                                    <label htmlFor="cameraInput" className="cursor-pointer ml-2">
+                                        <Camera size={18} className="text-gray-400 hover:text-green-500" />
+                                    </label>
                                     <button
                                         onClick={startVoiceSearch}
                                         disabled={isListening}
@@ -245,6 +345,7 @@ const SearchBox = () => {
                                             <X size={18} />
                                         </button>
                                     )}
+
                                 </div>
 
                                 {isListening && (
@@ -261,11 +362,11 @@ const SearchBox = () => {
                 </div>
 
                 {/* Main Content */}
-                <div className="max-w-7xl mx-auto px-4 py-6 ">
-                    {/* Search Results */}
+                <div className="max-w-4xl mx-auto px-4 py-6">
+                    {/* Search Results - LIST VIEW (one product per line) */}
                     {searchPerformed && !loading && results.length > 0 && (
                         <div>
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-4 pb-2 border-b">
                                 <h2 className="text-lg font-semibold text-gray-800">
                                     Search Results for "{keyword}"
                                 </h2>
@@ -274,7 +375,7 @@ const SearchBox = () => {
 
                             {/* Suggestions chips */}
                             {suggestions.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mb-6">
+                                <div className="flex flex-wrap gap-2 mb-4">
                                     {suggestions.map((sug, idx) => (
                                         <button
                                             key={idx}
@@ -287,48 +388,44 @@ const SearchBox = () => {
                                 </div>
                             )}
 
-                            {/* Products Grid */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                            {/* Products LIST VIEW - one per line */}
+                            <div className="space-y-1">
                                 {results.map((product) => (
                                     <div
                                         key={product._id}
                                         onClick={() => handleProductClick(product)}
-                                        className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+                                        className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 hover:border-blue-200"
                                     >
-                                        <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-                                            <img
-                                                src={product.images?.[0]?.url || "/api/placeholder/300/300"}
-                                                alt={product.name}
-                                                className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
-                                                onError={(e) => {
-                                                    e.target.src = "/api/placeholder/300/300";
-                                                }}
-                                            />
-                                            {product.discountPrice > 0 && (
-                                                <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                                    {Math.round((product.discountPrice / product.price) * 100)}% OFF
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="p-3">
-                                            <h3 className="font-medium text-gray-800 text-sm line-clamp-2 mb-1">
-                                                {product.name}
-                                            </h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-base font-bold text-blue-600">
-                                                    ₹{product.finalPrice?.toLocaleString()}
-                                                </span>
-                                                {product.price > product.finalPrice && (
-                                                    <span className="text-xs text-gray-400 line-through">
-                                                        ₹{product.price?.toLocaleString()}
-                                                    </span>
-                                                )}
+                                        <div className="flex gap-2">
+                                            {/* Product Image */}
+                                            <div className="w-15 h-15 flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
+                                                <img
+                                                    src={product.images?.[0]?.url || "/api/placeholder/300/300"}
+                                                    alt={product.name}
+                                                    className="w-full h-full object-contain p-2"
+                                                    onError={(e) => {
+                                                        e.target.src = "/api/placeholder/300/300";
+                                                    }}
+                                                />
                                             </div>
-                                            {product.category?.name && (
-                                                <p className="text-xs text-gray-500 mt-1">
-                                                    {product.category.name}
+
+                                            {/* Product Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className=" text-gray-800 text-base line-clamp-1">
+                                                    {product.name}
+                                                </h3>
+                                                <p className="text-sm text-gray-500 mt-0.5">
+                                                    Category: {product.category?.name || "Uncategorized"}
                                                 </p>
-                                            )}
+
+                                            </div>
+
+                                            {/* Arrow indicator */}
+                                            <div className="flex items-center text-gray-400">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -361,10 +458,9 @@ const SearchBox = () => {
                         </div>
                     )}
 
-                    {/* Suggestions UI */}
+                    {/* Suggestions UI - Recent Searches & Popular Products */}
                     {showSuggestions && (
                         <div className="space-y-8">
-
                             {/* Recent Searches */}
                             {recentSearches.length > 0 && (
                                 <div>
@@ -374,10 +470,7 @@ const SearchBox = () => {
                                             <h2 className="font-semibold text-gray-800">Recent Searches</h2>
                                         </div>
                                         <button
-                                            onClick={() => {
-                                                localStorage.removeItem("recentSearches");
-                                                setRecentSearches([]);
-                                            }}
+                                            onClick={clearAllSearches}
                                             className="text-xs text-red-500 hover:text-red-600 transition-colors"
                                         >
                                             Clear All
@@ -399,7 +492,7 @@ const SearchBox = () => {
                                 </div>
                             )}
 
-                            {/* Popular Products */}
+                            {/* Popular Products - List View */}
                             <div>
                                 <div className="flex items-center gap-2 mb-4">
                                     <div className="bg-gradient-to-r from-orange-500 to-red-500 p-1 rounded-lg">
@@ -411,36 +504,46 @@ const SearchBox = () => {
                                     </span>
                                 </div>
 
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                                <div className="space-y-3">
                                     {popular.map((product) => (
                                         <div
                                             key={product._id}
                                             onClick={() => handleProductClick(product)}
-                                            className="group bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+                                            className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100"
                                         >
-                                            <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-                                                <img
-                                                    src={product.images?.[0]?.url || "/api/placeholder/300/300"}
-                                                    alt={product.name}
-                                                    className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500"
-                                                    onError={(e) => {
-                                                        e.target.src = "/api/placeholder/300/300";
-                                                    }}
-                                                />
-                                                {product.soldCount > 100 && (
-                                                    <div className="absolute top-2 left-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                                                        🔥 Best Seller
+                                            <div className="flex gap-4 p-4">
+                                                <div className="w-20 h-20 flex-shrink-0 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
+                                                    <img
+                                                        src={product.images?.[0]?.url || "/api/placeholder/300/300"}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-contain p-2"
+                                                        onError={(e) => {
+                                                            e.target.src = "/api/placeholder/300/300";
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-medium text-gray-800 text-base line-clamp-1">
+                                                        {product.name}
+                                                    </h3>
+                                                    <p className="text-sm text-gray-500 mt-0.5">
+                                                        Category: {product.category?.name || "Uncategorized"}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <span className="text-lg font-bold text-blue-600">
+                                                            ₹{(product.finalPrice || product.price)?.toLocaleString()}
+                                                        </span>
+                                                        {product.soldCount > 100 && (
+                                                            <span className="text-xs text-orange-600 font-medium">
+                                                                🔥 Best Seller
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                            <div className="p-3">
-                                                <h3 className="font-medium text-gray-800 text-sm line-clamp-2 mb-1">
-                                                    {product.name}
-                                                </h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <span className="text-base font-bold text-blue-600">
-                                                        ₹{product.finalPrice?.toLocaleString()}
-                                                    </span>
+                                                </div>
+                                                <div className="flex items-center text-gray-400">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                    </svg>
                                                 </div>
                                             </div>
                                         </div>
@@ -449,10 +552,10 @@ const SearchBox = () => {
                             </div>
                         </div>
                     )}
-                    <RecentlyViewed />
-
+                    <div className="my-5">
+                        <RecentlyViewed />
+                    </div>
                 </div>
-
             </div>
             <FooterNavbar />
         </>
