@@ -237,12 +237,6 @@ const Products = () => {
                       </span>
                     )}
 
-                    {/* Selected badge for top product */}
-                    {isFirstProduct && (
-                      <span className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                        ⭐ Selected
-                      </span>
-                    )}
 
                     {isHighlighted && !isFirstProduct && (
                       <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">

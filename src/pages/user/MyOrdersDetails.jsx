@@ -10,23 +10,6 @@ import { ArrowLeft } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-/* ================= STAR ================= */
-const StarRating = ({ rating, setRating, editable = false }) => {
-  return (
-    <div className="flex gap-1 text-xl">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          onClick={() => editable && setRating(star)}
-          className={`cursor-pointer ${star <= rating ? "text-yellow-400" : "text-gray-300"
-            }`}
-        >
-          ★
-        </span>
-      ))}
-    </div>
-  );
-};
 
 /* ================= SKELETON ================= */
 const Skeleton = () => {
@@ -360,52 +343,58 @@ const MyOrdersDetails = () => {
 
         {/* HEADER */}
 
+        {/* HEADER */}
         <div className="bg-white p-6 rounded-2xl shadow flex justify-between items-start">
 
-          {/* 🔥 LEFT SECTION (Arrow + Title) */}
+          {/* LEFT SECTION */}
           <div className="flex items-start gap-4">
+
+            {/* BACK BUTTON */}
             <button
-              onClick={handleCancelOrder}
-              disabled={cancelling}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-white transition 
-      ${cancelling
-                  ? "bg-red-400 cursor-not-allowed"
-                  : "bg-red-500 hover:bg-red-600"
-                }`}
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 rounded-xl border flex items-center justify-center hover:bg-gray-100 transition"
             >
-              {cancelling ? (
-                <>
-                  {/* Spinner */}
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Cancelling...
-                </>
-              ) : (
-                "Cancel Order"
-              )}
+              <ArrowLeft size={20} />
             </button>
 
-            {/* Title */}
+            {/* TITLE */}
             <div>
-              <h1 className="text-xl font-bold">Order Details</h1>
-              <p className="text-gray-500 text-sm">{order?._id}</p>
-            </div>
+              <h1 className="text-xl font-bold">
+                Order Details
+              </h1>
 
+              <p className="text-gray-500 text-sm break-all">
+                {order?._id}
+              </p>
+            </div>
           </div>
 
-          {/* 🔥 RIGHT SECTION */}
-          <div className="flex gap-3">
+          {/* RIGHT SECTION */}
+          <div className="flex gap-3 flex-wrap justify-end">
 
-            {/* ✅ Cancel Button */}
-            {["Pending", "Processing", "Shipped"].includes(order?.orderStatus) && (
+            {/* ✅ CANCEL BUTTON ONLY BEFORE SHIPPED */}
+            {["Pending", "Processing"].includes(order?.orderStatus) && (
               <button
-                onClick={() => setShowCancelModal(true)} // 👈 modal open
-                className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                onClick={handleCancelOrder}
+                disabled={cancelling}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium shadow transition
+        ${cancelling
+                    ? "bg-red-400 cursor-not-allowed"
+                    : "bg-red-500 hover:bg-red-600"
+                  }`}
               >
-                Cancel Order
+                {cancelling ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Cancelling...
+                  </>
+                ) : (
+                  "Cancel Order"
+                )}
               </button>
             )}
 
-            {/* ✅ Download Invoice */}
+            {/* ✅ SHOW ONLY WHEN DELIVERED */}
             {order?.orderStatus === "Delivered" && (
               <button
                 onClick={handleDownloadInvoice}
@@ -414,7 +403,6 @@ const MyOrdersDetails = () => {
                 📄 Download Invoice
               </button>
             )}
-
           </div>
         </div>
 

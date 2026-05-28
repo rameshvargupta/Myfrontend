@@ -3,7 +3,17 @@ import { useSelector, useDispatch } from "react-redux";
 import axios from "axios";
 import HeroSlider from "@/components/HeroSlider";
 import ProductCard from "@/components/ProductCard";
-import { X, Eye, EyeOff, ChevronDown, MessageCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  X,
+  Mail,
+  Lock,
+  ShieldCheck,
+  CheckCircle2,
+  Gift,
+  Truck, ChevronDown, MessageCircle
+} from "lucide-react";
 import { setUser } from "@/redux/userSlice";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -17,6 +27,7 @@ import RecentlyViewed from "./user/RecentlyViewed";
 import Footer from "@/components/Footer";
 import debounce from "lodash.debounce";
 import { fetchWithRetry } from "@/utils/auth";
+import { Label } from "@radix-ui/react-label";
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -268,105 +279,222 @@ const Home = () => {
     <>
       <div className="space-y-10 relative pt-18 pb-24 md:pt-0 md:pb-0">
 
-        {/* ================= LOGIN MODAL ================= */}
-        {showLoginPopup && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-white w-[95%] max-w-4xl rounded-2xl shadow-2xl overflow-hidden grid md:grid-cols-2 relative animate-fadeIn">
+       {/* ================= PREMIUM LOGIN MODAL ================= */}
+{showLoginPopup && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
 
-              {/* Close */}
+    {/* BACKGROUND GLOW */}
+    <div className="absolute inset-0 overflow-hidden">
+      <div className="absolute top-0 left-0 w-60 h-60 bg-pink-500/20 blur-3xl rounded-full" />
+      <div className="absolute bottom-0 right-0 w-60 h-60 bg-indigo-500/20 blur-3xl rounded-full" />
+    </div>
 
-              <button
-                onClick={handleClosePopup}
-                className="absolute top-4 right-4 text-white md:text-gray-500 md:hover:text-black"
-              >
-                <X size={22} />
-              </button>
+    {/* MODAL */}
+    <div className="relative w-full max-w-3xl rounded-[28px] overflow-hidden border border-white/10 bg-white/10 backdrop-blur-2xl shadow-[0_20px_70px_rgba(0,0,0,0.6)] grid md:grid-cols-2 animate-in fade-in zoom-in-95 duration-300">
 
-              {/* Left Side Image */}
-              <div className=" bg-indigo-600 text-white p-10 flex flex-col justify-center">
-                <h2 className="text-3xl font-bold mb-4">
-                  Welcome to Gt Shop
-                </h2>
-                <p className="text-sm opacity-90">
-                  Login now to access exclusive deals, offers
-                  and track your orders easily.
-                </p>
-              </div>
+      {/* CLOSE BUTTON */}
+      <button
+        onClick={handleClosePopup}
+        className="absolute top-4 right-4 z-50 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-white transition"
+      >
+        <X size={18} />
+      </button>
 
-              {/* Right Side Form */}
-              <div className="p-8">
-                <h2 className="text-2xl font-bold mb-6 text-center">
-                  Login to Continue
-                </h2>
+      {/* ================= LEFT SIDE ================= */}
+      <div className="relative hidden md:flex flex-col justify-between p-7 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 overflow-hidden">
 
-                {error && (
-                  <p className="text-red-500 text-sm mb-4 text-center">
-                    {error}
-                  </p>
-                )}
+        {/* Decorative */}
+        <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-40 h-40 bg-black/20 rounded-full blur-3xl" />
 
-                <input
-                  type="email"
-                  placeholder="Email Address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full mb-4 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                />
+        {/* LOGO */}
+        <div className="relative z-10">
+          <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl mb-5">
+            <ShieldCheck className="text-white w-7 h-7" />
+          </div>
 
-                <div className="relative mb-5">
-                  <input
-                    type={showPass ? "text" : "password"}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
-                  />
-                  <span
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute right-4 top-3 cursor-pointer text-gray-500"
-                  >
-                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </span>
-                </div>
+          <h1 className="text-4xl font-black text-white tracking-tight">
+            GT_Shop
+          </h1>
 
-                <button
-                  onClick={handleLogin}
-                  disabled={loading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-semibold transition flex items-center justify-center"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Logging in...
-                    </>
-                  ) : (
-                    "Login"
-                  )}
-                </button>
+          <p className="mt-3 text-white/80 text-sm leading-relaxed max-w-xs">
+            Exclusive deals, trending products and
+            premium shopping experience.
+          </p>
+        </div>
 
-                <p className="text-sm text-center mt-2">
-                  <span
-                    onClick={() => navigate("/forgot-password")}
-                    className="text-red-600 font-semibold cursor-pointer hover:underline"
-                  >
-                    Forgot Password
-                  </span>
-                </p>
-                <p className="text-sm text-center mt-2">
-                  Not registered?{" "}
-                  <span
-                    onClick={() => navigate("/signup")}
-                    className="text-green-600 font-semibold cursor-pointer hover:underline"
-                  >
-                    Create Account
-                  </span>
-                </p>
-              </div>
+        {/* FEATURES */}
+        <div className="relative z-10 space-y-4 mt-8">
 
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-green-300" />
             </div>
+
+            <div>
+              <p className="text-white text-sm font-semibold">
+                Secure Login
+              </p>
+
+              <p className="text-white/70 text-xs">
+                Advanced protection
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+              <Gift className="w-4 h-4 text-pink-200" />
+            </div>
+
+            <div>
+              <p className="text-white text-sm font-semibold">
+                Daily Offers
+              </p>
+
+              <p className="text-white/70 text-xs">
+                Exclusive discounts
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ================= RIGHT SIDE ================= */}
+      <div className="relative bg-slate-950/85 backdrop-blur-2xl p-6 md:p-8">
+
+        {/* MOBILE LOGO */}
+        <div className="md:hidden text-center mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-r from-pink-500 to-indigo-500 shadow-2xl mb-3">
+            <ShieldCheck className="text-white w-7 h-7" />
+          </div>
+
+          <h1 className="text-3xl font-black text-white">
+            GT_Shop
+          </h1>
+        </div>
+
+        {/* HEADING */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white">
+            Welcome Back 👋
+          </h2>
+
+          <p className="text-gray-400 mt-1 text-sm">
+            Login to continue shopping
+          </p>
+        </div>
+
+        {/* ERROR */}
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {error}
           </div>
         )}
 
+        {/* EMAIL */}
+        <div className="mb-4">
+          <Label className="text-gray-300 mb-2 block text-sm">
+            Email Address
+          </Label>
+
+          <div className="relative">
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full h-12 rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl pl-11 pr-4 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 outline-none transition"
+            />
+          </div>
+        </div>
+
+        {/* PASSWORD */}
+        <div className="mb-5">
+          <Label className="text-gray-300 mb-2 block text-sm">
+            Password
+          </Label>
+
+          <div className="relative">
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+
+            <input
+              type={showPass ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full h-12 rounded-xl border border-white/10 bg-white/10 backdrop-blur-xl pl-11 pr-11 text-white placeholder:text-gray-500 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/30 outline-none transition"
+            />
+
+            <button
+              type="button"
+              onClick={() => setShowPass(!showPass)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition"
+            >
+              {showPass ? (
+                <EyeOff size={18} />
+              ) : (
+                <Eye size={18} />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* LOGIN BUTTON */}
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          className="w-full h-12 rounded-xl bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-90 text-white font-semibold shadow-[0_10px_30px_rgba(236,72,153,0.35)] transition-all duration-300 flex items-center justify-center"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Logging in...
+            </>
+          ) : (
+            "Login to GT_Shop"
+          )}
+        </button>
+
+        {/* LINKS */}
+        <div className="mt-5 space-y-3">
+
+          <p className="text-center text-sm">
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="text-pink-400 hover:text-pink-300 cursor-pointer font-medium transition"
+            >
+              Forgot Password?
+            </span>
+          </p>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-gray-500">
+              OR
+            </span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          <p className="text-center text-sm text-gray-400">
+            Don’t have an account?{" "}
+            <span
+              onClick={() => navigate("/signup")}
+              className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer transition"
+            >
+              Create Account
+            </span>
+          </p>
+
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
         {/* for middle devices   */}
         <div className="md:hidden fixed top-0 mt-12 left-0 right-0 z-40 bg-white shadow-sm border-b border-gray-100">
 

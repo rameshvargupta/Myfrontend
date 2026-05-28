@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import { addToCart } from "@/redux/cartSlice";
 import ProductReviews from "@/components/product/ProductReviews";
@@ -18,15 +19,16 @@ import {
   RefreshCw,
   Minus,
   Plus,
-  CheckCircle,
   AlertCircle,
   Facebook,
   Twitter,
   Mail,
+  Maximize2,
   Link as LinkIcon,
   X
 } from "lucide-react";
 import { toast } from "sonner";
+
 import FooterNavbar from "@/components/user/FooterNavbar";
 import ExpectedDelivery from "./ExpectedDelivery";
 import RecentlyViewed from "./RecentlyViewed";
@@ -45,10 +47,12 @@ const ProductDetails = () => {
   const selectedAddress = useSelector((state) => state.address?.selectedAddress);
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [direction, setDirection] = useState(0);
   const [activeImage, setActiveImage] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
-
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const { token } = useSelector((state) => state.user);
 
@@ -81,6 +85,31 @@ const ProductDetails = () => {
     }
   }, [token, dispatch]);
 
+ const openImagePreview = (img, index) => {
+  setDirection(0);
+  setActiveImage(img);
+  setCurrentImageIndex(index);
+  setShowImagePreview(true);
+};
+
+
+  const paginate = (newDirection) => {
+    if (!product?.images?.length) return;
+
+    let newIndex = currentImageIndex + newDirection;
+
+    if (newIndex < 0) {
+      newIndex = product.images.length - 1;
+    }
+
+    if (newIndex >= product.images.length) {
+      newIndex = 0;
+    }
+
+    setCurrentImageIndex(newIndex);
+    setActiveImage(product.images[newIndex].url);
+   setDirection(newDirection);
+  };
   const handleAddToCart = () => {
     if (!product || product.stock === 0) return toast.error("Out of stock");
     const exists = cartItems.find(i => i.productId === product._id);
@@ -195,65 +224,231 @@ const ProductDetails = () => {
 
             {/* Left - Image Gallery */}
             <div className="space-y-4">
-              <div className="relative bg-gray-50 rounded-2xl overflow-hidden group">
-                <img
-                  src={activeImage}
-                  alt={product.name}
-                  className="w-full aspect-square object-contain p-6 hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => {
-                      if (!token) {
-                        toast.error("Please login first");
-                        return;
-                      }
+              <div className="relative bg-gradient-to-br from-gray-50 to-white rounded-3xl overflow-hidden group border border-gray-100 shadow-sm">
 
-                      if (isWishlisted) {
-                        dispatch(removeWishlistItem(product._id));
-                        toast.success("Removed from wishlist");
-                      } else {
-                        dispatch(addWishlistItem(product._id));
-                        toast.success("Added to wishlist ❤️");
-                      }
-                    }}
-                    className="bg-white p-2 rounded-full shadow-md hover:shadow-lg transition"
-                  >
-                    <Heart
-                      size={18}
-                      className={
-                        isWishlisted
-                          ? "fill-red-500 text-red-500"
-                          : "text-gray-600"
-                      }
-                    />
-                  </button>
+                {/* MAIN IMAGE */}
+                <div className="relative overflow-hidden">
+
+                  <img
+                    src={activeImage}
+                    alt={product.name}
+                    onClick={() =>
+                      openImagePreview(
+                        activeImage,
+                        product.images.findIndex(
+                          (img) => img.url === activeImage
+                        )
+                      )
+                    }
+                    className="w-full aspect-square object-contain p-6 cursor-zoom-in hover:scale-105 transition-transform duration-500"
+                  />
+
+                  {/* PREMIUM OVERLAY */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition" />
+
+                  {/* ZOOM BUTTON */}
                   <button
-                    onClick={() => handleShare()}
-                    className="bg-white p-2 rounded-full shadow-md hover:shadow-lg transition"
+                    onClick={() =>
+                      openImagePreview(
+                        activeImage,
+                        product.images.findIndex(
+                          (img) => img.url === activeImage
+                        )
+                      )
+                    }
+                    className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-xl hover:scale-105"
                   >
-                    <Share2 size={18} className="text-gray-600" />
+                    <Maximize2 size={18} />
                   </button>
-                </div>
-                {product.stock < 10 && product.stock > 0 && (
-                  <div className="absolute top-4 left-4">
-                    <span className="bg-orange-500 text-white text-xs px-3 py-1 rounded-full font-medium">Only {product.stock} left</span>
+
+                  {/* TOP ACTIONS */}
+                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+
+                    <button
+                      onClick={() => {
+                        if (!token) {
+                          toast.error("Please login first");
+                          return;
+                        }
+
+                        if (isWishlisted) {
+                          dispatch(removeWishlistItem(product._id));
+                          toast.success("Removed from wishlist");
+                        } else {
+                          dispatch(addWishlistItem(product._id));
+                          toast.success("Added to wishlist ❤️");
+                        }
+                      }}
+                      className="bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-lg hover:scale-105 transition"
+                    >
+                      <Heart
+                        size={18}
+                        className={
+                          isWishlisted
+                            ? "fill-red-500 text-red-500"
+                            : "text-gray-700"
+                        }
+                      />
+                    </button>
+
+                    <button
+                      onClick={() => handleShare()}
+                      className="bg-white/90 backdrop-blur-xl p-3 rounded-2xl shadow-lg hover:scale-105 transition"
+                    >
+                      <Share2 size={18} className="text-gray-700" />
+                    </button>
                   </div>
-                )}
+
+                  {/* STOCK BADGE */}
+                  {product.stock < 10 && product.stock > 0 && (
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs px-4 py-1.5 rounded-full font-semibold shadow-lg">
+                        Only {product.stock} left
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex gap-3 overflow-x-auto pb-2">
+
                 {product.images.map((img, idx) => (
+
                   <button
-                    key={img._id || idx}
-                    onClick={() => setActiveImage(img.url)}
-                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img.url ? "border-indigo-600 shadow-md" : "border-gray-200 hover:border-gray-300"
-                      }`}
+                    key={idx}
+                    onClick={() => {
+                      setDirection(idx > currentImageIndex ? 1 : -1);
+                      setActiveImage(img.url);
+                      setCurrentImageIndex(idx);
+                    }}
+                    className={`
+        flex-shrink-0
+        w-20
+        h-20
+        rounded-2xl
+        overflow-hidden
+        border-2
+        transition-all
+        ${activeImage === img.url
+                        ? "border-indigo-600 scale-105"
+                        : "border-gray-200 hover:border-gray-400"
+                      }
+      `}
                   >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <img
+                      src={img.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   </button>
+
                 ))}
+
               </div>
+
+              {/* ================= IMAGE PREVIEW MODAL ================= */}
+              {showImagePreview && (
+                <div className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-xl flex items-center justify-center">
+
+                  {/* CLOSE */}
+                  <button
+                    onClick={() => setShowImagePreview(false)}
+                    className="absolute top-5 right-5 z-50 bg-white/10 hover:bg-white/20 border border-white/10 p-3 rounded-full text-white transition"
+                  >
+                    <X size={24} />
+                  </button>
+
+
+
+                  {/* IMAGE */}
+                  <div className="w-full max-w-5xl px-6">
+                    <AnimatePresence mode="wait">
+
+                      <motion.img
+                        key={activeImage}
+                        src={activeImage}
+                        alt={product.name}
+
+                        drag="x"
+                        dragElastic={0.2}
+                        dragConstraints={{ left: 0, right: 0 }}
+
+                        onDragEnd={(e, { offset }) => {
+
+                          // LEFT SWIPE
+                          if (offset.x < -80) {
+                            paginate(1);
+                          }
+
+                          // RIGHT SWIPE
+                          else if (offset.x > 80) {
+                            paginate(-1);
+                          }
+                        }}
+
+                        initial={{
+                          opacity: 0,
+                          x: direction > 0 ? 120 : -120,
+                        }}
+
+                        animate={{
+                          opacity: 1,
+                          x: 0,
+                        }}
+
+                        exit={{
+                          opacity: 0,
+                          x: direction > 0 ? -120 : 120,
+                        }}
+
+                        transition={{
+                          duration: 0.25,
+                        }}
+
+                        className="
+      w-full
+      max-h-[82vh]
+      object-contain
+      cursor-grab
+      active:cursor-grabbing
+      select-none
+      touch-pan-y
+    "
+                      />
+
+                    </AnimatePresence>
+
+
+                    {/* THUMBNAILS */}
+                    <div className="flex justify-center gap-3 mt-6 flex-wrap">
+
+                      {product.images.map((img, idx) => (
+
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setActiveImage(img.url);
+                            setCurrentImageIndex(idx);
+                          }}
+                          className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition
+            ${currentImageIndex === idx
+                              ? "border-white scale-110"
+                              : "border-white/20"
+                            }`}
+                        >
+                          <img
+                            src={img.url}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
             </div>
 
             {/* Right - Product Info */}

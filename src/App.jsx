@@ -43,6 +43,7 @@ import ReturnPolicy from "./pages/HelpAndSupport/ReturnPolicy";
 import PrivacyPolicy from "./pages/HelpAndSupport/PrivacyPolicy";
 import RefundPolicy from "./pages/HelpAndSupport/RefundPolicy";
 import SearchBox from "./pages/user/SearchBox";
+import TopDeals from "./pages/user/TopDeals";
 const API_URL = import.meta.env.VITE_API_URL;
 
 
@@ -83,6 +84,7 @@ const router = createBrowserRouter([
       { path: "/cartpage", element: <CartPage /> },
       { path: "/wishlist", element: <Wishlist /> },
       { path: "/myorders", element: <MyOrders /> },
+      { path: "/topDeals", element: <TopDeals /> },
       { path: "/myorders/:orderId", element: <MyOrdersDetails /> },
       { path: "/ordersuccess/:orderId", element: <OrderSuccess /> },
       { path: "/category/:id", element: <ProductCategoryDetails /> },

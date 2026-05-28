@@ -9,7 +9,7 @@ const FooterNavbar = () => {
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
     { to: "/productCategoryDetails", icon: LayoutGrid, label: "Categories" },
-    { to: "/top-deals", icon: Flame, label: "Deals" },
+    { to: "/topDeals", icon: Flame, label: "Deals" },
     { to: "/myorders", icon: Package, label: "Orders" },
     { to: "/menubar", icon: Menu, label: "Menu" },
   ];

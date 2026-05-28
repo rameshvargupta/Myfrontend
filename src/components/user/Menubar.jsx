@@ -61,7 +61,7 @@ const Menubar = () => {
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 bg-white shadow-sm">
-                   <Link to={"/"}> <h2 className="text-xl font-bold">Menu</h2></Link>
+                    <Link to={"/"}> <h2 className="text-xl font-bold">Menu</h2></Link>
                     <X size={22} onClick={() => navigate(-1)} className="cursor-pointer" />
                 </div>
 
@@ -113,15 +113,7 @@ const Menubar = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="mx-4 mt-6 bg-white p-5 rounded-xl text-center">
-                        <p className="mb-3">You are not logged in</p>
-                        <button
-                            onClick={() => navigate("/login")}
-                            className="bg-indigo-600 text-white px-5 py-2 rounded-lg"
-                        >
-                            Login
-                        </button>
-                    </div>
+                    <div></div>
                 )}
 
                 <div className="mt-6 px-4 space-y-3">
