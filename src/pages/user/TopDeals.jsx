@@ -1,9 +1,361 @@
-import React from 'react'
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Heart } from "lucide-react";
+import { toast } from "sonner";
+
+import Navbar from "@/components/Navbar";
+import FooterNavbar from "@/components/user/FooterNavbar";
+
+import { fetchUserProducts } from "@/api/productApi";
+
+import { useDispatch, useSelector } from "react-redux";
+import { addToCart } from "@/redux/cartSlice";
+
+import {
+  loadWishlist,
+  addWishlistItem,
+  removeWishlistItem,
+} from "@/redux/wishlistSlice";
 
 const TopDeals = () => {
-  return (
-    <div>TopDeals</div>
-  )
-}
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-export default TopDeals
+  const dispatch = useDispatch();
+
+  const { token } = useSelector((state) => state.user);
+
+  const cartItems = useSelector(
+    (state) => state.cart?.cartItems || []
+  );
+
+  const { items: wishlistItems } = useSelector(
+    (state) => state.wishlist
+  );
+
+  const wishlistIds = useMemo(() => {
+    return new Set(
+      wishlistItems.map(
+        (item) => (item.product?._id || item._id)?.toString()
+      )
+    );
+  }, [wishlistItems]);
+
+  useEffect(() => {
+    fetchTopDeals();
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(loadWishlist());
+    }
+  }, [dispatch, token]);
+
+  const fetchTopDeals = async () => {
+    try {
+      setLoading(true);
+
+      const data = await fetchUserProducts(
+        "?page=1&limit=100"
+      );
+
+      if (data.success) {
+        const sortedDeals = [...data.products]
+          .filter(
+            (product) =>
+              product.discountPrice &&
+              product.discountPrice > 0
+          )
+          .sort((a, b) => {
+            const discountA =
+              ((a.price - a.discountPrice) /
+                a.price) *
+              100;
+
+            const discountB =
+              ((b.price - b.discountPrice) /
+                b.price) *
+              100;
+
+            return discountB - discountA;
+          });
+
+        setProducts(sortedDeals);
+      }
+    } catch (error) {
+      toast.error("Failed to load deals");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+
+        <div className="flex justify-center items-center h-[60vh]">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        </div>
+
+        <FooterNavbar />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Navbar />
+
+      <div className="max-w-7xl mx-auto px-4 py-5 mb-16">
+        <div className="mb-5">
+          <h1 className="text-2xl font-bold">
+            🔥 Top Deals
+          </h1>
+
+          <p className="text-gray-500 text-sm mt-1">
+            Best discounted products available now
+          </p>
+        </div>
+
+        {products.length === 0 ? (
+          <div className="text-center py-16">
+            <h2 className="font-semibold text-lg">
+              No Deals Available
+            </h2>
+
+            <p className="text-gray-500 mt-2">
+              Please check again later.
+            </p>
+          </div>
+        ) : (
+          <div
+            className="
+              grid
+              grid-cols-2
+              md:grid-cols-3
+              lg:grid-cols-4
+              gap-4
+              md:gap-6
+            "
+          >
+            {products.map((p) => {
+              const isInWishlist =
+                wishlistIds.has(
+                  p._id?.toString()
+                );
+
+              const discountPercent = Math.round(
+                ((p.price - p.discountPrice) /
+                  p.price) *
+                  100
+              );
+
+              return (
+                <div
+                  key={p._id}
+                  className="
+                    bg-white
+                    rounded-2xl
+                    overflow-hidden
+                    shadow-md
+                    hover:shadow-xl
+                    transition-all
+                    group
+                  "
+                >
+                  <Link to={`/product/${p.slug}`}>
+                    <div className="relative">
+                      <img
+                        src={p.images?.[0]?.url}
+                        alt={p.name}
+                        className="
+                          w-full
+                          h-40
+                          sm:h-48
+                          object-cover
+                          group-hover:scale-105
+                          transition-transform
+                        "
+                      />
+
+                      <span
+                        className="
+                          absolute
+                          top-2
+                          left-2
+                          bg-red-500
+                          text-white
+                          text-xs
+                          px-2
+                          py-1
+                          rounded-full
+                          font-bold
+                        "
+                      >
+                        {discountPercent}% OFF
+                      </span>
+
+                      <button
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          if (!token) {
+                            toast.error(
+                              "Please login first"
+                            );
+                            return;
+                          }
+
+                          try {
+                            if (isInWishlist) {
+                              await dispatch(
+                                removeWishlistItem(
+                                  p._id
+                                )
+                              );
+
+                              toast.success(
+                                "Removed from wishlist"
+                              );
+                            } else {
+                              await dispatch(
+                                addWishlistItem(
+                                  p._id
+                                )
+                              );
+
+                              toast.success(
+                                "Added to wishlist ❤️"
+                              );
+                            }
+
+                            dispatch(
+                              loadWishlist()
+                            );
+                          } catch {
+                            toast.error(
+                              "Something went wrong"
+                            );
+                          }
+                        }}
+                        className="
+                          absolute
+                          top-2
+                          right-2
+                          bg-white
+                          rounded-full
+                          p-2
+                        "
+                      >
+                        <Heart
+                          size={18}
+                          className={
+                            isInWishlist
+                              ? "fill-red-500 text-red-500"
+                              : "text-gray-500"
+                          }
+                        />
+                      </button>
+                    </div>
+                  </Link>
+
+                  <div className="p-3">
+                    <h2 className="font-semibold line-clamp-1">
+                      {p.name}
+                    </h2>
+
+                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+                      {p.description}
+                    </p>
+
+                    <div className="mt-2">
+                      <span className="font-bold text-lg">
+                        ₹{p.finalPrice}
+                      </span>
+
+                      <span className="ml-2 text-sm text-gray-400 line-through">
+                        ₹{p.price}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center mt-2 text-xs">
+                      <span className="text-yellow-500">
+                        ★ {p.rating || 0}
+                      </span>
+
+                      <span
+                        className={`px-2 py-1 rounded-full ${
+                          p.stock > 0
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {p.stock > 0
+                          ? "In Stock"
+                          : "Out Stock"}
+                      </span>
+                    </div>
+
+                    <button
+                      disabled={p.stock === 0}
+                      onClick={() => {
+                        const alreadyInCart =
+                          cartItems.find(
+                            (item) =>
+                              item.productId ===
+                              p._id
+                          );
+
+                        if (alreadyInCart) {
+                          toast.info(
+                            "Already in cart"
+                          );
+                          return;
+                        }
+
+                        dispatch(
+                          addToCart({
+                            productId: p._id,
+                            name: p.name,
+                            price: p.finalPrice,
+                            image:
+                              p.images?.[0]?.url,
+                            quantity: 1,
+                            slug: p.slug,
+                          })
+                        );
+
+                        toast.success(
+                          "Added to cart"
+                        );
+                      }}
+                      className="
+                        w-full
+                        mt-3
+                        py-2
+                        rounded-full
+                        text-white
+                        font-semibold
+                        bg-gradient-to-r
+                        from-indigo-600
+                        to-pink-500
+                      "
+                    >
+                      Add To Cart
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <FooterNavbar />
+    </>
+  );
+};
+
+export default TopDeals;

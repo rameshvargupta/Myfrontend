@@ -86,7 +86,7 @@ const ProductCategoryDetails = () => {
         <>
             <Navbar />
 
-            <div className="max-w-7xl mx-auto px-4 mt-6">
+            <div className="max-w-7xl mx-auto px-4 mb-20">
 
                 {/* -------- Breadcrumb -------- */}
                 <div className="text-sm mb-4 text-gray-500">
