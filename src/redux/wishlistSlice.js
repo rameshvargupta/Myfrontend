@@ -1,5 +1,3 @@
-// redux/wishlistSlice.js
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -12,7 +10,6 @@ export const loadWishlist = createAsyncThunk(
     try {
       const { token } = getState().user;
 
-      // ✅ Token check
       if (!token) {
         return rejectWithValue("User not authenticated");
       }
@@ -27,10 +24,10 @@ export const loadWishlist = createAsyncThunk(
       );
 
       return data.wishlist;
-
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to load wishlist"
+        error.response?.data?.message ||
+        "Failed to load wishlist"
       );
     }
   }
@@ -43,10 +40,6 @@ export const addWishlistItem = createAsyncThunk(
     try {
       const { token } = getState().user;
 
-      if (!token) {
-        return rejectWithValue("User not authenticated");
-      }
-
       const { data } = await axios.post(
         `${API_URL}/api/v1/user/wishlist/${productId}`,
         {},
@@ -58,10 +51,10 @@ export const addWishlistItem = createAsyncThunk(
       );
 
       return data.wishlist;
-
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to add to wishlist"
+        error.response?.data?.message ||
+        "Failed to add wishlist item"
       );
     }
   }
@@ -74,10 +67,6 @@ export const removeWishlistItem = createAsyncThunk(
     try {
       const { token } = getState().user;
 
-      if (!token) {
-        return rejectWithValue("User not authenticated");
-      }
-
       const { data } = await axios.delete(
         `${API_URL}/api/v1/user/wishlist/${productId}`,
         {
@@ -88,24 +77,49 @@ export const removeWishlistItem = createAsyncThunk(
       );
 
       return data.wishlist;
-
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to remove item"
+        error.response?.data?.message ||
+        "Failed to remove wishlist item"
       );
     }
   }
 );
 
-/* ================= SLICE ================= */
 const wishlistSlice = createSlice({
   name: "wishlist",
+
   initialState: {
     items: [],
     loading: false,
     error: null,
   },
-  reducers: {},
+
+  reducers: {
+    /* ========= Optimistic Add - Instant UI Update ========= */
+    addWishlistLocal: (state, action) => {
+      const exists = state.items.some(
+        (item) => (item._id || item.product?._id) === action.payload._id
+      );
+
+      if (!exists) {
+        // Add to beginning of array for immediate visibility
+        state.items.unshift(action.payload);
+      }
+    },
+
+    /* ========= Optimistic Remove - Instant UI Update ========= */
+    removeWishlistLocal: (state, action) => {
+      state.items = state.items.filter(
+        (item) => (item._id || item.product?._id) !== action.payload
+      );
+    },
+
+    /* ========= Sync Wishlist - For manual sync ========= */
+    syncWishlist: (state, action) => {
+      state.items = action.payload;
+    },
+  },
 
   extraReducers: (builder) => {
     builder
@@ -115,37 +129,51 @@ const wishlistSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
+
       .addCase(loadWishlist.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        state.items = action.payload || [];
       })
+
       .addCase(loadWishlist.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
 
-      /* ===== ADD ===== */
+      /* ===== ADD - Don't modify state here, just handle errors ===== */
       .addCase(addWishlistItem.pending, (state) => {
         state.error = null;
       })
+
       .addCase(addWishlistItem.fulfilled, (state, action) => {
-        state.items = action.payload;
+        // Sync with server response (in case of any differences)
+        state.items = action.payload || [];
       })
+
       .addCase(addWishlistItem.rejected, (state, action) => {
         state.error = action.payload;
       })
 
-      /* ===== REMOVE ===== */
+      /* ===== REMOVE - Don't modify state here, just handle errors ===== */
       .addCase(removeWishlistItem.pending, (state) => {
         state.error = null;
       })
+
       .addCase(removeWishlistItem.fulfilled, (state, action) => {
-        state.items = action.payload;
+        // Sync with server response
+        state.items = action.payload || [];
       })
+
       .addCase(removeWishlistItem.rejected, (state, action) => {
         state.error = action.payload;
       });
   },
 });
+
+export const {
+  addWishlistLocal,
+  removeWishlistLocal,
+  syncWishlist,
+} = wishlistSlice.actions;
 
 export default wishlistSlice.reducer;

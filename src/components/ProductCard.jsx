@@ -4,12 +4,14 @@ import { addToCart } from "@/redux/cartSlice";
 import {
   addWishlistItem,
   removeWishlistItem,
+  addWishlistLocal,
+  removeWishlistLocal,
   loadWishlist,
 } from "@/redux/wishlistSlice";
 
 import { toast } from "sonner";
 import { Star, Loader2, Trash2, Heart } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const ProductCard = ({
   product,
@@ -18,6 +20,7 @@ const ProductCard = ({
   removing = false,
 }) => {
   const dispatch = useDispatch();
+  const [pendingWishlist, setPendingWishlist] = useState(false);
 
   const cartItems = useSelector(
     (state) => state.cart?.cartItems || []
@@ -26,6 +29,8 @@ const ProductCard = ({
   const { items: wishlistItems = [] } = useSelector(
     (state) => state.wishlist
   );
+
+  const { token } = useSelector((state) => state.user);
 
   // ================= WISHLIST CHECK =================
   const isInWishlist = useMemo(() => {
@@ -42,24 +47,51 @@ const ProductCard = ({
       )
       : 0;
 
-  // ================= TOGGLE WISHLIST =================
+  // ================= TOGGLE WISHLIST - INSTANT WITH LOCAL UPDATE =================
   const handleWishlistToggle = async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    try {
-      if (isInWishlist) {
-        await dispatch(removeWishlistItem(product._id));
-        toast.success("Removed from wishlist ❤️");
-      } else {
-        await dispatch(addWishlistItem(product._id));
-        toast.success("Added to wishlist ❤️");
-      }
-
-      dispatch(loadWishlist()); // sync
-    } catch {
-      toast.error("Wishlist action failed");
+    if (!token) {
+      toast.error("Please login first");
+      return;
     }
+
+    // Set loading state for this specific product
+    setPendingWishlist(true);
+    
+    const wasInWishlist = isInWishlist;
+
+    if (wasInWishlist) {
+      // ✅ INSTANT REMOVE - UI updates immediately
+      dispatch(removeWishlistLocal(product._id));
+      toast.success("Removed from wishlist");
+
+      try {
+        // Background API call
+        await dispatch(removeWishlistItem(product._id)).unwrap();
+      } catch (err) {
+        // ❌ Rollback if API fails
+        dispatch(addWishlistLocal(product));
+        toast.error("Failed to remove from wishlist");
+      }
+    } else {
+      // ✅ INSTANT ADD - UI updates immediately
+      dispatch(addWishlistLocal(product));
+      toast.success("Added to wishlist ❤️");
+
+      try {
+        // Background API call
+        await dispatch(addWishlistItem(product._id)).unwrap();
+      } catch (err) {
+        // ❌ Rollback if API fails
+        dispatch(removeWishlistLocal(product._id));
+        toast.error("Failed to add to wishlist");
+      }
+    }
+
+    // Remove loading state
+    setPendingWishlist(false);
   };
 
   return (
@@ -73,39 +105,45 @@ const ProductCard = ({
             src={product.images?.[0]?.url}
             alt={product.name}
             className="w-full h-44 sm:h-52 object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
           />
         </Link>
 
-        {/* DISCOUNT */}
+        {/* DISCOUNT BADGE */}
         {discountPercent > 0 && (
-          <span className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md">
+          <span className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
             {discountPercent}% OFF
           </span>
         )}
 
-        {/* STOCK */}
+        {/* STOCK BADGE */}
         {product.stock === 0 && (
-          <span className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+          <span className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded z-10">
             Out of Stock
           </span>
         )}
 
-        {/* ================= WISHLIST ICON (NEW) ================= */}
+        {/* ================= WISHLIST BUTTON - INSTANT TOGGLE ================= */}
         <button
           onClick={handleWishlistToggle}
-          className="absolute top-2 right-2 z-20 bg-white/90 hover:bg-pink-50 p-2 rounded-full shadow transition"
+          disabled={pendingWishlist}
+          className="absolute top-2 right-2 z-20 bg-white/90 hover:bg-pink-50 p-2 rounded-full shadow-md transition-all duration-200 hover:scale-110 active:scale-95"
         >
-          <Heart
-            size={18}
-            className={`transition
-              ${isInWishlist
-                ? "fill-pink-600 text-pink-600"
-                : "text-gray-600"
-              }`}
-          />
+          {pendingWishlist ? (
+            <Loader2 size={18} className="animate-spin text-pink-500" />
+          ) : (
+            <Heart
+              size={18}
+              className={`transition-all duration-150
+                ${isInWishlist
+                  ? "fill-pink-600 text-pink-600 scale-110"
+                  : "text-gray-600 hover:text-pink-500"
+                }`}
+            />
+          )}
         </button>
 
-        {/* ================= REMOVE WISHLIST BUTTON ================= */}
+        {/* ================= REMOVE FROM WISHLIST BUTTON (for wishlist page) ================= */}
         {showRemove && (
           <button
             onClick={(e) => {
@@ -127,12 +165,14 @@ const ProductCard = ({
       {/* ================= CONTENT ================= */}
       <div className="p-3 flex flex-col gap-1 flex-1">
 
-        <h3 className="font-semibold text-sm sm:text-base line-clamp-1">
-          {product.name}
-        </h3>
+        <Link to={`/product/${product.slug}`} className="block">
+          <h3 className="font-semibold text-sm sm:text-base line-clamp-1 hover:text-indigo-600 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
 
         <p className="text-xs text-gray-500 line-clamp-2">
-          {product.description}
+          {product.description?.substring(0, 80) || "No description available"}
         </p>
 
         {/* RATING */}
@@ -146,25 +186,25 @@ const ProductCard = ({
             </div>
 
             <span className="text-gray-400">
-              ({product.numReviews} reviews)
+              ({product.numReviews || 0} reviews)
             </span>
           </div>
         )}
 
         {/* PRICE */}
-        <div className="mt-1 flex items-center gap-2">
+        <div className="mt-1 flex items-center gap-2 flex-wrap">
           <span className="text-lg font-bold text-gray-900">
-            ₹{product.finalPrice}
+            ₹{product.finalPrice?.toLocaleString()}
           </span>
 
           {product.discountPrice > 0 && (
             <span className="text-xs text-gray-400 line-through">
-              ₹{product.price}
+              ₹{product.price?.toLocaleString()}
             </span>
           )}
         </div>
 
-        {/* ADD TO CART */}
+        {/* ADD TO CART BUTTON */}
         <button
           disabled={product.stock === 0}
           onClick={() => {
@@ -186,14 +226,15 @@ const ProductCard = ({
                 price: product.finalPrice,
                 image: product.images?.[0]?.url,
                 quantity: 1,
+                slug: product.slug,
               })
             );
 
             toast.success("Product added to cart");
           }}
-          className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition
+          className={`mt-auto w-full py-2 rounded-xl text-sm font-semibold transition-all duration-200
             ${product.stock > 0
-              ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90"
+              ? "bg-gradient-to-r from-indigo-600 to-pink-500 text-white hover:opacity-90 hover:scale-[1.02] active:scale-95"
               : "bg-gray-300 text-gray-600 cursor-not-allowed"
             }`}
         >

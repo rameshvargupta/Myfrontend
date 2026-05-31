@@ -17,6 +17,61 @@ import {
   removeWishlistItem,
 } from "@/redux/wishlistSlice";
 
+// Skeleton Card Component
+const ProductSkeleton = () => (
+  <div className="bg-white rounded-2xl overflow-hidden shadow-md animate-pulse">
+    {/* Image Skeleton */}
+    <div className="relative">
+      <div className="w-full h-40 sm:h-48 bg-gray-200"></div>
+      
+      {/* Discount Badge Skeleton */}
+      <div className="absolute top-2 left-2">
+        <div className="w-16 h-6 bg-gray-300 rounded-full"></div>
+      </div>
+      
+      {/* Heart Button Skeleton */}
+      <div className="absolute top-2 right-2">
+        <div className="bg-gray-200 rounded-full p-2 w-8 h-8"></div>
+      </div>
+    </div>
+
+    {/* Content Skeleton */}
+    <div className="p-3 space-y-2">
+      {/* Title Skeleton */}
+      <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+      
+      {/* Description Skeleton */}
+      <div className="space-y-1">
+        <div className="h-3 bg-gray-200 rounded w-full"></div>
+        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+      </div>
+      
+      {/* Price Skeleton */}
+      <div className="flex items-center gap-2 mt-2">
+        <div className="h-6 bg-gray-200 rounded w-20"></div>
+        <div className="h-4 bg-gray-200 rounded w-16"></div>
+      </div>
+      
+      {/* Rating & Stock Skeleton */}
+      <div className="flex justify-between items-center mt-2">
+        <div className="h-4 bg-gray-200 rounded w-16"></div>
+        <div className="h-6 bg-gray-200 rounded w-20"></div>
+      </div>
+      
+      {/* Button Skeleton */}
+      <div className="h-10 bg-gray-200 rounded-full mt-3 w-full"></div>
+    </div>
+  </div>
+);
+
+// Header Skeleton
+const HeaderSkeleton = () => (
+  <div className="mb-5 animate-pulse">
+    <div className="h-8 bg-gray-200 rounded w-40"></div>
+    <div className="h-4 bg-gray-200 rounded w-64 mt-2"></div>
+  </div>
+);
+
 const TopDeals = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +111,7 @@ const TopDeals = () => {
       setLoading(true);
 
       const data = await fetchUserProducts(
-        "?page=1&limit=100"
+        "?page=1&limit=100&sort=-createdAt"
       );
 
       if (data.success) {
@@ -89,15 +144,31 @@ const TopDeals = () => {
     }
   };
 
+  // Show skeleton loading (no circular loader)
   if (loading) {
     return (
       <>
         <Navbar />
-
-        <div className="flex justify-center items-center h-[60vh]">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 py-5 mb-16">
+          <HeaderSkeleton />
+          
+          <div
+            className="
+              grid
+              grid-cols-2
+              md:grid-cols-3
+              lg:grid-cols-4
+              gap-4
+              md:gap-6
+            "
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <ProductSkeleton key={i} />
+            ))}
+          </div>
         </div>
-
+        
         <FooterNavbar />
       </>
     );
@@ -107,7 +178,7 @@ const TopDeals = () => {
     <>
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-5 mb-16">
+      <div className="max-w-7xl mx-auto px-4 py-0  mb-18">
         <div className="mb-5">
           <h1 className="text-2xl font-bold">
             🔥 Top Deals
@@ -162,12 +233,15 @@ const TopDeals = () => {
                     hover:shadow-xl
                     transition-all
                     group
+                    transform
+                    hover:-translate-y-1
+                    duration-200
                   "
                 >
                   <Link to={`/product/${p.slug}`}>
-                    <div className="relative">
+                    <div className="relative overflow-hidden">
                       <img
-                        src={p.images?.[0]?.url}
+                        src={p.images?.[0]?.url || "/placeholder-image.jpg"}
                         alt={p.name}
                         className="
                           w-full
@@ -176,7 +250,12 @@ const TopDeals = () => {
                           object-cover
                           group-hover:scale-105
                           transition-transform
+                          duration-300
                         "
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-image.jpg";
+                        }}
                       />
 
                       <span
@@ -184,13 +263,16 @@ const TopDeals = () => {
                           absolute
                           top-2
                           left-2
-                          bg-red-500
+                          bg-gradient-to-r
+                          from-red-500
+                          to-red-600
                           text-white
                           text-xs
                           px-2
                           py-1
                           rounded-full
                           font-bold
+                          shadow-md
                         "
                       >
                         {discountPercent}% OFF
@@ -247,6 +329,9 @@ const TopDeals = () => {
                           bg-white
                           rounded-full
                           p-2
+                          hover:scale-110
+                          transition-transform
+                          shadow-md
                         "
                       >
                         <Heart
@@ -254,7 +339,7 @@ const TopDeals = () => {
                           className={
                             isInWishlist
                               ? "fill-red-500 text-red-500"
-                              : "text-gray-500"
+                              : "text-gray-500 hover:text-red-500 transition-colors"
                           }
                         />
                       </button>
@@ -262,31 +347,34 @@ const TopDeals = () => {
                   </Link>
 
                   <div className="p-3">
-                    <h2 className="font-semibold line-clamp-1">
+                    <h2 className="font-semibold line-clamp-1 text-gray-800">
                       {p.name}
                     </h2>
 
                     <p className="text-xs text-gray-500 line-clamp-2 mt-1">
-                      {p.description}
+                      {p.description || "No description available"}
                     </p>
 
-                    <div className="mt-2">
-                      <span className="font-bold text-lg">
-                        ₹{p.finalPrice}
+                    <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+                      <span className="font-bold text-lg text-indigo-600">
+                        ₹{p.finalPrice?.toLocaleString()}
                       </span>
 
-                      <span className="ml-2 text-sm text-gray-400 line-through">
-                        ₹{p.price}
+                      <span className="text-sm text-gray-400 line-through">
+                        ₹{p.price?.toLocaleString()}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center mt-2 text-xs">
-                      <span className="text-yellow-500">
-                        ★ {p.rating || 0}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-yellow-500">★</span>
+                        <span className="text-gray-600">
+                          {p.rating || "4.5"}
+                        </span>
+                      </div>
 
                       <span
-                        className={`px-2 py-1 rounded-full ${
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${
                           p.stock > 0
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
@@ -294,7 +382,7 @@ const TopDeals = () => {
                       >
                         {p.stock > 0
                           ? "In Stock"
-                          : "Out Stock"}
+                          : "Out of Stock"}
                       </span>
                     </div>
 
@@ -341,6 +429,15 @@ const TopDeals = () => {
                         bg-gradient-to-r
                         from-indigo-600
                         to-pink-500
+                        hover:from-indigo-700
+                        hover:to-pink-600
+                        transition-all
+                        duration-200
+                        disabled:opacity-50
+                        disabled:cursor-not-allowed
+                        transform
+                        hover:scale-105
+                        active:scale-95
                       "
                     >
                       Add To Cart

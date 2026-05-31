@@ -11,6 +11,8 @@ import {
   loadWishlist,
   addWishlistItem,
   removeWishlistItem,
+  addWishlistLocal,
+  removeWishlistLocal
 } from "@/redux/wishlistSlice";
 import FooterNavbar from "@/components/user/FooterNavbar";
 
@@ -29,6 +31,7 @@ const Products = () => {
   const [inStock, setInStock] = useState(false);
   const [highlightedProductId, setHighlightedProductId] = useState(null);
   const [selectedProductData, setSelectedProductData] = useState(null);
+  const [pendingWishlistActions, setPendingWishlistActions] = useState({});
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -150,7 +153,7 @@ const Products = () => {
     navigate("/searchBox");
   };
 
-  if (loading || wishlistLoading) {
+  if (loading) {
     return (
       <>
         <Navbar />
@@ -182,7 +185,6 @@ const Products = () => {
               Search: "{searchKeyword}"
             </span>
           )}
-
         </div>
 
         <div
@@ -199,6 +201,7 @@ const Products = () => {
             const isInWishlist = wishlistIds.has(p._id?.toString());
             const isHighlighted = highlightedProductId === p._id;
             const isFirstProduct = index === 0 && selectedProductData?._id === p._id;
+            const isWishlistLoading = pendingWishlistActions[p._id];
 
             return (
               <div
@@ -212,13 +215,11 @@ const Products = () => {
                   hover:shadow-[0_16px_40px_rgba(79,70,229,0.25)]
                   transition-all
                   group
-               
                   ${isFirstProduct
                     ? 'border-2 border-blue-300 bg-gradient-to-br from-white to-blue-50'
                     : ''
                   }
                 `}
-
               >
                 <Link to={`/product/${p.slug}`}>
                   <div className="relative">
@@ -237,7 +238,6 @@ const Products = () => {
                       </span>
                     )}
 
-
                     {isHighlighted && !isFirstProduct && (
                       <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">
                         Highlighted
@@ -255,18 +255,39 @@ const Products = () => {
                           return;
                         }
 
-                        try {
-                          if (isInWishlist) {
-                            await dispatch(removeWishlistItem(p._id));
-                            toast.success("Removed from wishlist");
-                          } else {
-                            await dispatch(addWishlistItem(p._id));
-                            toast.success("Added to wishlist ❤️");
+                        // Set loading state for this product
+                        setPendingWishlistActions(prev => ({ ...prev, [p._id]: true }));
+
+                        const wasInWishlist = isInWishlist;
+
+                        if (wasInWishlist) {
+                          // Optimistic remove
+                          dispatch(removeWishlistLocal(p._id));
+                          toast.success("Removed from wishlist");
+
+                          try {
+                            await dispatch(removeWishlistItem(p._id)).unwrap();
+                          } catch (err) {
+                            // Rollback on error
+                            dispatch(addWishlistLocal(p));
+                            toast.error("Failed to remove from wishlist");
                           }
-                          dispatch(loadWishlist());
-                        } catch {
-                          toast.error("Something went wrong");
+                        } else {
+                          // Optimistic add
+                          dispatch(addWishlistLocal(p));
+                          toast.success("Added to wishlist ❤️");
+
+                          try {
+                            await dispatch(addWishlistItem(p._id)).unwrap();
+                          } catch (err) {
+                            // Rollback on error
+                            dispatch(removeWishlistLocal(p._id));
+                            toast.error("Failed to add to wishlist");
+                          }
                         }
+
+                        // Remove loading state
+                        setPendingWishlistActions(prev => ({ ...prev, [p._id]: false }));
                       }}
                     >
                       <div
@@ -274,23 +295,27 @@ const Products = () => {
                           relative flex items-center justify-center
                           w-9 h-9 rounded-full
                           backdrop-blur-md
-                          transition-all duration-300
+                          transition-all duration-150
                           ${isInWishlist
                             ? "bg-pink-50 shadow-md scale-110"
                             : "bg-white/80 hover:bg-pink-50"
                           }
                         `}
                       >
-                        <Heart
-                          size={20}
-                          className={`
-                            transition-all duration-300
-                            ${isInWishlist
-                              ? "fill-pink-600 text-pink-600 animate-pulse"
-                              : "text-gray-600 group-hover:text-pink-500"
-                            }
-                          `}
-                        />
+                        {isWishlistLoading ? (
+                          <div className="w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Heart
+                            size={20}
+                            className={`
+                              transition-all duration-150
+                              ${isInWishlist
+                                ? "fill-pink-600 text-pink-600"
+                                : "text-gray-600 group-hover:text-pink-500"
+                              }
+                            `}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
