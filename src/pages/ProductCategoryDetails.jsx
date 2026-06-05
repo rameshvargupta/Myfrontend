@@ -5,17 +5,21 @@ import Navbar from "@/components/Navbar";
 import ProductCard from "@/components/ProductCard";
 import { toast } from "sonner";
 import FooterNavbar from "@/components/user/FooterNavbar";
-import { 
-  SlidersHorizontal, 
-  X, 
-  ChevronDown, 
-  Filter, 
-  Grid3x3, 
-  List,
-  ArrowUpDown,
-  DollarSign,
-  Tags,
-  RotateCcw
+import {
+    SlidersHorizontal,
+    X,
+    ChevronDown,
+    Filter,
+    Grid3x3,
+    List,
+    ArrowUpDown,
+    DollarSign,
+    Tags,
+    RotateCcw,
+    Smartphone,
+    Battery,
+    Zap,
+    Package
 } from "lucide-react";
 
 const ProductCategoryDetails = () => {
@@ -25,7 +29,8 @@ const ProductCategoryDetails = () => {
 
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [categoryName, setCategoryName] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState("all");
+    const [categoryName, setCategoryName] = useState("All Products");
 
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -40,6 +45,15 @@ const ProductCategoryDetails = () => {
 
     const LIMIT = 12;
 
+    // Category Icons mapping
+    const getCategoryIcon = (categoryName) => {
+        const name = categoryName?.toLowerCase() || '';
+        if (name.includes('mobile') || name.includes('phone')) return <Smartphone size={16} />;
+        if (name.includes('pod') || name.includes('audio')) return <Zap size={16} />;
+        if (name.includes('battery')) return <Battery size={16} />;
+        return <Package size={16} />;
+    };
+
     /* ---------------- FETCH CATEGORIES ---------------- */
     useEffect(() => {
         const loadCategories = async () => {
@@ -47,45 +61,55 @@ const ProductCategoryDetails = () => {
                 const res = await fetchCategories();
                 if (res.success) {
                     setCategories(res.categories);
-                    const current = res.categories.find((c) => c._id === id);
-                    if (current) {
-                        setCategoryName(current.name);
-                    } else if (id) {
-                        // If category not found in list, set a default name
-                        setCategoryName("Category");
-                    }
                 }
             } catch {
                 toast.error("Failed to load categories");
             }
         };
         loadCategories();
-    }, [id]);
+    }, []);
+
+    // Handle category from URL params
+    useEffect(() => {
+        if (id && categories.length > 0) {
+            const category = categories.find((c) => c._id === id);
+            if (category) {
+                setSelectedCategory(id);
+                setCategoryName(category.name);
+            }
+        } else if (!id) {
+            setSelectedCategory("all");
+            setCategoryName("All Products");
+        }
+    }, [id, categories]);
 
     /* ---------------- RESET PAGE ON FILTER CHANGE ---------------- */
     useEffect(() => {
         if (!isInitialLoad) {
             setPage(1);
         }
-    }, [id, sort, minPrice, maxPrice]);
+    }, [selectedCategory, sort, minPrice, maxPrice]);
 
     /* ---------------- FETCH PRODUCTS ---------------- */
     useEffect(() => {
-        if (id) {
-            fetchProducts();
-        }
-    }, [id, page, sort, minPrice, maxPrice]);
+        fetchProducts();
+    }, [selectedCategory, page, sort, minPrice, maxPrice]);
 
     const fetchProducts = async () => {
         setLoading(true);
         try {
-            let query = `?category=${id}&page=${page}&limit=${LIMIT}`;
+            let query = `?page=${page}&limit=${LIMIT}`;
+
+            // Only add category filter if not "all"
+            if (selectedCategory !== "all") {
+                query += `&category=${selectedCategory}`;
+            }
 
             if (sort) query += `&sort=${sort}`;
             if (minPrice) query += `&minPrice=${minPrice}`;
             if (maxPrice) query += `&maxPrice=${maxPrice}`;
 
-            console.log("Fetching products with query:", query); // Debug log
+            console.log("Fetching products with query:", query);
 
             const res = await fetchUserProducts(query);
 
@@ -124,15 +148,23 @@ const ProductCategoryDetails = () => {
     };
 
     // Handle category change from sidebar
-    const handleCategoryChange = (categoryId) => {
+    const handleCategoryChange = (categoryId, categoryNameValue) => {
         // Clear all filters when changing category
         setSort("");
         setMinPrice("");
         setMaxPrice("");
         setPage(1);
         setShowMobileFilter(false);
-        // Navigate to new category
-        navigate(`/category/${categoryId}`);
+        
+        if (categoryId === "all") {
+            setSelectedCategory("all");
+            setCategoryName("All Products");
+            navigate("/products");
+        } else {
+            setSelectedCategory(categoryId);
+            setCategoryName(categoryNameValue);
+            navigate(`/category/${categoryId}`);
+        }
     };
 
     const hasActiveFilters = sort || minPrice || maxPrice;
@@ -170,7 +202,7 @@ const ProductCategoryDetails = () => {
     // Mobile Filter Sidebar
     const MobileFilterSidebar = () => (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm lg:hidden">
-            <div 
+            <div
                 ref={sidebarRef}
                 className="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl animate-in slide-in-from-right duration-300 overflow-y-auto"
             >
@@ -194,16 +226,29 @@ const ProductCategoryDetails = () => {
                             Categories
                         </h4>
                         <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {/* All Products Option */}
+                            <button
+                                onClick={() => handleCategoryChange("all", "All Products")}
+                                className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${selectedCategory === "all"
+                                        ? "bg-indigo-50 text-indigo-600 font-semibold"
+                                        : "text-gray-600 hover:bg-gray-50"
+                                    }`}
+                            >
+                                <Package size={16} />
+                                All Products
+                            </button>
+                            
+                            {/* Category List */}
                             {categories.map((cat) => (
                                 <button
                                     key={cat._id}
-                                    onClick={() => handleCategoryChange(cat._id)}
-                                    className={`w-full text-left block px-3 py-2 rounded-lg text-sm transition ${
-                                        id === cat._id
+                                    onClick={() => handleCategoryChange(cat._id, cat.name)}
+                                    className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${selectedCategory === cat._id
                                             ? "bg-indigo-50 text-indigo-600 font-semibold"
                                             : "text-gray-600 hover:bg-gray-50"
-                                    }`}
+                                        }`}
                                 >
+                                    {getCategoryIcon(cat.name)}
                                     {cat.name}
                                 </button>
                             ))}
@@ -280,18 +325,22 @@ const ProductCategoryDetails = () => {
 
             <div className="min-h-screen bg-gray-50">
                 <div className="max-w-7xl mx-auto px-4 py-4 md:py-6 mb-20">
-                    
+
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-2 text-sm text-gray-500 mb-4 flex-wrap">
                         <Link to="/" className="hover:text-indigo-600 transition">Home</Link>
                         <span>/</span>
                         <Link to="/products" className="hover:text-indigo-600 transition">Products</Link>
-                        <span>/</span>
-                        <span className="text-gray-800 font-medium">{categoryName || "Category"}</span>
+                        {selectedCategory !== "all" && (
+                            <>
+                                <span>/</span>
+                                <span className="text-gray-800 font-medium">{categoryName}</span>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex flex-col lg:flex-row gap-6">
-                        
+
                         {/* ================= DESKTOP SIDEBAR ================= */}
                         <div className="hidden lg:block w-72 flex-shrink-0">
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 sticky top-20">
@@ -302,22 +351,43 @@ const ProductCategoryDetails = () => {
                                         Categories
                                     </h3>
                                     <div className="space-y-1 max-h-80 overflow-y-auto">
+                                        {/* All Products Option */}
+                                        <Link
+                                            to="/products"
+                                            onClick={() => {
+                                                setSelectedCategory("all");
+                                                setCategoryName("All Products");
+                                                setSort("");
+                                                setMinPrice("");
+                                                setMaxPrice("");
+                                            }}
+                                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${selectedCategory === "all"
+                                                    ? "bg-indigo-50 text-indigo-600 font-semibold"
+                                                    : "text-gray-600 hover:bg-gray-50"
+                                                }`}
+                                        >
+                                            <Package size={16} />
+                                            All Products
+                                        </Link>
+                                        
+                                        {/* Category List */}
                                         {categories.map((cat) => (
                                             <Link
                                                 key={cat._id}
                                                 to={`/category/${cat._id}`}
                                                 onClick={() => {
-                                                    // Clear filters when changing category
+                                                    setSelectedCategory(cat._id);
+                                                    setCategoryName(cat.name);
                                                     setSort("");
                                                     setMinPrice("");
                                                     setMaxPrice("");
                                                 }}
-                                                className={`block px-3 py-2 rounded-lg text-sm transition ${
-                                                    id === cat._id
+                                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${selectedCategory === cat._id
                                                         ? "bg-indigo-50 text-indigo-600 font-semibold"
                                                         : "text-gray-600 hover:bg-gray-50"
-                                                }`}
+                                                    }`}
                                             >
+                                                {getCategoryIcon(cat.name)}
                                                 {cat.name}
                                             </Link>
                                         ))}
@@ -384,12 +454,15 @@ const ProductCategoryDetails = () => {
 
                         {/* ================= MAIN CONTENT ================= */}
                         <div className="flex-1">
-                            
+
                             {/* Toolbar */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <p className="text-sm text-gray-600">
                                         <span className="font-semibold text-gray-800">{products.length}</span> products found
+                                        {selectedCategory !== "all" && (
+                                            <span className="text-gray-500"> in {categoryName}</span>
+                                        )}
                                     </p>
 
                                     <div className="flex items-center gap-3">
@@ -397,17 +470,15 @@ const ProductCategoryDetails = () => {
                                         <div className="hidden sm:flex items-center gap-1 border rounded-lg p-1">
                                             <button
                                                 onClick={() => setViewMode("grid")}
-                                                className={`p-1.5 rounded transition ${
-                                                    viewMode === "grid" ? "bg-indigo-100 text-indigo-600" : "text-gray-400"
-                                                }`}
+                                                className={`p-1.5 rounded transition ${viewMode === "grid" ? "bg-indigo-100 text-indigo-600" : "text-gray-400"
+                                                    }`}
                                             >
                                                 <Grid3x3 size={18} />
                                             </button>
                                             <button
                                                 onClick={() => setViewMode("list")}
-                                                className={`p-1.5 rounded transition ${
-                                                    viewMode === "list" ? "bg-indigo-100 text-indigo-600" : "text-gray-400"
-                                                }`}
+                                                className={`p-1.5 rounded transition ${viewMode === "list" ? "bg-indigo-100 text-indigo-600" : "text-gray-400"
+                                                    }`}
                                             >
                                                 <List size={18} />
                                             </button>
@@ -461,9 +532,9 @@ const ProductCategoryDetails = () => {
                                         )}
                                         {sort && (
                                             <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full text-xs">
-                                                {sort === "price_asc" ? "Price: Low to High" : 
-                                                 sort === "price_desc" ? "Price: High to Low" :
-                                                 sort === "newest" ? "Newest First" : "Top Rated"}
+                                                {sort === "price_asc" ? "Price: Low to High" :
+                                                    sort === "price_desc" ? "Price: High to Low" :
+                                                        sort === "newest" ? "Newest First" : "Top Rated"}
                                                 <button onClick={() => setSort("")} className="hover:text-red-500">
                                                     <X size={12} />
                                                 </button>
@@ -481,11 +552,10 @@ const ProductCategoryDetails = () => {
 
                             {/* Product Grid/List */}
                             {loading ? (
-                                <div className={`grid ${
-                                    viewMode === "grid" 
-                                        ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" 
+                                <div className={`grid ${viewMode === "grid"
+                                        ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
                                         : "grid-cols-1 gap-4"
-                                }`}>
+                                    }`}>
                                     {Array.from({ length: 8 }).map((_, i) => (
                                         <SkeletonCard key={i} />
                                     ))}
@@ -499,21 +569,26 @@ const ProductCategoryDetails = () => {
                                         No products found
                                     </h3>
                                     <p className="text-gray-500 text-sm mb-4">
-                                        No products available in this category yet.
+                                        {selectedCategory !== "all" 
+                                            ? `No products available in ${categoryName} category yet.`
+                                            : "No products available at the moment."}
                                     </p>
                                     <Link
-                                        to="/"
+                                        to="/products"
                                         className="inline-block px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+                                        onClick={() => {
+                                            setSelectedCategory("all");
+                                            setCategoryName("All Products");
+                                        }}
                                     >
-                                        Continue Shopping
+                                        Browse All Products
                                     </Link>
                                 </div>
                             ) : (
-                                <div className={`grid ${
-                                    viewMode === "grid" 
-                                        ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6" 
+                                <div className={`grid ${viewMode === "grid"
+                                        ? "grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6"
                                         : "grid-cols-1 gap-4"
-                                }`}>
+                                    }`}>
                                     {products.map((product) => (
                                         <ProductCard key={product._id} product={product} />
                                     ))}
@@ -530,7 +605,7 @@ const ProductCategoryDetails = () => {
                                     >
                                         Previous
                                     </button>
-                                    
+
                                     <div className="flex gap-1">
                                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                                             let pageNum;
@@ -543,16 +618,15 @@ const ProductCategoryDetails = () => {
                                             } else {
                                                 pageNum = page - 2 + i;
                                             }
-                                            
+
                                             return (
                                                 <button
                                                     key={pageNum}
                                                     onClick={() => setPage(pageNum)}
-                                                    className={`w-10 h-10 rounded-lg text-sm font-medium transition ${
-                                                        page === pageNum
+                                                    className={`w-10 h-10 rounded-lg text-sm font-medium transition ${page === pageNum
                                                             ? "bg-indigo-600 text-white"
                                                             : "border border-gray-200 hover:bg-gray-50"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {pageNum}
                                                 </button>

@@ -116,61 +116,99 @@ const router = createBrowserRouter([
 
 /* =========================
    APP
+// ========================= */
+
+/* =========================
+   APP
 ========================= */
 const App = () => {
   const dispatch = useDispatch();
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    const loadUser = async () => {
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
 
-    let parsedUser = null;
+      let parsedUser = null;
 
-    // ✅ Safe JSON parse
-    try {
-      parsedUser = storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error("Invalid user in localStorage");
-      localStorage.removeItem("user");
-    }
+      // ✅ Safe JSON Parse
+      try {
+        parsedUser = storedUser ? JSON.parse(storedUser) : null;
+      } catch (error) {
+        console.error("Invalid user in localStorage:", error);
+        localStorage.removeItem("user");
+      }
 
-    // ✅ Agar token aur user dono hain to redux me set karo
-    if (parsedUser && token) {
-      dispatch(setUser({ user: parsedUser, token }));
-    }
+      // ✅ Local user ko Redux me restore karo
+      if (parsedUser && token) {
+        dispatch(
+          setUser({
+            user: parsedUser,
+            token,
+          })
+        );
+      }
 
-    // ❌ Agar token nahi hai
-    if (!token) {
-      dispatch(logoutUser());
-      setLoadingUser(false);
-      return;
-    }
-
-    // ✅ Server se fresh user fetch karo
-    fetch(`${API_URL}/api/v1/user/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.success) {
-          localStorage.clear();
-          dispatch(logoutUser());
-        } else {
-          localStorage.setItem("user", JSON.stringify(data.user)); // important
-          dispatch(setUser({ user: data.user, token }));
-        }
-        setLoadingUser(false);
-      })
-      .catch(() => {
-        localStorage.clear();
+      // ❌ Token hi nahi hai
+      if (!token) {
         dispatch(logoutUser());
         setLoadingUser(false);
-      });
+        return;
+      }
 
+      try {
+        const response = await fetch(`${API_URL}/api/v1/user/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // ✅ Sirf Unauthorized par logout
+        if (response.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+
+          dispatch(logoutUser());
+          setLoadingUser(false);
+          return;
+        }
+
+        const data = await response.json();
+
+        // ✅ Fresh user update
+        if (data?.success && data?.user) {
+          localStorage.setItem("user", JSON.stringify(data.user));
+
+          dispatch(
+            setUser({
+              user: data.user,
+              token,
+            })
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+
+        // 🚀 Network issue / Render cold start
+        // Logout mat karo
+        if (parsedUser && token) {
+          dispatch(
+            setUser({
+              user: parsedUser,
+              token,
+            })
+          );
+        }
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    loadUser();
   }, [dispatch]);
-  console.log("API URL:", import.meta.env.VITE_API_URL);
 
+  console.log("API URL:", import.meta.env.VITE_API_URL);
 
   if (loadingUser) {
     return (
