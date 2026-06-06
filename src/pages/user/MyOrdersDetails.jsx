@@ -339,27 +339,27 @@ const MyOrdersDetails = () => {
     <>
       <Navbar />
 
-      <div className="max-w-7xl mx-auto p-4 space-y-6 mb-20">
+      <div className="max-w-7xl mx-auto p-2 space-y-3 mb-20">
 
         {/* HEADER */}
 
         {/* HEADER */}
-        <div className="bg-white p-6 rounded-2xl shadow flex justify-between items-start">
+        <div className="bg-white p-2 rounded-2xl shadow flex justify-between items-start">
 
           {/* LEFT SECTION */}
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-2">
 
             {/* BACK BUTTON */}
             <button
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-xl border flex items-center justify-center hover:bg-gray-100 transition"
+              className="w-8 h-8 rounded-xl border flex items-center justify-center hover:bg-gray-100 transition mt-2"
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
 
             {/* TITLE */}
             <div>
-              <h1 className="text-xl font-bold">
+              <h1 className="text-l font-bold">
                 Order Details
               </h1>
 
@@ -377,7 +377,7 @@ const MyOrdersDetails = () => {
               <button
                 onClick={handleCancelOrder}
                 disabled={cancelling}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-white font-medium shadow transition
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-white font-xl shadow transition
         ${cancelling
                     ? "bg-red-400 cursor-not-allowed"
                     : "bg-red-500 hover:bg-red-600"
@@ -407,7 +407,7 @@ const MyOrdersDetails = () => {
         </div>
 
         {/* ================= TRACKING ================= */}
-        <div className="bg-white p-5 sm:p-6 rounded-2xl shadow space-y-6">
+        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow space-y-4">
 
           {/* HEADER */}
           <div className="flex justify-between items-center">

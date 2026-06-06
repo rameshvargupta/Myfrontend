@@ -59,7 +59,7 @@ const ProductCard = ({
 
     // Set loading state for this specific product
     setPendingWishlist(true);
-    
+
     const wasInWishlist = isInWishlist;
 
     if (wasInWishlist) {

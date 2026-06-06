@@ -359,11 +359,11 @@ const Checkout = () => {
     <>
       <Navbar />
 
-      <div className="min-h-screen bg-gray-50 mb-20">
+      <div className="min-h-screen bg-gray-50 mt-2 mb-20">
 
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 space-y-6">
+        <div className="max-w-7xl mx-auto px-2 lg:px-8 space-y-0">
 
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-3xl font-bold mx-4">
             Checkout
           </h1>
 

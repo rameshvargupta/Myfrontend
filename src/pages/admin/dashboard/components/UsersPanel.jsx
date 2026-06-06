@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import {
@@ -10,20 +10,41 @@ import {
   ChevronDown,
   MoreVertical,
   RefreshCcw,
+  Users,
+  ShoppingBag,
+  XCircle,
+  Shield,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  LayoutGrid,
+  Table,
+  Filter,
+  Eye,
+  Ban,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import FooterNavbar from "@/components/user/FooterNavbar";
 import Navbar from "@/components/Navbar";
-const API_URL = import.meta.env.VITE_API_URL;
 
+const API_URL = import.meta.env.VITE_API_URL;
 
 const UsersPanel = () => {
   const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [loading, setLoading] = useState(false);
+  const [sortField, setSortField] = useState("totalOrders");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [openMenu, setOpenMenu] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState("card");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 9;
+
   const token = localStorage.getItem("token");
   const menuRef = useRef(null);
 
@@ -31,23 +52,15 @@ const UsersPanel = () => {
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
-
       const res = await fetch(`${API_URL}/api/v1/user/admin/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
+        headers: { Authorization: `Bearer ${token}` }
+      });
       const data = await res.json();
-
-      if (!res.ok || !data.success)
-        throw new Error(data.message || "Failed to fetch users");
+      if (!res.ok || !data.success) throw new Error(data.message || "Failed to fetch users");
 
       const normalizedUsers = data.users.map((u) => ({
         _id: u._id,
-        name:
-          `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
-          "Unnamed User",
+        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || "Unnamed User",
         email: u.email || "No Email",
         mobile: u.phoneNo || "—",
         avatar: u.profilePic || "/default-avatar.png",
@@ -56,10 +69,10 @@ const UsersPanel = () => {
         role: u.role || "user",
         isBlocked: u.isBlocked || false,
         createdAt: u.createdAt,
+        address: u.address || "No address",
       }));
 
       setUsers(normalizedUsers);
-      setFilteredUsers(normalizedUsers);
     } catch (err) {
       console.log(err);
       toast.error("Failed to fetch users");
@@ -73,33 +86,58 @@ const UsersPanel = () => {
       toast.error("Please login again");
       return;
     }
-
     fetchUsers();
   }, [fetchUsers, token]);
 
-  // ================= SEARCH & SORT =================
-  useEffect(() => {
+  // ================= FILTER & SORT =================
+  const filteredAndSortedUsers = useMemo(() => {
     let result = [...users];
 
+    // Search filter
     if (search.trim() !== "") {
       result = result.filter((u) => {
         const name = u.name?.toLowerCase() || "";
         const email = u.email?.toLowerCase() || "";
-        return (
-          name.includes(search.toLowerCase()) ||
-          email.includes(search.toLowerCase())
-        );
+        return name.includes(search.toLowerCase()) || email.includes(search.toLowerCase());
       });
     }
 
-    result.sort((a, b) =>
-      sortOrder === "asc"
-        ? (a.totalOrders || 0) - (b.totalOrders || 0)
-        : (b.totalOrders || 0) - (a.totalOrders || 0)
-    );
+    // Status filter
+    if (statusFilter === "active") {
+      result = result.filter((u) => !u.isBlocked);
+    } else if (statusFilter === "blocked") {
+      result = result.filter((u) => u.isBlocked);
+    }
 
-    setFilteredUsers(result);
-  }, [search, users, sortOrder]);
+    // Role filter
+    if (roleFilter === "admin") {
+      result = result.filter((u) => u.role === "admin");
+    } else if (roleFilter === "user") {
+      result = result.filter((u) => u.role === "user");
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+
+      if (sortField === "createdAt") {
+        valA = new Date(valA);
+        valB = new Date(valB);
+      }
+
+      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
+      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [users, search, sortField, sortOrder, statusFilter, roleFilter]);
+
+  // Pagination
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const paginatedUsers = filteredAndSortedUsers.slice(startIndex, startIndex + rowsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedUsers.length / rowsPerPage);
 
   // ================= CLICK OUTSIDE CLOSE =================
   useEffect(() => {
@@ -108,7 +146,6 @@ const UsersPanel = () => {
         setOpenMenu(null);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -116,26 +153,18 @@ const UsersPanel = () => {
   // ================= BLOCK / UNBLOCK =================
   const handleBlock = async (id) => {
     try {
-      const res = await fetch(
-        `${API_URL}/api/v1/admin/users/block/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      const res = await fetch(`${API_URL}/api/v1/admin/users/block/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
-
-      if (!res.ok || !data.success)
-        throw new Error(data.message);
-
+      if (!res.ok || !data.success) throw new Error(data.message);
       toast.success(data.message);
-
-      // Re-sync from DB (100% safe)
       fetchUsers();
+      setOpenMenu(null);
     } catch (err) {
       console.log(err);
       toast.error("Block action failed");
@@ -144,29 +173,20 @@ const UsersPanel = () => {
 
   // ================= DELETE USER =================
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?"))
-      return;
-
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      const res = await fetch(
-        `${API_URL}/api/v1/admin/users/${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      const res = await fetch(`${API_URL}/api/v1/admin/users/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       const data = await res.json();
-
-      if (!res.ok || !data.success)
-        throw new Error(data.message);
-
+      if (!res.ok || !data.success) throw new Error(data.message);
       toast.success("User deleted successfully");
-
-      setUsers((prev) => prev.filter((u) => u._id !== id));
+      fetchUsers();
+      setOpenMenu(null);
     } catch (err) {
       console.log(err);
       toast.error("Delete failed");
@@ -180,264 +200,427 @@ const UsersPanel = () => {
     setRefreshing(false);
   };
 
-  // ================= CALCULATED STATS =================
+  // ================= STATS =================
   const totalUsers = users.length;
-  const totalOrders = users.reduce(
-    (acc, u) => acc + (u.totalOrders || 0),
-    0
-  );
-  const cancelledOrders = users.reduce(
-    (acc, u) => acc + (u.cancelledOrders || 0),
-    0
-  );
+  const activeUsers = users.filter(u => !u.isBlocked).length;
+  const blockedUsers = users.filter(u => u.isBlocked).length;
+  const adminUsers = users.filter(u => u.role === "admin").length;
+  const totalOrders = users.reduce((acc, u) => acc + (u.totalOrders || 0), 0);
+  const cancelledOrders = users.reduce((acc, u) => acc + (u.cancelledOrders || 0), 0);
+
+  // Sort handler
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  // Get status info
+  const getStatusInfo = (user) => {
+    if (user.isBlocked) {
+      return { text: "Blocked", color: "bg-red-100 text-red-600", icon: Ban };
+    }
+    if (user.role === "admin") {
+      return { text: "Admin", color: "bg-purple-100 text-purple-600", icon: Shield };
+    }
+    return { text: "Active", color: "bg-green-100 text-green-600", icon: CheckCircle };
+  };
 
   return (
-    <> <Navbar/>
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-10 mb-15">
+    <>
+      <Navbar />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-2 lg:p-8 mb-12">
+
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
-          <div>
-            <h2 className="text-4xl font-bold text-gray-800 tracking-tight">
-              Users Management
-            </h2>
-            <p className="text-gray-500 mt-1">
-              Monitor, manage and control your platform users
-            </p>
-          </div>
-
-          <div className="flex gap-3 w-full md:w-auto">
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-4 top-3 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search by name or email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 shadow-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none transition"
-              />
+        <div className="max-w-7xl mx-auto mb-6">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
+                  <Users className="text-white" size={24} />
+                </div>
+                <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                  User Management
+                </span>
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Manage and control all platform users
+              </p>
             </div>
 
-            <button
-              onClick={handleRefresh}
-              className="px-4 py-3 bg-white rounded-2xl shadow-sm border hover:bg-gray-50 transition flex items-center gap-2"
-            >
-              <RefreshCcw
-                size={16}
-                className={refreshing ? "animate-spin" : ""}
-              />
-              Refresh
-            </button>
+            <div className="flex gap-2 items-center">
+              <button
+                onClick={handleRefresh}
+                className="bg-white border-2 border-gray-200 px-4 py-2 rounded-xl text-sm flex items-center gap-2 hover:bg-gray-50 transition-all"
+                disabled={refreshing}
+              >
+                <RefreshCcw size={16} className={refreshing ? "animate-spin" : ""} />
+                Refresh
+              </button>
+
+              <div className="flex bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm">
+                <button
+                  onClick={() => setViewMode("card")}
+                  className={`p-2 rounded-lg transition-all ${viewMode === "card" ? "bg-indigo-100 text-indigo-600 shadow-sm" : "text-gray-500 hover:bg-gray-100"}`}
+                >
+                  <LayoutGrid size={18} />
+                </button>
+                <button
+                  onClick={() => setViewMode("table")}
+                  className={`p-2 rounded-lg transition-all ${viewMode === "table" ? "bg-indigo-100 text-indigo-600 shadow-sm" : "text-gray-500 hover:bg-gray-100"}`}
+                >
+                  <Table size={18} />
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* STATS */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-          <StatCard title="Total Users" value={totalUsers} color="indigo" />
-          <StatCard title="Total Orders" value={totalOrders} color="green" />
-          <StatCard title="Cancelled Orders" value={cancelledOrders} color="red" />
-        </div>
+          {/* STATS CARDS */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mb-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Users</p>
+                  <h2 className="text-2xl font-bold text-gray-800 mt-1">{totalUsers}</h2>
+                </div>
+                <div className="p-3 bg-indigo-100 rounded-xl group-hover:scale-110 transition-transform">
+                  <Users size={22} className="text-indigo-600" />
+                </div>
+              </div>
+            </div>
 
-        {/* TABLE */}
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-5 hover:shadow-md transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600">Active Users</p>
+                  <h2 className="text-2xl font-bold text-green-600 mt-1">{activeUsers}</h2>
+                </div>
+                <div className="p-3 bg-green-100 rounded-xl group-hover:scale-110 transition-transform">
+                  <UserCheck size={22} className="text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-red-100 p-5 hover:shadow-md transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-600">Blocked Users</p>
+                  <h2 className="text-2xl font-bold text-red-600 mt-1">{blockedUsers}</h2>
+                </div>
+                <div className="p-3 bg-red-100 rounded-xl group-hover:scale-110 transition-transform">
+                  <UserX size={22} className="text-red-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-purple-100 p-5 hover:shadow-md transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-600">Admin Users</p>
+                  <h2 className="text-2xl font-bold text-purple-600 mt-1">{adminUsers}</h2>
+                </div>
+                <div className="p-3 bg-purple-100 rounded-xl group-hover:scale-110 transition-transform">
+                  <Shield size={22} className="text-purple-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-5 hover:shadow-md transition-all group">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-orange-600">Total Orders</p>
+                  <h2 className="text-2xl font-bold text-orange-600 mt-1">{totalOrders}</h2>
+                </div>
+                <div className="p-3 bg-orange-100 rounded-xl group-hover:scale-110 transition-transform">
+                  <ShoppingBag size={22} className="text-orange-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SEARCH + FILTERS */}
+          <div className="bg-white rounded-2xl shadow-sm border-0 p-4 mb-2">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search size={18} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  placeholder="Search by name or email..."
+                  className="w-full border-2 border-gray-200 rounded-xl pl-11 pr-4 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-2">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="blocked">Blocked</option>
+                </select>
+
+                <select
+                  value={roleFilter}
+                  onChange={(e) => setRoleFilter(e.target.value)}
+                  className="border-2 border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                >
+                  <option value="all">All Roles</option>
+                  <option value="user">Users</option>
+                  <option value="admin">Admins</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* CONTENT */}
           {loading ? (
-            <div className="py-20 text-center text-gray-500">
-              Loading users...
+            <div className="flex justify-center items-center h-64">
+              <div className="flex flex-col items-center gap-3">
+                <RefreshCcw className="animate-spin text-indigo-600" size={40} />
+                <p className="text-gray-500">Loading users...</p>
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4 text-left">User</th>
-                    <th className="px-6 py-4 text-center">Mobile</th>
-                    <th
-                      className="px-6 py-4 text-center cursor-pointer"
-                      onClick={() =>
-                        setSortOrder(sortOrder === "asc" ? "desc" : "asc")
-                      }
-                    >
-                      <div className="flex items-center justify-center gap-1">
-                        Orders
-                        {sortOrder === "asc" ? (
-                          <ChevronUp size={14} />
-                        ) : (
-                          <ChevronDown size={14} />
-                        )}
-                      </div>
-                    </th>
-                    <th className="px-6 py-4 text-center">Cancelled</th>
-                    <th className="px-6 py-4 text-center">Status</th>
-                    <th className="px-6 py-4 text-center">Joined</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
+          ) : viewMode === "card" ? (
+            /* CARD VIEW - MODERN ENHANCED */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedUsers.map((user) => {
+                const statusInfo = getStatusInfo(user);
+                const StatusIcon = statusInfo.icon;
+                const isBlocked = user.isBlocked;
+                const joinedDate = new Date(user.createdAt).toLocaleDateString();
 
-                <tbody className="divide-y divide-gray-100">
-                  {filteredUsers.map((user) => (
-                    <tr
-                      key={user._id}
-                      className={`transition duration-200 ${user.isBlocked
-                        ? "bg-red-50"
-                        : "hover:bg-gray-50"
-                        }`}
-                    >
-                      <td className="px-6 py-5">
-                        <Link
-                          to={`/admin/users/${user._id}`}
-                          className="flex items-center gap-4 group"
-                        >
+                return (
+                  <div key={user._id} className="group bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+                    <div className={`h-1 ${isBlocked ? "bg-red-500" : user.role === "admin" ? "bg-gradient-to-r from-purple-500 to-pink-500" : "bg-gradient-to-r from-indigo-500 to-purple-600"}`}></div>
+
+                    <div className="p-5">
+                      {/* Header with Avatar */}
+                      <div className="flex items-start gap-4 mb-4">
+                        <Link to={`/admin/users/${user._id}`} className="flex-shrink-0">
                           <img
                             src={user.avatar}
-                            className="w-12 h-12 rounded-2xl object-cover border shadow-sm"
-                            alt="User"
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-gray-200 shadow-sm group-hover:scale-105 transition-transform"
+                            alt={user.name}
                           />
-                          <div>
-                            <p
-                              className={`font-semibold text-sm group-hover:text-indigo-600 transition ${user.isBlocked
-                                ? "text-red-600"
-                                : "text-gray-800"
-                                }`}
-                            >
-                              {user.name}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {user.email}
-                            </p>
-                          </div>
                         </Link>
-                      </td>
-
-                      <td className="px-6 py-5 text-center text-gray-600">
-                        {user.mobile}
-                      </td>
-
-                      <td className="px-6 py-5 text-center">
-                        <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 font-semibold text-xs">
-                          {user.totalOrders}
+                        <div className="flex-1 min-w-0">
+                          <Link to={`/admin/users/${user._id}`}>
+                            <h3 className={`font-bold text-lg truncate hover:text-indigo-600 transition ${isBlocked ? "text-red-600" : "text-gray-800"}`}>
+                              {user.name}
+                            </h3>
+                          </Link>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Mail size={12} className="text-gray-400" />
+                            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <Phone size={12} className="text-gray-400" />
+                            <p className="text-xs text-gray-500">{user.mobile}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full font-semibold ${statusInfo.color}`}>
+                          <StatusIcon size={12} />
+                          {statusInfo.text}
                         </span>
-                      </td>
+                      </div>
 
-                      <td className="px-6 py-5 text-center">
-                        <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 font-semibold text-xs">
-                          {user.cancelledOrders}
-                        </span>
-                      </td>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-3 text-center">
+                          <ShoppingBag size={16} className="text-indigo-600 mx-auto mb-1" />
+                          <p className="text-xs text-gray-500">Orders</p>
+                          <p className="font-bold text-indigo-600 text-lg">{user.totalOrders}</p>
+                        </div>
+                        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 text-center">
+                          <XCircle size={16} className="text-red-600 mx-auto mb-1" />
+                          <p className="text-xs text-gray-500">Cancelled</p>
+                          <p className="font-bold text-red-600 text-lg">{user.cancelledOrders}</p>
+                        </div>
+                      </div>
 
-                      <td className="px-6 py-5 text-center">
-                        <span
-                          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${user.isBlocked
-                            ? "bg-red-100 text-red-700"
-                            : user.role === "admin"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-blue-100 text-blue-700"
-                            }`}
-                        >
-                          {user.isBlocked ? "Blocked" : user.role}
-                        </span>
-                      </td>
+                      {/* Footer Info */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={12} className="text-gray-400" />
+                          <p className="text-xs text-gray-500">Joined: {joinedDate}</p>
+                        </div>
 
-                      <td className="px-6 py-5 text-center text-gray-500 text-xs">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-
-                      <td className="px-6 py-5 relative">
-                        <div className="flex justify-end">
-                          <button
-                            onClick={() =>
-                              setOpenMenu(
-                                openMenu === user._id ? null : user._id
-                              )
-                            }
-                            className="p-2 rounded-xl hover:bg-gray-100 transition"
+                        <div className="flex gap-2">
+                          <Link
+                            to={`/admin/users/${user._id}`}
+                            className="p-2 rounded-xl transition-all bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-600"
+                            title="View Details"
                           >
-                            <MoreVertical size={18} />
+                            <Eye size={16} />
+                          </Link>
+                          <button
+                            onClick={() => handleBlock(user._id)}
+                            className={`p-2 rounded-xl transition-all ${isBlocked ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-orange-100 text-orange-600 hover:bg-orange-200"}`}
+                            title={isBlocked ? "Unblock User" : "Block User"}
+                          >
+                            {isBlocked ? <UserCheck size={16} /> : <UserX size={16} />}
                           </button>
+                          <button
+                            onClick={() => handleDelete(user._id)}
+                            className="p-2 rounded-xl transition-all bg-red-100 text-red-600 hover:bg-red-200"
+                            title="Delete User"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
 
-                          {openMenu === user._id && (
-                            <div
-                              ref={menuRef}
-                              className="absolute right-6 top-14 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl z-20 overflow-hidden"
-                            >
-                              <button
-                                onClick={() => {
-                                  handleBlock(user._id);
-                                  setOpenMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 transition flex items-center gap-2"
+              {filteredAndSortedUsers.length === 0 && (
+                <div className="col-span-full text-center py-14">
+                  <div className="flex flex-col items-center gap-3">
+                    <AlertCircle size={48} className="text-gray-300" />
+                    <p className="text-gray-400">No users found</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* TABLE VIEW - ENHANCED */
+            <div className="bg-white rounded-2xl shadow-lg border-0 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
+                    <tr>
+                      <th className="p-4 text-left font-semibold text-gray-700">User</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Contact</th>
+                      <th onClick={() => handleSort("totalOrders")} className="p-4 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition">
+                        Orders {sortField === "totalOrders" && (sortOrder === "asc" ? "↑" : "↓")}
+                      </th>
+                      <th onClick={() => handleSort("cancelledOrders")} className="p-4 text-center font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition">
+                        Cancelled
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-700">Status</th>
+                      <th onClick={() => handleSort("createdAt")} className="p-4 text-left font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition">
+                        Joined {sortField === "createdAt" && (sortOrder === "asc" ? "↑" : "↓")}
+                      </th>
+                      <th className="p-4 text-center font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedUsers.map((user) => {
+                      const statusInfo = getStatusInfo(user);
+                      const isBlocked = user.isBlocked;
+
+                      return (
+                        <tr key={user._id} className={`hover:bg-gray-50 transition ${isBlocked ? "bg-red-50/30" : ""}`}>
+                          <td className="p-4">
+                            <Link to={`/admin/users/${user._id}`} className="flex items-center gap-3 group">
+                              <img src={user.avatar} className="w-10 h-10 rounded-xl object-cover border" alt={user.name} />
+                              <div>
+                                <p className={`font-semibold text-sm group-hover:text-indigo-600 transition ${isBlocked ? "text-red-600" : "text-gray-800"}`}>
+                                  {user.name}
+                                </p>
+                                <p className="text-xs text-gray-500">{user.email}</p>
+                              </div>
+                            </Link>
+                          </td>
+                          <td className="p-4">
+                            <p className="text-sm text-gray-600">{user.mobile}</p>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 font-semibold text-xs">
+                              {user.totalOrders}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-red-50 text-red-600 font-semibold text-xs">
+                              {user.cancelledOrders}
+                            </span>
+                          </td>
+                          <td className="p-4 text-center">
+                            <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-full font-semibold ${statusInfo.color}`}>
+                              <statusInfo.icon size={12} />
+                              {statusInfo.text}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <p className="text-xs text-gray-500">{new Date(user.createdAt).toLocaleDateString()}</p>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex gap-2 justify-center">
+                              <Link
+                                to={`/admin/users/${user._id}`}
+                                className="p-2 rounded-lg transition-all hover:bg-indigo-50 text-indigo-600"
+                                title="View Details"
                               >
-                                {user.isBlocked ? (
-                                  <>
-                                    <UserCheck
-                                      size={16}
-                                      className="text-emerald-600"
-                                    />
-                                    <span className="text-emerald-600">
-                                      Unblock User
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <UserX
-                                      size={16}
-                                      className="text-yellow-600"
-                                    />
-                                    <span className="text-yellow-600">
-                                      Block User
-                                    </span>
-                                  </>
-                                )}
+                                <Eye size={18} />
+                              </Link>
+                              <button
+                                onClick={() => handleBlock(user._id)}
+                                className={`p-2 rounded-lg transition-all ${isBlocked ? "hover:bg-green-50 text-green-600" : "hover:bg-orange-50 text-orange-600"}`}
+                                title={isBlocked ? "Unblock User" : "Block User"}
+                              >
+                                {isBlocked ? <UserCheck size={18} /> : <UserX size={18} />}
                               </button>
-
                               <button
-                                onClick={() => {
-                                  handleDelete(user._id);
-                                  setOpenMenu(null);
-                                }}
-                                className="w-full text-left px-4 py-3 text-sm hover:bg-red-50 transition flex items-center gap-2 text-red-600"
+                                onClick={() => handleDelete(user._id)}
+                                className="p-2 rounded-lg transition-all hover:bg-red-50 text-red-500"
+                                title="Delete User"
                               >
-                                <Trash2 size={16} />
-                                Delete User
+                                <Trash2 size={18} />
                               </button>
                             </div>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
 
-                  {filteredUsers.length === 0 && (
-                    <tr>
-                      <td colSpan="7" className="text-center py-14 text-gray-400">
-                        No users found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                    {filteredAndSortedUsers.length === 0 && (
+                      <tr>
+                        <td colSpan="7" className="text-center py-14 text-gray-400">
+                          No users found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* PAGINATION */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center mt-6 bg-white rounded-2xl shadow-sm border-0 p-4">
+              <p className="text-sm text-gray-500">
+                Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredAndSortedUsers.length)} of {filteredAndSortedUsers.length} users
+              </p>
+              <div className="flex gap-2">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  className="px-4 py-2 border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                >
+                  Previous
+                </button>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  className="px-4 py-2 border-2 border-gray-200 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
-      <FooterNavbar/>
+      <FooterNavbar />
     </>
-  );
-};
-
-// ================= STAT CARD COMPONENT =================
-const StatCard = ({ title, value, color }) => {
-  const colorMap = {
-    indigo: "text-indigo-600",
-    green: "text-green-600",
-    red: "text-red-600",
-  };
-
-  return (
-    <div className="bg-white rounded-3xl shadow-md p-6 hover:shadow-xl transition">
-      <p className="text-sm text-gray-500">{title}</p>
-      <h3 className={`text-3xl font-bold mt-2 ${colorMap[color]}`}>
-        {value}
-      </h3>
-    </div>
   );
 };
 

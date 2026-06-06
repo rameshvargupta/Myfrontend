@@ -52,9 +52,9 @@ const CartPage = () => {
     <>
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 mb-20">
+      <div className="max-w-7xl mx-auto px-2 mb-20">
 
-        <h1 className="text-3xl font-bold mt-6 mb-8">
+        <h1 className="text-3xl font-bold mt-2 mb-5">
           Shopping Cart
         </h1>
 

@@ -138,8 +138,8 @@ const Menubar = () => {
                         onClick={() => toggleSection("shop")}
                     >
                         <SubItem text="All Products" onClick={() => navigate("/products")} />
-                        <SubItem text="Categories" onClick={() => navigate("/categories")} />
-                        <SubItem text="Offers" onClick={() => navigate("/offers")} />
+                        <SubItem text="Categories" onClick={() => navigate("/productCategoryDetails")} />
+                        <SubItem text="Offers" onClick={() => navigate("/topDeals")} />
                     </Accordion>
 
                     {/* ACCOUNT */}
@@ -152,7 +152,6 @@ const Menubar = () => {
                         >
                             <SubItem text="My Profile" onClick={() => navigate("/profile")} />
                             <SubItem text="My Orders" onClick={() => navigate("/myorders")} />
-                            <SubItem text="Track Order" onClick={() => navigate("/track-order")} />
                             <SubItem text="Address" onClick={() => navigate("/profile")} />
                         </Accordion>
                     )}

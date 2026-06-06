@@ -170,22 +170,8 @@ const Products = () => {
     <>
       <Navbar />
 
-      <div className="max-w-7xl mx-auto px-4 mt-3 mb-16">
-        {/* Back button and search context */}
-        <div className="mb-4 flex items-center gap-3 flex-wrap">
-          <button
-            onClick={handleBackToSearch}
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors"
-          >
-            <ArrowLeft size={20} />
-            <span className="text-sm">Back to Search</span>
-          </button>
-          {searchKeyword && (
-            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              Search: "{searchKeyword}"
-            </span>
-          )}
-        </div>
+      <div className="max-w-7xl mx-auto px-4 mt-3 mb-18">
+
 
         <div
           className="

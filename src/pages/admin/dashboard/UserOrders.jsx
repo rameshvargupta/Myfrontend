@@ -62,13 +62,12 @@ const UserOrders = ({ user, token }) => {
               Order ID: <span className="text-sm">{order._id.slice(-6)}</span>
             </p>
             <span
-              className={`px-3 py-1 text-sm rounded-full ${
-                order.orderStatus === "Delivered"
+              className={`px-3 py-1 text-sm rounded-full ${order.orderStatus === "Delivered"
                   ? "bg-green-100 text-green-700"
                   : order.orderStatus === "Cancelled"
-                  ? "bg-red-100 text-red-700"
-                  : "bg-yellow-100 text-yellow-700"
-              }`}
+                    ? "bg-red-100 text-red-700"
+                    : "bg-yellow-100 text-yellow-700"
+                }`}
             >
               {order.orderStatus}
             </span>

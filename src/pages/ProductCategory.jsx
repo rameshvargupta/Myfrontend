@@ -45,7 +45,7 @@ const ProductCategory = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 mb-3">
+    <div className="max-w-7xl mx-auto px-2 mb-3">
 
       <div
         className="

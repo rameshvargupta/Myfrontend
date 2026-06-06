@@ -188,7 +188,7 @@ const AddBanners = () => {
     <div className="min-h-screen bg-gray-50">
       <Navbar />
 
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-4 pb-20">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 pb-20">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
@@ -230,8 +230,8 @@ const AddBanners = () => {
                       <button
                         onClick={() => setEditMode((p) => ({ ...p, [pos]: !p[pos] }))}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${isEdit
-                            ? "bg-green-50 text-green-700 border border-green-200"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                       >
                         {isEdit ? (
@@ -342,8 +342,8 @@ const AddBanners = () => {
                             <div className="flex-1">
                               <label className="block cursor-pointer">
                                 <div className={`rounded-lg border-2 border-dashed transition-all p-4 text-center ${files[pos]?.length
-                                    ? "border-green-400 bg-green-50"
-                                    : "border-gray-300 hover:border-gray-400 bg-white"
+                                  ? "border-green-400 bg-green-50"
+                                  : "border-gray-300 hover:border-gray-400 bg-white"
                                   }`}>
                                   <input
                                     type="file"
@@ -383,8 +383,8 @@ const AddBanners = () => {
                                 className="w-full relative overflow-hidden"
                               >
                                 <div className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${uploading[pos] || !files[pos]?.length
-                                    ? "bg-gray-300 cursor-not-allowed text-gray-500"
-                                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                                  ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                                  : "bg-blue-600 hover:bg-blue-700 text-white"
                                   }`}>
                                   <div className="flex items-center justify-center gap-2">
                                     {uploading[pos] ? (
